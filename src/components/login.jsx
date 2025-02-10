@@ -1,13 +1,12 @@
 import { useNavigate } from "react-router-dom";
+import { useLocation } from 'react-router-dom';
 
 const Login = () => {
   const navigate = useNavigate();
 
   return (
     <div className="flex h-screen">
-      <div className="w-1/4 bg-gray-50 flex items-center justify-center p-8">
-        <h1 className="text-2xl font-bold text-gray-800">Everything Rentals</h1>
-      </div>
+      
       <div className="flex-1 flex flex-col items-center justify-center px-10">
         <h2 className="text-3xl font-bold text-gray-800">Login to your Account</h2>
         <p className="text-gray-600 mb-6">Log in to access Everything Rentals</p>
