@@ -14,39 +14,43 @@ const BusinessDetails = () => {
   const [selectedNiche, setSelectedNiche] = useState("");
 
   return (
-    <div className="flex flex-col items-center p-8">
-      <h2 className="text-2xl font-bold mb-6">Create an account</h2>
+    <div className="flex flex-col items-center space-y-6 p-10 max-w-lg mx-auto">
+      <h2 className="text-3xl font-bold">Create an account</h2>
 
-      <div className="w-full max-w-md space-y-4">
-        <label className="block">Business details:</label>
-        <div className="flex space-x-2">
-          <input type="text" placeholder="Company name" className="border p-2 flex-1" />
-          <input type="text" placeholder="Website" className="border p-2 flex-1" />
+      <div className="w-full space-y-5">
+        <h3 className="text-lg font-semibold">Business details</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <input type="text" placeholder="Company name" className="border p-2 w-full" />
+          <input type="text" placeholder="Website" className="border p-2 w-full" />
         </div>
 
-        <select className="border p-2 w-full" value={selectedNiche} onChange={(e) => setSelectedNiche(e.target.value)}>
+        <select 
+          className="border p-2 w-full" 
+          value={selectedNiche} 
+          onChange={(e) => setSelectedNiche(e.target.value)}
+        >
           <option value="" disabled>Choose Niche</option>
           {niches.map((niche, index) => (
             <option key={index} value={niche}>{niche}</option>
           ))}
         </select>
 
-        <label className="block">Address details:</label>
+        <h3 className="text-lg font-semibold">Address details</h3>
         <Select
           options={countryOptions}
           value={selectedCountry}
           onChange={setSelectedCountry}
-          className="border p-2 w-full"
+          className="w-full"
           placeholder="Choose Country"
         />
 
-        <div className="flex space-x-2">
-          <input type="text" placeholder="State" className="border p-2 flex-1" />
-          <input type="text" placeholder="City" className="border p-2 flex-1" />
+        <div className="grid grid-cols-2 gap-4">
+          <input type="text" placeholder="State" className="border p-2 w-full" />
+          <input type="text" placeholder="City" className="border p-2 w-full" />
         </div>
-        <div className="flex space-x-2">
-          <input type="text" placeholder="City" className="border p-2 flex-1" />
-          <input type="text" placeholder="Phone Number" className="border p-2 flex-1" />
+        <div className="grid grid-cols-2 gap-4">
+          <input type="text" placeholder="Street Address" className="border p-2 w-full" />
+          <input type="text" placeholder="Phone Number" className="border p-2 w-full" />
         </div>
       </div>
 
