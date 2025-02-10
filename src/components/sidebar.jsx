@@ -30,19 +30,19 @@ const Sidebar = () => {
           <p className="font-medium text-base">Client</p>
           <p className="font-medium text-base">Rentals</p>
         </div>
-            <a className="flex items-center mb-6">
+            <a href='/details' className="flex items-center mb-6">
             <img
               src="/assets/info.png"
               alt="Details"
               className="w-6 h-6 mr-3"
             />
             <div>
-              <span className="block">Your Details</span>
+              <span  className="block">Your Details</span>
               <p className="text-sm">Provide your essential details</p>
             </div>
           </a>
             
-              <a  href='' className="flex items-center mb-6">
+              <a  href='/email-verification' className="flex items-center mb-6">
                 <img
                   src="/assets/otp.png"
                   alt="Verify"
@@ -54,7 +54,7 @@ const Sidebar = () => {
                 </div>
               </a>
 
-              <a  href='' className="flex items-center mb-6">
+              <a  href='/business-details'  className="flex items-center mb-6">
                 <img
                   src="/assets/businessdetails.png"
                   alt="Business"
@@ -66,7 +66,7 @@ const Sidebar = () => {
                 </div>
               </a>
 
-              <a href='' className="flex items-center mb-6">
+              <a href='/business-details' className="flex items-center mb-6">
                 <img
                   src="/assets/identity.png"
                   alt="Identity Verify"
@@ -78,7 +78,7 @@ const Sidebar = () => {
                 </div>
               </a>
 
-              <a href='' className="flex items-center mb-6">
+              <a href='/' className="flex items-center mb-6">
                 <img
                   src="/assets/out.png"
                   alt="Welcome"
@@ -105,3 +105,4 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+
