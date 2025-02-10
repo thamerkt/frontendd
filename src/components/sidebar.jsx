@@ -30,7 +30,7 @@ const Sidebar = () => {
           <p className="font-medium text-base">Client</p>
           <p className="font-medium text-base">Rentals</p>
         </div>
-            <div className="flex items-center mb-6">
+            <a className="flex items-center mb-6">
             <img
               src="/assets/info.png"
               alt="Details"
@@ -40,8 +40,9 @@ const Sidebar = () => {
               <span className="block">Your Details</span>
               <p className="text-sm">Provide your essential details</p>
             </div>
-          </div>
-              <div className="flex items-center mb-6">
+          </a>
+            
+              <a  href='' className="flex items-center mb-6">
                 <img
                   src="/assets/otp.png"
                   alt="Verify"
@@ -51,11 +52,11 @@ const Sidebar = () => {
                   <span className="block">Verify Email</span>
                   <p className="text-sm">Enter your verification code</p>
                 </div>
-              </div>
+              </a>
 
-              <div className="flex items-center mb-6">
+              <a  href='' className="flex items-center mb-6">
                 <img
-                  src="/assets/welcome-icon.png"
+                  src="/assets/businessdetails.png"
                   alt="Business"
                   className="w-6 h-6 mr-3"
                 />
@@ -63,11 +64,11 @@ const Sidebar = () => {
                   <span className="block">Business Details</span>
                   <p className="text-sm">Provide details for your business</p>
                 </div>
-              </div>
+              </a>
 
-              <div className="flex items-center mb-6">
+              <a href='' className="flex items-center mb-6">
                 <img
-                  src="/assets/welcome-icon.png"
+                  src="/assets/identity.png"
                   alt="Identity Verify"
                   className="w-6 h-6 mr-3"
                 />
@@ -75,11 +76,11 @@ const Sidebar = () => {
                   <span className="block">Identity Verify</span>
                   <p className="text-sm">Verify your identity</p>
                 </div>
-              </div>
+              </a>
 
-              <div className="flex items-center mb-6">
+              <a href='' className="flex items-center mb-6">
                 <img
-                  src="/assets/welcome-icon.png"
+                  src="/assets/out.png"
                   alt="Welcome"
                   className="w-6 h-6 mr-3"
                 />
@@ -87,7 +88,7 @@ const Sidebar = () => {
                   <span className="block">Welcome</span>
                   <p className="text-sm">Go to the home page</p>
                 </div>
-              </div>
+              </a>
             </>
           )}
         </div>
