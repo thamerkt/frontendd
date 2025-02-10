@@ -10,6 +10,8 @@ const Navbar = () => {
     const [search, setSearch] = useState('');
     const [selectedStates, setSelectedStates] = useState([]);
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [islogged, setIslogged] = useState(false);
+
 
     const handleStateChange = (state) => {
         setSelectedStates((prevState) =>
@@ -40,7 +42,7 @@ const Navbar = () => {
                 </div>
             </div>
 
-            <div className=" px-20 py-0 text-white text-20 flex items-center justify-between gap-x-2 w-full bg-[#0F0D23] space-x-5 ">
+            <div className=" px-20 py-3 text-white text-20 flex items-center justify-between gap-x-2 w-full bg-[#0F0D23] space-x-5 ">
                 <ul className="flex space-x-7 ml-5 ">
                     <li className="- hover:text-teal-600 ">HOME</li>
                     <li className="hover:text-teal-600 ">STUFF RENTALS</li>
@@ -49,12 +51,15 @@ const Navbar = () => {
                     <li className="hover:text-teal-600 ">ACCOUNTS</li>
                     <li className="hover:text-teal-600 ">CONTACT</li>
                 </ul>
-
-                <div className=" px-6 py-3 flex justify-between items-center space-x-4 ">
+                {!islogged && (
+                <div className=" px-6  flex justify-between items-center space-x-4 ">
+                
                     <button className="w-full p-2 bg-teal-500 text-white text-base hover:bg-teal-600 transition duration-300 px-7">Login</button>
                     <button className="w-full text-teal-500 p-2 border-2 border-teal-500  text-base  hover:bg-teal-600  hover:text-white transition duration-300 px-7">Register</button>
                 </div>
+                )}
             </div>
+                
 
             <div className="bg-white shadow-md py-10 px-40 flex items-center justify-between gap-x-2">
                 <h1 className="text-4xl font-serif italic ">Everything Rentals</h1>
