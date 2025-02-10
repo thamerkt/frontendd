@@ -4,6 +4,8 @@ import Register from "./components/Register";
 import Navbar from "./components/navbar";
 import Sidebar from "./components/sidebar";
 import Login from "./components/login";
+import EmailVerification from "./components/EmailVerification";
+import BusinessDetails from "./components/BusinessDetails";
 
 const App = () => {
   return (
@@ -21,6 +23,8 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Register />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/email-verification" element={<EmailVerification />} />
+              <Route path="/business-details" element={<BusinessDetails />} />
             </Routes>
           </main>
         </div>
