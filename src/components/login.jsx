@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const navigate = useNavigate();
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   return (
     <div className="flex h-screen">
@@ -13,20 +15,35 @@ const Login = () => {
         <p className="text-gray-600 mb-6">Log in to access Everything Rentals</p>
         
         <input className="w-full border p-3 mb-4" type="email" placeholder="Email" />
-        <input className="w-full border p-3 mb-4" type="password" placeholder="Password" />
         
+        <div className="relative w-full mb-4">
+          <input
+            className="w-full border p-3 pr-10"
+            type={passwordVisible ? "text" : "password"}
+            placeholder="Password"
+          />
+          <img
+            src={passwordVisible ? "/assets/visible.png" : "/assets/invisible.png"}
+            alt="Toggle Password Visibility"
+            className="absolute right-3 top-3 w-6 h-6 cursor-pointer"
+            onClick={() => setPasswordVisible(!passwordVisible)}
+          />
+        </div>
         <button className="w-full bg-teal-500 text-white py-3 rounded mb-4 flex items-center justify-center">
-          Log in to your Account →
-        </button>
+  Log in to your Account
+  <img src="/assets/arrow.png" alt="Arrow Icon" className="w-6 h-6 ml-2" />
+</button>
+
+
         
         <button className="w-full border py-3 rounded mb-2 flex items-center justify-center">
-          <img src="/assets/google-icon.png" alt="Google" className="w-5 h-5 mr-2" /> Sign In with Google
+          <img src="/assets/search.png" alt="Google" className="w-5 h-5 mr-2" /> Sign In with Google
         </button>
         <button className="w-full border py-3 rounded mb-2 bg-blue-600 text-white flex items-center justify-center">
-          <img src="/assets/facebook-icon.png" alt="Facebook" className="w-5 h-5 mr-2" /> Sign In with Facebook
+          <img src="/assets/f2.png" alt="Facebook" className="w-5 h-5 mr-2" /> Sign In with Facebook
         </button>
         <button className="w-full border py-3 rounded flex items-center justify-center">
-          <img src="/assets/apple-icon.png" alt="Apple" className="w-5 h-5 mr-2" /> Sign In with Apple
+          <img src="/assets/apple.png" alt="Apple" className="w-5 h-5 mr-2" /> Sign In with Apple
         </button>
         
         <p className="mt-4 font-semibold">Forgot Password?</p>
