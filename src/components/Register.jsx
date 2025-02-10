@@ -49,21 +49,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col w-full">
-      {/* Navbar */}
-      <div className="bg-black text-white px-6 py-3 flex justify-between items-center w-full">
-        <span className="text-sm">
-          Email us at:{" "}
-          <a href="mailto:medkh@gmail.com" className="underline">
-            medkh@gmail.com
-          </a>
-        </span>
-        <div className="flex space-x-4">
-          <img src="/assets/f3.png" alt="Facebook" className="w-5 h-5" />
-          <img src="/assets/twitter.png" alt="Twitter" className="w-5 h-5" />
-          <img src="/assets/email.png" alt="Google" className="w-5 h-5" />
-          <img src="/assets/cart.png" alt="Cart" className="w-5 h-5" />
-        </div>
-      </div>
+      
 
       {/* Main Content */}
       <div className="flex flex-1 w-full items-center justify-center p-8">
