@@ -5,7 +5,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isRegisterPage = location.pathname === "/register";
+  const isRegisterPage = ["/register/", "/register/details","/register/email-verification","/register/identity-verification","/register/business-details"].includes(location.pathname)
 
   const linkClasses = (isActive) =>
     `flex items-center mb-6 p-2 ${
@@ -27,7 +27,7 @@ const Sidebar = () => {
             </div>
 
             {/* Sidebar Links */}
-            <NavLink to="/details" className={({ isActive }) => linkClasses(isActive)}>
+            <NavLink to="/register/details" className={({ isActive }) => linkClasses(isActive)}>
               {({ isActive }) => (
                 <>
                   <img
@@ -42,7 +42,7 @@ const Sidebar = () => {
               )}
             </NavLink>
 
-            <NavLink to="/email-verification" className={({ isActive }) => linkClasses(isActive)}>
+            <NavLink to="/register/email-verification" className={({ isActive }) => linkClasses(isActive)}>
               {({ isActive }) => (
                 <>
                   <img
@@ -57,7 +57,7 @@ const Sidebar = () => {
               )}
             </NavLink>
 
-            <NavLink to="/business-details" className={({ isActive }) => linkClasses(isActive)}>
+            <NavLink to="/register/business-details" className={({ isActive }) => linkClasses(isActive)}>
               {({ isActive }) => (
                 <>
                   <img
@@ -76,7 +76,7 @@ const Sidebar = () => {
               )}
             </NavLink>
 
-            <NavLink to="/identity-verification" className={({ isActive }) => linkClasses(isActive)}>
+            <NavLink to="/register/identity-verification" className={({ isActive }) => linkClasses(isActive)}>
               {({ isActive }) => (
                 <>
                   <img

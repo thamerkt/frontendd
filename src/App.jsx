@@ -4,8 +4,8 @@ import Register from "./components/Register";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/sidebar";
 import Login from "./components/login";
-import EmailVerification from "./components/EmailVerification";
-import BusinessDetails from "./components/BusinessDetails";
+import EmailVerification from "./pages/EmailVerification";
+import BusinessDetails from "./pages/BusinessDetails";
 import ContactUs from "./pages/contactus";
 
 import IdentityVerification from "./pages/identityverification";
@@ -26,13 +26,13 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Register />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/email-verification" element={<EmailVerification />} />
+              <Route path="/register/email-verification" element={<EmailVerification />} />
 
-              <Route path="/business-details" element={<BusinessDetails />} />
+              <Route path="/register/business-details" element={<BusinessDetails />} />
               <Route path="/contact-us" element={<ContactUs />} />
 =======
-              <Route path="/business-details" element={<BusinessDetails />}/>
-              <Route path="/identity-verification" element={<IdentityVerification />} />
+              <Route path="/register/business-details" element={<BusinessDetails />}/>
+              <Route path="/register/identity-verification" element={<IdentityVerification />} />
             </Routes>
           </main>
         </div>
