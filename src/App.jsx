@@ -30,9 +30,9 @@ const App = () => {
 
               <Route path="/register/business-details" element={<BusinessDetails />} />
               <Route path="/contact-us" element={<ContactUs />} />
-=======
               <Route path="/register/business-details" element={<BusinessDetails />}/>
               <Route path="/register/identity-verification" element={<IdentityVerification />} />
+              <Route path="*" element={<Register />}  />
             </Routes>
           </main>
         </div>

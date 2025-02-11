@@ -12,8 +12,14 @@ const Register = () => {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [passwordVisible, setPasswordVisible] = useState(false); // State for password visibility
-  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false); // State for confirm password visibility
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+
+  // Password validation function
+  const validatePassword = (password) => {
+    const regex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+    return regex.test(password);
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -23,12 +29,23 @@ const Register = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    // Clear previous errors
+    setError("");
+
+    // Validate passwords
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match!");
       return;
     }
 
-    setLoading(true); // Set loading state
+    if (!validatePassword(formData.password)) {
+      setError(
+        "Password must be at least 8 characters, include a number and a special character."
+      );
+      return;
+    }
+
+    setLoading(true);
 
     try {
       await axios.post("http://localhost:5000/register", {
@@ -51,7 +68,7 @@ const Register = () => {
       console.error(error);
       setError("Registration Failed. Please try again.");
     } finally {
-      setLoading(false); // Set loading state back to false
+      setLoading(false);
     }
   };
 
@@ -64,10 +81,10 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen  flex justify-center items-center p-8">
+    <div className="min-h-screen flex justify-center items-center p-8">
       <div className="bg-white shadow-lg rounded-lg w-full max-w-4xl flex flex-col sm:flex-row justify-center items-center">
         {/* Sidebar */}
-        
+        {/* You can add the sidebar here */}
 
         {/* Form Section */}
         <div className="w-full sm:w-2/3 p-8">
@@ -84,7 +101,7 @@ const Register = () => {
                 onChange={handleChange}
                 placeholder="First Name"
                 className="w-full sm:w-1/2 p-3 border text-base rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
+                
               />
               <input
                 type="text"
@@ -93,7 +110,7 @@ const Register = () => {
                 onChange={handleChange}
                 placeholder="Last Name"
                 className="w-full sm:w-1/2 p-3 border text-base rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
+                
               />
             </div>
             <input
@@ -103,7 +120,7 @@ const Register = () => {
               onChange={handleChange}
               placeholder="Email"
               className="w-full p-3 border text-base rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-              required
+              
             />
             <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-6 sm:space-y-0">
               <div className="relative w-full sm:w-1/2">
@@ -114,7 +131,7 @@ const Register = () => {
                   onChange={handleChange}
                   placeholder="Password"
                   className="w-full p-3 border text-base rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  required
+                  
                 />
                 <img
                   src={passwordVisible ? "/assets/visible.png" : "/assets/invisible.png"}
@@ -131,7 +148,7 @@ const Register = () => {
                   onChange={handleChange}
                   placeholder="Confirm Password"
                   className="w-full p-3 border text-base rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  required
+                  
                 />
                 <img
                   src={confirmPasswordVisible ? "/assets/visible.png" : "/assets/invisible.png"}
@@ -192,5 +209,3 @@ const Register = () => {
 };
 
 export default Register;
-
-
