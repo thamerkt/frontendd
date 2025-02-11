@@ -76,7 +76,7 @@ const Sidebar = () => {
               )}
             </NavLink>
 
-            <NavLink to="/identity-verify" className={({ isActive }) => linkClasses(isActive)}>
+            <NavLink to="/identity-verification" className={({ isActive }) => linkClasses(isActive)}>
               {({ isActive }) => (
                 <>
                   <img
