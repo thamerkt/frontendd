@@ -8,10 +8,14 @@ const Login = () => {
 
   return (
     <div className="flex h-screen">
-      
       <div className="flex-1 flex flex-col items-center justify-center px-6">
-        <h2 className="text-3xl font-bold text-gray-800 mb-4">Login to your Account</h2>
-        <p className="text-gray-600 mb-4">Log in to access Everything Rentals</p>
+        {/* Ajout des classes pour les polices */}
+        <h2 className="text-3xl font-bold text-gray-800 mb-4 font-dm-serif">
+          Login to your Account
+        </h2>
+        <p className="text-gray-600 mb-4 font-dm-sans font-medium">
+          Log in to access Everything Rentals
+        </p>
         
         <input className="w-full max-w-xs border p-3 mb-4" type="email" placeholder="Email" />
         

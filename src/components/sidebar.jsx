@@ -5,7 +5,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isLoginPage = location.pathname === "/login";
+  const isRegisterPage = location.pathname === "/register";
 
   const linkClasses = (isActive) =>
     `flex items-center mb-6 p-2 ${
@@ -14,7 +14,7 @@ const Sidebar = () => {
 
   return (
     <>
-      {!isLoginPage && (
+      {isRegisterPage && (
         <div className="w-full sm:w-1/4 bg-gray-50 p-8 flex flex-col justify-between">
           <div>
             <h1 className="text-2xl font-bold mb-6 text-gray-800">
