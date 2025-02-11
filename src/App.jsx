@@ -8,6 +8,8 @@ import EmailVerification from "./components/EmailVerification";
 import BusinessDetails from "./components/BusinessDetails";
 import ContactUs from "./pages/contactus";
 
+import IdentityVerification from "./pages/identityverification";
+
 const App = () => {
   return (
     <Router>
@@ -25,8 +27,12 @@ const App = () => {
               <Route path="/" element={<Register />} />
               <Route path="/login" element={<Login />} />
               <Route path="/email-verification" element={<EmailVerification />} />
+
               <Route path="/business-details" element={<BusinessDetails />} />
               <Route path="/contact-us" element={<ContactUs />} />
+=======
+              <Route path="/business-details" element={<BusinessDetails />}/>
+              <Route path="/identity-verification" element={<IdentityVerification />} />
             </Routes>
           </main>
         </div>

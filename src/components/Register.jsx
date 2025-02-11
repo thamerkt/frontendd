@@ -64,7 +64,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex justify-center items-center p-8">
+    <div className="min-h-screen  flex justify-center items-center p-8">
       <div className="bg-white shadow-lg rounded-lg w-full max-w-4xl flex flex-col sm:flex-row justify-center items-center">
         {/* Sidebar */}
         
@@ -151,7 +151,7 @@ const Register = () => {
                 {loading ? "Registering..." : "Register"}
               </button>
 
-              <button className="w-full p-3 bg-white border text-black text-base rounded-md flex items-center justify-center hover:bg-gray-100 transition duration-300">
+              <button className="w-full p-3 bg-white border text-black text-base rounded-md flex items-center justify-center hover:bg-gray-200 transition duration-300">
                 <img
                   src="/assets/search.png"
                   alt="Google"
@@ -169,7 +169,7 @@ const Register = () => {
                 Sign in with Facebook
               </button>
 
-              <button className="w-full p-3 bg-white border text-black text-base rounded-md flex items-center justify-center hover:bg-gray-100 transition duration-300">
+              <button className="w-full p-3 bg-white border text-black text-base rounded-md flex items-center justify-center hover:bg-gray-200 transition duration-300">
                 <img
                   src="/assets/apple.png"
                   alt="Apple"
