@@ -5,7 +5,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isRegisterPage = ["/register/", "/register/details","/register/email-verification","/register/identity-verification","/register/business-details"].includes(location.pathname)
+  const isRegisterPage = location.pathname.startsWith('/register');
 
   const linkClasses = (isActive) =>
     `flex items-center mb-6 p-2 ${

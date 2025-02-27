@@ -7,6 +7,7 @@ import Login from "./components/login";
 import EmailVerification from "./pages/EmailVerification";
 import BusinessDetails from "./pages/BusinessDetails";
 import ContactUs from "./pages/contactus";
+import Home from "./pages/Home";
 
 import IdentityVerification from "./pages/identityverification";
 
@@ -24,9 +25,9 @@ const App = () => {
           {/* Main Content */}
           <main className="flex-1 p-4">
             <Routes>
-              <Route path="/" element={<Register />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register/email-verification" element={<EmailVerification />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/login/" element={<Login />} />
+              <Route path="/register/email-verification/" element={<EmailVerification />} />
 
               <Route path="/register/business-details" element={<BusinessDetails />} />
               <Route path="/contact-us" element={<ContactUs />} />

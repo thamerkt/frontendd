@@ -76,7 +76,7 @@ const Navbar = () => {
                             Select your Area
                         </button>
                         {dropdownOpen && (
-                            <div className="absolute z-10 bg-white shadow-md max-h-60 overflow-y-auto w-48 p-2 border mt-2">
+                            <div className=" z-10 bg-white shadow-md max-h-60 overflow-y-auto w-48 p-2 border mt-2">
                                 <input
                                     type="text"
                                     className="w-full p-2 border-b mb-2"
