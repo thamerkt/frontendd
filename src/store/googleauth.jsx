@@ -11,7 +11,7 @@ const GoogleLoginButton = () => {
       });
 
       console.log("Django Auth Response:", res.data);
-      localStorage.setItem("token", res.data.token); // Stocke le token pour les futures requêtes
+      localStorage.setItem("token", res.data.token);
     } catch (error) {
       console.error("Login Error:", error);
     }

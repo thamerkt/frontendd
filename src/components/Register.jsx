@@ -16,14 +16,14 @@ const Register = () => {
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
   // Password validation function
-  const validatePassword = (password) => {
+  const validatePassword = (password) => {d
     const regex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
     return regex.test(password);
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError(""); // Clear errors on input change
+    setError(""); 
   };
 
   const handleSubmit = async (event) => {
