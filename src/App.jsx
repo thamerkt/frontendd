@@ -8,8 +8,8 @@ import EmailVerification from "./pages/EmailVerification";
 import BusinessDetails from "./pages/BusinessDetails";
 import ContactUs from "./pages/contactus";
 import Home from "./pages/Home";
-
 import IdentityVerification from "./pages/identityverification";
+import ProfileForm from "./pages/ProfileFrom";
 
 const App = () => {
   return (
@@ -28,12 +28,12 @@ const App = () => {
               <Route path="/" element={<Home />} />
               <Route path="/login/" element={<Login />} />
               <Route path="/register/email-verification/" element={<EmailVerification />} />
-
               <Route path="/register/business-details" element={<BusinessDetails />} />
               <Route path="/contact-us" element={<ContactUs />} />
-              <Route path="/register/business-details" element={<BusinessDetails />}/>
+              <Route path="/register/business-details" element={<BusinessDetails />} />
               <Route path="/register/identity-verification" element={<IdentityVerification />} />
-              <Route path="*" element={<Register />}  />
+              <Route path="/register/profil" element={<ProfileForm />} />
+              <Route path="*" element={<Register />} />
             </Routes>
           </main>
         </div>
