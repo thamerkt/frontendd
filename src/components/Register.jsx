@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { FormContainer } from "../Customcss/custom";
+import authStore from "../store/authStore";
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+
     email: "",
     password: "",
     confirmPassword: "",
@@ -44,17 +44,10 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await axios.post("http://localhost:5000/register", {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password,
-      });
+      response=await authStore.signup(formData.email,formData.password)
 
       alert("Registration Successful!");
       setFormData({
-        firstName: "",
-        lastName: "",
         email: "",
         password: "",
         confirmPassword: "",
