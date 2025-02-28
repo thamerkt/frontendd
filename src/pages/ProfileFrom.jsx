@@ -1,100 +1,106 @@
 import { useState, useEffect } from "react";
 import { FaCamera } from "react-icons/fa";
 import countryData from "world-countries";
-import { addProfile } from "../services/profileService"; // Import the service
+import Profileservice from "../services/profileService";
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css'; // Import the necessary styles
 
 const ProfileForm = () => {
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    birthday: "",
+    first_name: "",
+    last_name: "",
+    date_of_birth: "",
     gender: "",
-    country: "",
-    state: "",
-    street: "",
+    address: "",
     zipCode: "",
-    phoneNumber: "",
-    photo: null,
+    phone: "",
+    profile_picture: null,
+    kyc_status: false,
+    role: "",
+    user: "",
+    countryCode: 'us', // Set the default country code
   });
 
   const [states, setStates] = useState([]);
   const countries = countryData.map((country) => country.name.common).sort();
 
   useEffect(() => {
-    if (formData.country) {
-      const selectedCountry = countryData.find(
-        (c) => c.name.common === formData.country
-      );
+    if (formData.address) {
+      const selectedCountry = countryData.find((c) => c.name.common === formData.address);
       if (selectedCountry?.subdivisions) {
         const stateNames = selectedCountry.subdivisions.map((sub) => sub.name);
         setStates(stateNames);
 
-        // Automatically select the first state
-        if (stateNames.length > 0) {
-          setFormData((prevFormData) => ({
-            ...prevFormData,
-            state: stateNames[0], // Set the first state as default
-          }));
-        } else {
-          setFormData((prevFormData) => ({
-            ...prevFormData,
-            state: "", // No states available
-          }));
-        }
+        setFormData((prev) => ({
+          ...prev,
+          state: stateNames.length > 0 ? stateNames[0] : "",
+        }));
       } else {
         setStates([]);
-        setFormData((prevFormData) => ({
-          ...prevFormData,
-          state: "", // No subdivisions available
-        }));
+        setFormData((prev) => ({ ...prev, state: "" }));
       }
     } else {
       setStates([]);
-      setFormData((prevFormData) => ({
-        ...prevFormData,
-        state: "", // No country selected
-      }));
+      setFormData((prev) => ({ ...prev, state: "" }));
     }
-  }, [formData.country]);
+  }, [formData.address]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+   
   };
 
   const handlePhotoUpload = (e) => {
     if (e.target.files.length > 0) {
-      setFormData({ ...formData, photo: URL.createObjectURL(e.target.files[0]) });
+      setFormData((prev) => ({
+        ...prev,
+        profile_picture: e.target.files[0], // Stocker le fichier
+      }));
     }
+  };
+
+  const handlePhoneChange = (value, data) => {
+    setFormData((prev) => ({ ...prev, phone: value }));
+  };
+
+  const handleCountryChange = (country) => {
+    setFormData((prev) => ({
+      ...prev,
+      address: country,
+      countryCode: countryData.find((c) => c.name.common === country)?.cca2.toLowerCase(), // Automatically set country code
+      phone: '', // Reset phone number to empty when country changes
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      // Call the addProfile service
-      const response = await addProfile(formData);
-      console.log("Profile added successfully:", response);
+    const formDataToSend = new FormData();
+    Object.keys(formData).forEach((key) => {
+      formDataToSend.append(key, formData[key]);
+    });
 
-      // Reset the form after successful submission
+    try {
+      const response = await Profileservice.addProfil(formDataToSend);
+      console.log("Profile added successfully:", response);
+      alert("Profile added successfully!");
+
       setFormData({
-        firstName: "",
-        lastName: "",
-        birthday: "",
+        first_name: "",
+        last_name: "",
+        date_of_birth: "",
         gender: "",
-        country: "",
-        state: "",
-        street: "",
+        address: "",
         zipCode: "",
-        phoneNumber: "",
-        photo: null,
+        phone: "",
+        profile_picture: null,
+        kyc_status: false,
+        role: "",
+        user: "",
+        countryCode: 'us', // Reset country code after submission
       });
       setStates([]);
-
-      alert("Profile added successfully!");
     } catch (error) {
       console.error("Error adding profile:", error);
       alert("Failed to add profile. Please try again.");
@@ -108,8 +114,12 @@ const ProfileForm = () => {
       {/* Photo Upload */}
       <div className="flex justify-center my-4">
         <label className="cursor-pointer flex flex-col items-center border-2 border-black rounded-full w-28 h-28 justify-center">
-          {formData.photo ? (
-            <img src={formData.photo} alt="Uploaded" className="w-28 h-28 rounded-full object-cover" />
+          {formData.profile_picture ? (
+            <img
+              src={URL.createObjectURL(formData.profile_picture)}
+              alt="Uploaded"
+              className="w-28 h-28 rounded-full object-cover"
+            />
           ) : (
             <FaCamera className="w-12 h-12 text-gray-500" />
           )}
@@ -118,32 +128,31 @@ const ProfileForm = () => {
       </div>
 
       {/* Personal Details */}
-      <label className="block text-gray-700 font-semibold">Personnal Details:</label>
+      <label className="block text-gray-700 font-semibold">Personal Details:</label>
       <div className="flex gap-4 mt-2">
         <input
           type="text"
-          name="firstName"
+          name="first_name"
           placeholder="First Name"
           className="w-1/2 border p-2 rounded text-gray-700"
           onChange={handleChange}
-          value={formData.firstName}
+          value={formData.first_name}
         />
         <input
           type="text"
-          name="lastName"
+          name="last_name"
           placeholder="Last Name"
           className="w-1/2 border p-2 rounded text-gray-700"
           onChange={handleChange}
-          value={formData.lastName}
+          value={formData.last_name}
         />
       </div>
       <input
-        type="text"
-        name="birthday"
-        placeholder="Birthday (DD/MM/YYYY)"
+        type="date"
+        name="date_of_birth"
         className="w-full border p-2 rounded mt-4 text-gray-700"
         onChange={handleChange}
-        value={formData.birthday}
+        value={formData.date_of_birth}
       />
       <select
         name="gender"
@@ -152,17 +161,17 @@ const ProfileForm = () => {
         value={formData.gender}
       >
         <option value="">Gender</option>
-        <option value="Male">Male</option>
-        <option value="Female">Female</option>
+        <option value="M">Male</option>
+        <option value="F">Female</option>
       </select>
 
       {/* Address Details */}
       <label className="block text-gray-700 font-semibold mt-4">Address Details:</label>
       <select
-        name="country"
+        name="address"
         className="w-full border p-2 rounded mt-2 text-gray-700"
-        onChange={handleChange}
-        value={formData.country}
+        onChange={(e) => handleCountryChange(e.target.value)}
+        value={formData.address}
       >
         <option value="">Select Country</option>
         {countries.map((country) => (
@@ -173,7 +182,7 @@ const ProfileForm = () => {
         name="state"
         className="w-full border p-2 rounded mt-4 text-gray-700"
         onChange={handleChange}
-        disabled={!formData.country}
+        disabled={!formData.address}
         value={formData.state}
       >
         <option value="">Select State</option>
@@ -183,38 +192,56 @@ const ProfileForm = () => {
       </select>
       <input
         type="text"
-        name="street"
-        placeholder="Street"
+        name="zipCode"
+        placeholder="Zip Code"
         className="w-full border p-2 rounded mt-4 text-gray-700"
         onChange={handleChange}
-        value={formData.street}
+        value={formData.zipCode}
       />
+
+      {/* Phone Number Input with Country Code Update */}
+      <label className="block text-gray-700 font-semibold mt-4">Phone Number:</label>
+      <PhoneInput
+        country={formData.countryCode} // Dynamically set country code based on selected country
+        value={formData.phone}
+        onChange={handlePhoneChange}
+        inputClass="w-full border p-2 rounded mt-4 text-gray-700"
+        dropdownClass="w-full"
+      />
+
+      {/* Additional Fields */}
       <div className="flex gap-4 mt-4">
         <input
           type="text"
-          name="zipCode"
-          placeholder="Zip Code"
+          name="role"
+          placeholder="Role"
           className="w-1/2 border p-2 rounded text-gray-700"
           onChange={handleChange}
-          value={formData.zipCode}
+          value={formData.role}
         />
         <input
           type="text"
-          name="phoneNumber"
-          placeholder="Phone Number"
+          name="user"
+          placeholder="User ID"
           className="w-1/2 border p-2 rounded text-gray-700"
           onChange={handleChange}
-          value={formData.phoneNumber}
+          value={formData.user}
         />
       </div>
+      <label className="flex items-center gap-2 mt-4">
+        <input
+          type="checkbox"
+          name="kyc_status"
+          checked={formData.kyc_status}
+          onChange={() => setFormData((prev) => ({ ...prev, kyc_status: !prev.kyc_status }))}
+        />
+        KYC Verified
+      </label>
 
-      {/* Custom Button */}
+      {/* Submit Button */}
       <div className="flex justify-end mt-6">
-        <button
-          className="bg-teal-500 text-white px-6 py-3 rounded-lg text-lg font-semibold shadow-md"
-          onClick={handleSubmit}
-        >
-          &gt;&gt;
+        <button className="bg-teal-500 text-white px-6 py-3 rounded-lg text-lg font-semibold shadow-md" onClick={handleSubmit}>
+          Submit
         </button>
       </div>
     </div>
