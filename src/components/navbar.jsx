@@ -15,6 +15,7 @@ const Navbar = () => {
     const location = useLocation(); // Get the current location
     const isRegisterPage = location.pathname.startsWith('/register');
     const isLogginPage = location.pathname.startsWith('/login');
+    const adminpage = location.pathname.startsWith('/admin/dashbord');
 
     const handleStateChange = (state) => {
         setSelectedStates((prevState) =>
@@ -45,7 +46,7 @@ const Navbar = () => {
                 </div>
             </div>)}
             
-            {!isRegisterPage && !isLogginPage && (
+            {!isRegisterPage && !isLogginPage && !adminpage && (
                 <div className="px-20 py-3 text-white text-20 flex items-center justify-between gap-x-2 w-full bg-[#0F0D23] space-x-5">
                     <ul className="flex space-x-7 ml-5">
                         <li className="hover:text-teal-600">HOME</li>

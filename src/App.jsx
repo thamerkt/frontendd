@@ -10,17 +10,23 @@ import ContactUs from "./pages/contactus";
 import Home from "./pages/Home";
 import IdentityVerification from "./pages/identityverification";
 import ProfileForm from "./pages/ProfileFrom";
+import Dashboard from "./pages/Admin/dashbord";
+import BookingComponent from "./components/Admin/Booking";
+import SidebarAdmin from "./components/Admin/sidebar"
+import ClientComponent from "./components/Admin/clients"
 
 const App = () => {
   return (
     <Router>
       <div className="min-h-screen flex flex-col">
         {/* Navbar */}
-        <Navbar />
+        
 
         <div className="flex flex-1">
           {/* Sidebar */}
-          <Sidebar />
+          <SidebarAdmin/>
+          
+          
 
           {/* Main Content */}
           <main className="flex-1 p-4">
@@ -36,6 +42,9 @@ const App = () => {
 
               <Route path="/register/identity-verification" element={<IdentityVerification />} />
               <Route path="/register/profil" element={<ProfileForm />} />
+              <Route path="/admin/dashbord" element={<Dashboard />} />
+              <Route path="/admin/booking" element={<BookingComponent />} />
+              <Route path="/admin/clients" element={<ClientComponent />} />
               <Route path="*" element={<Register />} />
             </Routes>
           </main>
