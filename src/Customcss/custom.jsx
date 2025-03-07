@@ -6,7 +6,7 @@ const TextInput = ({ type, name, value, onChange, placeholder }) => {
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="w-full sm:w-1/2 p-3 border text-base rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+      className="w-full  p-3 border text-base rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 mt-3"
     />
   );
 };
@@ -31,7 +31,7 @@ const FormContainer = ({ children }) => {
 };
 const SelectInput = ({ name, value, onChange, options, placeholder }) => {
   return (
-    <div className="relative w-full sm:w-1/2">
+    <div className="relative w-full mt-3">
       <select
         name={name}
         value={value}

@@ -4,6 +4,7 @@ import countryData from "world-countries";
 import Profileservice from "../services/profileService";
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css'; // Import the necessary styles
+import { FormContainer, SelectInput, CameraButton, NextButton, TextInput } from "../Customcss/custom";
 
 const ProfileForm = () => {
   const [formData, setFormData] = useState({
@@ -20,7 +21,11 @@ const ProfileForm = () => {
     user: "",
     countryCode: 'us', // Set the default country code
   });
-
+  const genderOptions = [
+    { value: 'M', label: 'Male' },
+    { value: 'F', label: 'Female' },
+  ];
+  const [selectedProfile, setSelectedProfile] = useState(null);
   const [states, setStates] = useState([]);
   const countries = countryData.map((country) => country.name.common).sort();
 
@@ -48,7 +53,7 @@ const ProfileForm = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-   
+
   };
 
   const handlePhotoUpload = (e) => {
@@ -98,7 +103,7 @@ const ProfileForm = () => {
         kyc_status: false,
         role: "",
         user: "",
-        countryCode: 'us', // Reset country code after submission
+        countryCode: 'us', 
       });
       setStates([]);
     } catch (error) {
@@ -108,12 +113,12 @@ const ProfileForm = () => {
   };
 
   return (
-    <div className="max-w-lg mx-auto p-6">
+    <div className="max-w-xl mx-auto p-6">
       <h1 className="text-3xl font-bold text-center mb-4">Create Profile</h1>
 
       {/* Photo Upload */}
       <div className="flex justify-center my-4">
-        <label className="cursor-pointer flex flex-col items-center border-2 border-black rounded-full w-28 h-28 justify-center">
+        <label className="cursor-pointer flex flex-col items-center border-2 border-black rounded-full w-20 h-20 justify-center">
           {formData.profile_picture ? (
             <img
               src={URL.createObjectURL(formData.profile_picture)}
@@ -127,51 +132,73 @@ const ProfileForm = () => {
         </label>
       </div>
 
+      <div>
+        <div className="grid grid-cols-2 gap-4">
+          {/* Physical Profile Card */}
+          <div
+            className={`p-2 border-2 rounded-lg text-center transition-all cursor-pointer ${selectedProfile === "physical" ? "border-teal-500" : "border-gray-300"
+              }`}
+            onClick={() => setSelectedProfile("physical")}
+          >
+
+            <h3 className="text-lg font-semibold">rental</h3>
+            <p className="text-sm text-gray-600">For individuals renting properties.</p>
+          </div>
+
+          {/* Moral Profile Card */}
+          <div
+            className={`p-2 border-2 rounded-lg text-center transition-all cursor-pointer ${selectedProfile === "moral" ? "border-teal-500" : "border-gray-300"
+              }`}
+            onClick={() => setSelectedProfile("moral")}
+          >
+            <h3 className="text-lg font-semibold">Company</h3>
+            <p className="text-sm text-gray-600">For companies or organizations renting properties.</p>
+          </div>
+        </div>
+      </div>
+
       {/* Personal Details */}
       <label className="block text-gray-700 font-semibold">Personal Details:</label>
       <div className="flex gap-4 mt-2">
-        <input
+        <TextInput
           type="text"
           name="first_name"
           placeholder="First Name"
-          className="w-1/2 border p-2 rounded text-gray-700"
           onChange={handleChange}
           value={formData.first_name}
         />
-        <input
+        <TextInput
           type="text"
           name="last_name"
           placeholder="Last Name"
-          className="w-1/2 border p-2 rounded text-gray-700"
+          className="w-full sm:w-1/2 p-3 border text-base rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
           onChange={handleChange}
           value={formData.last_name}
         />
       </div>
-      <input
+      <TextInput
         type="date"
         name="date_of_birth"
-        className="w-full border p-2 rounded mt-4 text-gray-700"
+
         onChange={handleChange}
         value={formData.date_of_birth}
       />
-      <select
+      <SelectInput
         name="gender"
-        className="w-full border p-2 rounded mt-4 text-gray-700"
-        onChange={handleChange}
         value={formData.gender}
-      >
-        <option value="">Gender</option>
-        <option value="M">Male</option>
-        <option value="F">Female</option>
-      </select>
+        onChange={handleChange}
+        options={genderOptions}
+        placeholder="Gender"
+      />
 
       {/* Address Details */}
       <label className="block text-gray-700 font-semibold mt-4">Address Details:</label>
       <select
         name="address"
-        className="w-full border p-2 rounded mt-2 text-gray-700"
+       
         onChange={(e) => handleCountryChange(e.target.value)}
         value={formData.address}
+        className="w-full p-3 border text-gray-500 text-base rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 appearance-none bg-white"
       >
         <option value="">Select Country</option>
         {countries.map((country) => (
@@ -180,7 +207,7 @@ const ProfileForm = () => {
       </select>
       <select
         name="state"
-        className="w-full border p-2 rounded mt-4 text-gray-700"
+        className="w-full p-3 border text-gray-500 text-base rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 appearance-none bg-white mt-3"
         onChange={handleChange}
         disabled={!formData.address}
         value={formData.state}
@@ -190,11 +217,10 @@ const ProfileForm = () => {
           <option key={state} value={state}>{state}</option>
         ))}
       </select>
-      <input
+      <TextInput
         type="text"
         name="zipCode"
         placeholder="Zip Code"
-        className="w-full border p-2 rounded mt-4 text-gray-700"
         onChange={handleChange}
         value={formData.zipCode}
       />
@@ -208,26 +234,6 @@ const ProfileForm = () => {
         inputClass="w-full border p-2 rounded mt-4 text-gray-700"
         dropdownClass="w-full"
       />
-
-      {/* Additional Fields */}
-      <div className="flex gap-4 mt-4">
-        <input
-          type="text"
-          name="role"
-          placeholder="Role"
-          className="w-1/2 border p-2 rounded text-gray-700"
-          onChange={handleChange}
-          value={formData.role}
-        />
-        <input
-          type="text"
-          name="user"
-          placeholder="User ID"
-          className="w-1/2 border p-2 rounded text-gray-700"
-          onChange={handleChange}
-          value={formData.user}
-        />
-      </div>
       <label className="flex items-center gap-2 mt-4">
         <input
           type="checkbox"
