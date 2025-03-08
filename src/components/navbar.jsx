@@ -15,7 +15,7 @@ const Navbar = () => {
     const location = useLocation(); // Get the current location
     const isRegisterPage = location.pathname.startsWith('/register');
     const isLogginPage = location.pathname.startsWith('/login');
-    const adminpage = location.pathname.startsWith('/admin/dashbord');
+    const adminpage = location.pathname.startsWith('/admin');
 
     const handleStateChange = (state) => {
         setSelectedStates((prevState) =>
@@ -30,7 +30,7 @@ const Navbar = () => {
     );
 
     return (
-        <>{!isRegisterPage && !isLogginPage && (
+        <>{!isRegisterPage && !isLogginPage && !adminpage && (
             <div className="bg-black text-white px-20 py-4 flex justify-between items-center w-full">
                 <span className="text-sm">
                     Email us at:{" "}

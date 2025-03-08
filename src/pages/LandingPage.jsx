@@ -1,78 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Store, MapPin, Upload, Heart, ChevronDown } from "lucide-react";
+import EquipmentService from "../services/EquipmentService";
 
-const rentals = [
-  {
-    id: 1,
-    title: "Home Improvement Tools",
-    description: "brief description about wedding essentials",
-    store: "Ilyass store",
-    location: "Nabeul 8000",
-    price: "500DT/DAY",
-    image: "/assets/hometools.jpg",
-    rating: 4,
-  },
-  {
-    id: 2,
-    title: "Construction Tools",
-    description: "brief description about wedding essentials",
-    store: "Ilyass store",
-    location: "Nabeul 8000",
-    price: "500DT/DAY",
-    image: "/assets/tools.png",
-    rating: 4,
-  },
-  {
-    id: 3,
-    title: "Event Equipment",
-    description: "brief description about wedding essentials",
-    store: "Ilyass store",
-    location: "Nabeul 8000",
-    price: "500DT/DAY",
-    image: "/assets/event.jpg",
-    rating: 4,
-  },
-  {
-    id: 4,
-    title: "WEDDING ESSENTIALS",
-    description: "brief description about wedding essentials",
-    store: "Ilyass store",
-    location: "Nabeul 8000",
-    price: "500DT/DAY",
-    image: "/assets/wedding-essentials.jpg",
-    rating: 4,
-  },
-  {
-    id: 5,
-    title: "WEDDING ESSENTIALS",
-    description: "brief description about wedding essentials",
-    store: "Ilyass store",
-    location: "Nabeul 8000",
-    price: "500DT/DAY",
-    image: "/assets/wedding-essentials.jpg",
-    rating: 4,
-  },
-];
 
-const categories = ["Technology", "Industries", "Vehicles", "Event", "Spaces"];
-const items = {
-  Technology: [
-    { name: "Camera", img: "/assets/camera.jpg" },
-    { name: "Laptop", img: "/assets/laptop.jpg" },
-    { name: "Gaming Console", img: "/assets/console.jpg" },
-    { name: "Drone", img: "/assets/drone.jpg" },
-    { name: "Vacuum", img: "/assets/vacuum.jpg" },
-    { name: "Projector", img: "/assets/projector.jpg" },
-    { name: "Led-lighting", img: "/assets/led.jpg" },
-  ],
-  Industries: [
-    { name: "Power Tools", img: "/assets/power.jpeg" },
-    { name: "Equipment", img: "/assets/equipment.png" },
-    { name: "Equipment", img: "/assets/equipment.png" },
-    { name: "Equipment", img: "/assets/equipment.png" },
-    { name: "Equipment", img: "/assets/equipment.png" },
-  ],
-};
+
+
 const faqs = [
   { question: "How does renting work on your platform?", answer: "Lorem ipsum dolor sit amet." },
   { question: "What happens if an item gets damaged?", answer: "Lorem ipsum dolor sit amet." },
@@ -83,31 +15,58 @@ const faqs = [
 ];
 
 const CategoriesSection = () => {
-  const [selectedCategory, setSelectedCategory] = useState("Technology");
+  const [selectedCategory, setSelectedCategory] = useState("2");
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [categories, setCategories] = useState([]);
+  const [items, setItems] = useState({});
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categoriesData = await EquipmentService.fetchCategories();
+        setCategories(categoriesData);
+      } catch (e) {
+        console.error("Error fetching categories data:", e.message);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const filter = `category=${selectedCategory}`;
+        const itemsData = await EquipmentService.fetchRentalsBy(filter);
+        setItems((prevItems) => ({
+          ...prevItems,
+          [selectedCategory]: itemsData,
+        }));
+      } catch (e) {
+        console.error("Error fetching items data:", e.message);
+      }
+    };
+
+    fetchItems();
+  }, [selectedCategory]);
 
   const cardsToShow = 4;
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % items[selectedCategory].length);
+    setCurrentIndex((prev) =>
+      items[selectedCategory]?.length ? (prev + 1) % items[selectedCategory].length : 0
+    );
   };
 
   const handlePrev = () => {
     setCurrentIndex((prev) =>
-      prev === 0 ? items[selectedCategory].length - 1 : prev - 1
+      items[selectedCategory]?.length ? (prev === 0 ? items[selectedCategory].length - 1 : prev - 1) : 0
     );
   };
 
   const getCurrentCards = () => {
-    const categoryItems = items[selectedCategory];
-    const cards = [];
-
-    for (let i = 0; i < cardsToShow; i++) {
-      const index = (currentIndex + i) % categoryItems.length;
-      cards.push(categoryItems[index]);
-    }
-
-    return cards;
+    const categoryItems = items[selectedCategory] || [];
+    return categoryItems.slice(currentIndex, currentIndex + cardsToShow);
   };
 
   return (
@@ -117,18 +76,17 @@ const CategoriesSection = () => {
       <div className="flex justify-center gap-2 mt-4">
         {categories.map((cat) => (
           <button
-            key={cat}
-            className={`px-4 py-2 rounded-lg ${
-              cat === selectedCategory
-                ? "bg-teal-600 text-white"
-                : "bg-white border border-teal-600 text-teal-600"
-            }`}
+            key={cat.id}
+            className={`px-4 py-2 rounded-lg ${cat.name === selectedCategory
+              ? "bg-teal-600 text-white"
+              : "bg-white border border-teal-600 text-teal-600"
+              }`}
             onClick={() => {
-              setSelectedCategory(cat);
+              setSelectedCategory(cat.id);
               setCurrentIndex(0);
             }}
           >
-            {cat}
+            {cat.name}
           </button>
         ))}
       </div>
@@ -169,12 +127,11 @@ const CategoriesSection = () => {
         </button>
       </div>
       <div className="flex justify-center gap-2 mt-4">
-        {items[selectedCategory].map((_, index) => (
+        {(items[selectedCategory] || []).map((_, index) => (
           <span
             key={index}
-            className={`w-3 h-3 rounded-full ${
-              index === currentIndex ? "bg-teal-500" : "bg-gray-300"
-            }`}
+            className={`w-3 h-3 rounded-full ${index === currentIndex ? "bg-teal-500" : "bg-gray-300"
+              }`}
           ></span>
         ))}
       </div>
@@ -188,6 +145,7 @@ const CategoriesSection = () => {
     </div>
   );
 };
+
 
 const FAQSection = () => {
   const [openIndex, setOpenIndex] = useState(null);
@@ -234,6 +192,9 @@ const FAQSection = () => {
 
 const LandingPage = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [rentals, setRentals] = useState([])
+  const [categories, setCategories] = useState([])
+
 
   const handleNext = () => {
     setCurrentIndex((prev) => (prev + 1) % rentals.length);
@@ -244,11 +205,28 @@ const LandingPage = () => {
       prev === 0 ? rentals.length - 1 : prev - 1
     );
   };
+  useEffect(() => {
 
+    const fetchData = async () => {
+      try {
+        const data = await EquipmentService.fetchRentals();
+        const categoriesdata = await EquipmentService.fetchCategories()
+        setCategories(categoriesdata)
+        setRentals(data);
+
+        console.log(rentals)
+      } catch (e) {
+        console.error("Error fetching history data:", e.message);
+      }
+    };
+
+
+    fetchData();
+  }, []);
   return (
     <div className="relative w-full h-auto">
       <div className="relative w-full h-[90vh]">
-        <img src="/assets/bg.jpg" alt="Banner" className="w-full h-full object-cover" />
+        <img src="/assets/bg1.jpg" alt="Banner" className="w-full h-full object-cover" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
           <h1 className="text-5xl font-bold italic">WELCOME</h1>
           <p className="text-xl italic mt-4">Rent Camping, Fitness, Wedding and lot more other stuff</p>
@@ -293,13 +271,26 @@ const LandingPage = () => {
               <div key={rental.id} className="bg-white shadow-lg rounded-lg overflow-hidden w-80 mx-4">
                 <img src={rental.image} alt={rental.title} className="w-full h-48 object-cover" />
                 <div className="p-4">
-                  <h3 className="text-lg font-semibold italic">{rental.title}</h3>
+                  <h3 className="text-lg font-semibold italic">{rental.stuffname}</h3>
                   <div className="flex items-center mt-2">
-                    {[...Array(5)].map((_, i) => (
-                      <span key={i} className={i < rental.rating ? "text-yellow-400" : "text-gray-300"}>★</span>
-                    ))}
+                    {
+                      rental?.stuff_management?.rating !== undefined ? (
+                        [...Array(5)].map((_, i) => (
+                          <span
+                            key={i}
+                            className={
+                              i < Math.floor(rental.stuff_management.rating) ? "text-yellow-400" : "text-gray-300"
+                            }
+                          >
+                            ★
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-300">No rating available</span>
+                      )
+                    }
                   </div>
-                  <p className="text-gray-600 mt-2 text-sm">{rental.description}</p>
+                  <p className="text-gray-600 mt-2 text-sm">{rental.short_description}</p>
                   <div className="flex items-center gap-2 mt-3">
                     <Store className="text-red-500" size={18} />
                     <span className="text-gray-700 text-sm">{rental.store}</span>
@@ -309,7 +300,7 @@ const LandingPage = () => {
                     <span className="text-gray-700 text-sm">{rental.location}</span>
                   </div>
                 </div>
-                <button className="bg-teal-600 text-white text-center py-3 text-lg font-semibold w-full">STARTING FROM {rental.price}</button>
+                <button className="bg-teal-600 text-white text-center py-3 text-lg font-semibold w-full">STARTING FROM {rental.price_per_day} $</button>
               </div>
             ))}
           </div>

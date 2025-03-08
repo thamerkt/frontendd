@@ -15,6 +15,8 @@ import BookingComponent from "./components/Admin/Booking";
 import SidebarAdmin from "./components/Admin/sidebar"
 import ClientComponent from "./components/Admin/clients"
 import LandingPage from "./pages/LandingPage";
+import History from "./pages/Admin/History";
+import HistoryPage from "./pages/HistoryPage";
 
 const App = () => {
   return (
@@ -48,6 +50,7 @@ const App = () => {
               <Route path="/admin/dashbord" element={<Dashboard />} />
               <Route path="/admin/booking" element={<BookingComponent />} />
               <Route path="/admin/clients" element={<ClientComponent />} />
+              <Route path="/admin/history" element={<HistoryPage />} />
               <Route path="*" element={<LandingPage />} />
             </Routes>
           </main>
