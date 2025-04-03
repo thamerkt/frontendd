@@ -6,23 +6,21 @@ const TextInput = ({ type, name, value, onChange, placeholder }) => {
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="w-full  p-3 border text-base rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 mt-3"
+      className="w-full p-3 border text-base rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 "
     />
   );
 };
 
 const FormContainer = ({ children }) => {
   return (
-    <div className="min-h-screen flex justify-center items-center p-8">
-      <div className="bg-white rounded-lg w-full max-w-4xl flex flex-col sm:flex-row justify-center items-center">
+    <div className="flex justify-center items-center p-8">
+      <div className="bg-white rounded-lg w-full flex flex-col sm:flex-row justify-center items-center">
         {/* Sidebar */}
         {/* You can add the sidebar here */}
 
         {/* Form Section */}
         <div className="w-full sm:w-2/3 p-8">
-          <h2 className="text-3xl font-bold mb-6 text-gray-800 text-center">
-            Create an account
-          </h2>
+          
           {children}
         </div>
       </div>
@@ -34,13 +32,15 @@ const SelectInput = ({ name, value, onChange, options, placeholder }) => {
     <div className="relative w-full mt-3">
       <select
         name={name}
-        value={value}
-        onChange={onChange}
+        value={value} // Ensure value is linked to state
+        onChange={onChange} // Ensure onChange updates state
         className="w-full p-3 border text-gray-500 text-base rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 appearance-none bg-white"
       >
         <option value="" disabled>{placeholder}</option>
-        {options.map((option, index) => (
-          <option key={index} value={option.value}>{option.label}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
         ))}
       </select>
       <span className="absolute right-3 top-3 text-gray-500 pointer-events-none">▾</span>
@@ -73,18 +73,19 @@ const CameraButton = () => {
     </label>
   );
 };
-const NextButton = ()=>{
-  return(
-    <div className="mt-6 flex justify-end items-end">
-            <button className="bg-teal-500 text-white px-6 py-2 rounded-lg flex items-end">
-              <span className="mr-2">Next</span>
-              <span>➤</span>
-            </button>
-          </div>
+const NextButton = () => {
+  return (
+    <div className="mt-6 flex justify-end">
+      <button className="bg-teal-500 text-white px-6 py-2 rounded-lg flex items-center" type="submit">
+        <span className="mr-2">Next</span>
+        <span className="text-lg">➤</span>
+      </button>
+    </div>
+  );
+};
 
-  )
 
-}
+
 
 
 

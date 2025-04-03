@@ -1,47 +1,44 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
 const IdentityVerification = () => {
-  // Replace this URL with a dynamically generated one if needed
-  const qrCodeUrl =
-    "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://your-verification-link.com";
+  const [qrCode, setQrCode] = useState("");
+  const [verificationLink, setVerificationLink] = useState("");
+
+  useEffect(() => {
+    axios
+      .get("http://127.0.0.1:8000/api/generate-qr/")
+      .then((response) => {
+        setQrCode(response.data.qr_code);
+        setVerificationLink(response.data.link);
+      })
+      .catch((error) => console.error("Error fetching QR Code:", error));
+  }, []);
 
   return (
     <div className="flex h-screen w-full">
-      {/* Sidebar (peut être ajusté selon le design) */}
-      
-
-      {/* Main Content */}
       <div className="flex flex-1 items-center justify-center w-1/2">
         <div className="text-center p-8 shadow-lg rounded-lg bg-white">
           <h2 className="text-4xl font-bold">Identity Verification</h2>
           <p className="text-gray-600 mt-2 text-lg">
             Complete Your Identity Verification to Proceed Securely
           </p>
+          <span>Scan the qr with your phone</span>
 
           {/* QR Code as an Image */}
           <div className="flex space-x-4 justify-center items-center">
-          
-          <div className="mt-6 flex justify-center">
-            <img
-              src={qrCodeUrl}
-              alt="QR Code"
-              className="w-40 h-40 object-contain"
-            />
-          </div>
-          <div className="mt-6 flex justify-center">
-          <p className="text-gray-600 mt-2 text-lg">
-            Or continue in PC <br/>using this <a className="text-teal-500 underline" href="/link">link</a>
-          </p>
-            
-          </div>
-          </div>
-
-          {/* Navigation Button */}
-          <div className="mt-6 flex justify-end items-end">
-            <button className="bg-teal-500 text-white px-6 py-2 rounded-lg flex items-end">
-              <span className="mr-2">Next</span>
-              <span>➤</span>
-            </button>
+            <div className="mt-6 flex justify-center">
+              {qrCode ? (
+                <img
+                  src={qrCode}
+                  alt="QR Code"
+                  className="w-40 h-40 object-contain"
+                />
+              ) : (
+                <p>Loading QR Code...</p>
+              )}
+            </div>
+           
           </div>
         </div>
       </div>

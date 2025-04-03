@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from 'react-router-dom';
-import authStore from "../store/authStore";
-import GoogleLoginButton from "../store/googleauth";
+import authStore from "../redux/authStore";
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+const clientId = '348131616981-85ms78t7eshj5l60pg07adpe9fc00tbt.apps.googleusercontent.com';
+
 
 const Login = () => {
   const navigate = useNavigate();
@@ -24,6 +26,56 @@ const Login = () => {
 
     }
   };
+  const handleSuccess = async (credentialResponse) => {
+      console.log("Google OAuth Success:", credentialResponse);
+  
+      // Extract the authorization code from the credential response
+      const { credential } = credentialResponse;
+      
+  
+      try {
+        // Send the authorization code to your Django backend
+        const response = await fetch('http://localhost:8000/user/auth/google/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential }),
+        });
+  
+        if (response.ok) {
+          const data = await response.json();
+          console.log('User authenticated:', data);
+  
+          // Store the access token (if returned by the backend)
+          if (data.userdata.access_token) {
+            localStorage.setItem('access_token', data.userdata.access_token);
+            Cookies.set('token',data.userdata.access_token)
+            Cookies.set('keycloak_user_id',data.userdata.user_id)
+            Cookies.set('first_name',data.userdata.first_name)
+            Cookies.set('last_name',data.userdata.last_name)
+            
+  
+          }else{
+            console.log("no")
+          }
+  
+          // Redirect the user or show a success message
+          toast.success("Google login successful! Redirecting...");
+          setTimeout(() => navigate("/register/profil"), 3000); // Redirect to the dashboard or another page
+        } else {
+          const errorData = await response.json();
+          console.error('Authentication error:', errorData);
+          toast.error("Google login failed. Please try again.");
+        }
+      } catch (error) {
+        console.error('Network error:', error);
+        toast.error("Network error. Please try again.");
+      }
+    };
+  
+    const handleError = () => {
+      console.error('Google OAuth failed');
+      toast.error("Google login failed. Please try again.");
+    };
 
   return (
     <div className="flex h-screen">
@@ -69,15 +121,32 @@ const Login = () => {
           </button>
         </form>
 
-        <button className="w-full max-w-xs border  rounded mb-2 flex items-center justify-center">
-          <GoogleLoginButton className="w-full"  />
-        </button>
-        <button className="w-full max-w-xs border py-3 rounded mb-2 bg-blue-600 text-white flex items-center justify-center">
-          <img src="/assets/f2.png" alt="Facebook" className="w-5 h-5 mr-2" /> Sign In with Facebook
-        </button>
-        <button className="w-full max-w-xs border py-3 rounded flex items-center justify-center">
-          <img src="/assets/apple.png" alt="Apple" className="w-5 h-5 mr-2" /> Sign In with Apple
-        </button>
+        <div className="space-y-3">
+                    
+        
+                    {/* Google OAuth Login */}
+                    <GoogleOAuthProvider clientId={clientId}>
+                      <GoogleLogin
+        
+                        onSuccess={handleSuccess}
+                        onError={handleError}
+                        useOneTap
+                      />
+                    </GoogleOAuthProvider>
+        
+                    {[
+                      { img: "f2.png", bg: "bg-blue-600", text: "text-white", hover: "hover:bg-blue-700", label: "Sign in with Facebook" },
+                      { img: "apple.png", bg: "bg-white", text: "text-black", hover: "hover:bg-gray-200", label: "Sign in with Apple" }
+                    ].map(({ img, bg, text, hover, label }, index) => (
+                      <button
+                        key={index}
+                        className={`w-full p-3 border ${bg} ${text} rounded-md flex items-center justify-center ${hover} transition duration-300`}
+                      >
+                        <img src={`/assets/${img}`} alt={label} className="w-5 h-5 mr-3" />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
 
         <p className="mt-4 font-semibold">Forgot Password?</p>
         <p className="mt-2">

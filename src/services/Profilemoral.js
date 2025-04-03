@@ -1,33 +1,30 @@
 import axios from "axios";
+import Cookies from "js-cookie";
 
-
-const API_URL = "http://127.0.0.1:8000/api"; // Remplace par l'URL de ton API
+const API_URL = "http://localhost:8000/profile"; // Remplace par l'URL correcte de ton API
 
 const Profilmoralservice = {
-    addProfilemoral: async (formdata) => {
-       
-        try {
-            const response = await axios.post(`${API_URL}/profilmoral/`, formdata);
-        
-            // Return the response data if the request is successful
-            return response.data;
-          } catch (error) {
-            if (error.response) {
-              // If server error
-              console.error('Server Error:', error.response.data);
-              throw new Error(error.response.data.message || `Error: ${error.response.status} - ${error.response.statusText}`);
-            } else if (error.request) {
-              // If no response was received from the server
-              console.error('No response received:', error.request);
-              throw new Error("No response from the server. Please check your network connection.");
-            } else {
-              // General error
-              console.error('Error:', error.message);
-              throw new Error("An unexpected error occurred.");
-            }
-          }
-        }}
+  addProfilemoral: async (formData) => {
+    try {
+      const token = Cookies.get("token"); // Récupération dynamique du token
+      if (!token) {
+        throw new Error("Token introuvable, veuillez vous reconnecter.");
+      }
 
-  
+      const response = await axios.post(`${API_URL}/profilmoral/`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || "Échec de l'ajout du profil d'entreprise";
+      console.error("❌ Erreur lors de l'ajout du profil:", errorMessage);
+      throw new Error(errorMessage);
+    }
+  },
+};
 
 export default Profilmoralservice;
