@@ -20,7 +20,8 @@ import HistoryPage from "./pages/HistoryPage";
 import CallbackPage from "./components/callback";
 import LandingPagee from "./pages/landingpagee";
 import QRScanner from "./components/QRCodeComponent";
-
+import ProductDetails from "./components/EquipmentPage";
+import AddProductForm from "./pages/AddProduct";
 import DocumentUpload from "./components/verification/DocumentUpload";
 import QrDisplay from "./components/verification/QrDisplay";
 import SelfieCapture from "./components/verification/SelfieCapture copy";
@@ -32,54 +33,65 @@ import BackCapture from "./components/verification/BackCapture";
 import FrontCapture from "./components/verification/FrontCapture";
 import { Provider } from 'react-redux';
 import store from './redux/store';
+import ShopGrid from './pages/shopGrid'
+import RegistrationProgressGuard from "./components/RegistrationProgressGuard";
 const App = () => {
   return (
     <Provider store={store}>
-    <Router>
-      <div className="min-h-screen flex flex-col">
-        {/* Navbar */}
-        <Navbar/>
-        
+      <Router>
+        <div className="min-h-screen flex flex-col">
+          {/* Navbar */}
+          <Navbar />
 
-        <div className="flex flex-1">
-          {/* Sidebar */}
-          <Sidebar/>
-          
-          
 
-          {/* Main Content */}
-          <main className="flex-1 p-4">
-            <Routes>
-              <Route path="/" element={<LandingPagee />} />
-              <Route path="/register/" element={<AuthForm />} />
-              <Route path="/login/" element={<AuthForm />} />
-              <Route path="/register/email-verification/" element={<EmailVerification />} />
-              <Route path="/register/test/" element={<ImageGallery />} />
-              
-             
+          <div className="flex flex-1">
+            {/* Sidebar */}
+            <Sidebar />
 
-              <Route path="/contact-us" element={<ContactUs />} />
-              <Route path="/register/business-details" element={<BusinessDetail />}/>
-              <Route path="/callback" element={<CallbackPage />}/>
-              <Route path="/register/identity-verification/verification/document-type" element={< DocumentTypeSelection/>}/>
-              <Route path="/register/identity-verification/verification/front-document" element={<FrontCapture />}/>
-              <Route path="/register/identity-verification/verification/back-document" element={<BackCapture />}/>
-              <Route path="/register/identity-verification/verification/selfie" element={<SelfieCapture />}/>
-              <Route path="/register/identity-verification/verification/VerificationComplete" element={<VerificationComplete />}/>
-              <Route path="/register/identity-verification" element={<IdentityVerification />} />
-              <Route path="/register/profil" element={<ProfileForm />} />
-              <Route path="/admin/dashbord" element={<Dashboard />} />
-              <Route path="/admin/booking" element={<BookingComponent />} />
-              <Route path="/admin/clients" element={<ClientComponent />} />
-              <Route path="/admin/history" element={<HistoryPage />} />
-              <Route path="/qr" element={<QRScanner />} />
-              
-              <Route path="*" element={<LandingPage />} />
-            </Routes>
-          </main>
+
+
+            {/* Main Content */}
+            <main className="flex-1 p-4">
+              <Routes>
+                <Route path="/collaboration" element={<LandingPagee />} />
+                <Route path="/register/" element={<AuthForm />} />
+                <Route path="/shopgrid/" element={<ShopGrid />} />
+                <Route path="/login/" element={<AuthForm />} />
+                
+                  <Route path="/register/email-verification" element={<EmailVerification />} />
+                  <Route path="/register/profil" element={<ProfileForm />} />
+                  <Route path="/register/business-details" element={<BusinessDetail />} />
+                  <Route path="/qr" element={<QRScanner />} />
+                  <Route path="/register/identity-verification/verification/document-type" element={<DocumentTypeSelection />} />
+                  <Route path="/register/identity-verification/verification/front-document/:user" element={<FrontCapture />} />
+                  <Route path="/register/identity-verification/verification/back-document" element={<BackCapture />} />
+                  <Route path="/register/identity-verification/verification/selfie" element={<SelfieCapture />} />
+                  <Route path="/register/identity-verification/verification/verification-complete" element={<VerificationComplete />} />
+                
+                <Route path="/register/test/" element={<ImageGallery />} />
+                <Route path="/equipment/" element={<ProductDetails />} />
+
+
+
+                <Route path="/contact-us" element={<ContactUs />} />
+
+                <Route path="/callback" element={<CallbackPage />} />
+
+                <Route path="/register/identity-verification" element={<IdentityVerification />} />
+
+                <Route path="/admin/dashbord" element={<Dashboard />} />
+                <Route path="/admin/booking" element={<BookingComponent />} />
+                <Route path="/admin/clients" element={<ClientComponent />} />
+                <Route path="/admin/history" element={<HistoryPage />} />
+
+                <Route path="/home" element={<LandingPage />} />
+
+
+              </Routes>
+            </main>
+          </div>
         </div>
-      </div>
-    </Router>
+      </Router>
     </Provider>
   );
 };

@@ -5,9 +5,9 @@ import { useNavigate } from "react-router-dom";
 const Navbar = () => {
     // Default states (Tunisian states as fallback)
     const tunisianStates = [
-        'Tunis', 'Ariana', 'Ben Arous', 'La Manouba', 'Nabeul', 'Zaghouan', 
-        'Bizerte', 'Beja', 'Jendouba', 'Kef', 'Kairouan', 'Sidi Bouzid', 
-        'Kasserine', 'Monastir', 'Mahdia', 'Sousse', 'Gabes', 'Medenine', 
+        'Tunis', 'Ariana', 'Ben Arous', 'La Manouba', 'Nabeul', 'Zaghouan',
+        'Bizerte', 'Beja', 'Jendouba', 'Kef', 'Kairouan', 'Sidi Bouzid',
+        'Kasserine', 'Monastir', 'Mahdia', 'Sousse', 'Gabes', 'Medenine',
         'Tataouine', 'Tozeur', 'Gafsa', 'Siliana', 'Sfax'
     ];
 
@@ -30,15 +30,19 @@ const Navbar = () => {
     const isRegisterPage = location.pathname.startsWith('/register');
     const isLogginPage = location.pathname.startsWith('/login');
     const adminpage = location.pathname.startsWith('/admin');
+    const customerrole = location.pathname.startsWith('/home')
+    const otherrole = location.pathname.startsWith('/collaboration')
+
 
     useEffect(() => {
-        // Detect user's country based on IP
+        localStorage.setItem('role', 'customer')
         const detectCountry = async () => {
             try {
                 const response = await fetch('https://ipapi.co/json/');
                 const data = await response.json();
                 setUserCountry(data.country);
-                
+
+
                 // Set states based on detected country
                 if (countryStates[data.country]) {
                     setAvailableStates(countryStates[data.country]);
@@ -98,13 +102,23 @@ const Navbar = () => {
                         {!islogged && (
                             <div className="flex space-x-2 md:space-x-4">
                                 <button
-                                    onClick={() => navigate('/login')}
+                                    onClick={() => {
+                                        navigate('/login');
+                                        
+                                    }}
                                     className="p-1 md:p-2 bg-teal-500 text-white text-sm md:text-base hover:bg-teal-600 transition duration-300 px-3 md:px-7"
                                 >
                                     Login
                                 </button>
                                 <button
-                                    onClick={() => navigate('/register')}
+                                    onClick={() => {navigate('/register')
+                                        if (otherrole) {
+                                            localStorage.setItem('role', 'other');
+                                        } else {
+                                            localStorage.setItem('role', 'customer');
+                                        }
+
+                                    }}
                                     className="p-1 md:p-2 text-teal-500 border border-teal-500 text-sm md:text-base hover:bg-teal-600 hover:text-white transition duration-300 px-3 md:px-7"
                                 >
                                     Register

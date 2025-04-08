@@ -3,6 +3,7 @@ import { FiCamera, FiRotateCw, FiArrowRight, FiUpload, FiCheck } from 'react-ico
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import Cookies from "js-cookie";
 
 const BackCapture = ({ 
   onNext,
@@ -24,9 +25,18 @@ const BackCapture = ({
   const detectionCanvasRef = useRef(null);
   const animationRef = useRef(null);
   const fileInputRef = useRef(null);
-  const navigate=useNavigate()
+  const navigate = useNavigate();
+  
+  const [progress, setProgress] = useState(() => {
+    const savedProgress = JSON.parse(localStorage.getItem('registrationProgress') || '{}');
+    return savedProgress;
+  });
+
+  // Use the currentStep from props if available, otherwise fall back to progress.step
+  const activeStep = currentStep || progress?.step || 3;
 
   useEffect(() => {
+    console.log('Current progress:',progress);
     const startCamera = async () => {
       try {
         setIsLoading(true);
@@ -161,14 +171,14 @@ const BackCapture = ({
             formData.append('document_name', 'National ID Back');
             formData.append('status', 'pending');
             formData.append('document_url',file);
-            formData.append('uploaded_by', '101'); 
+            formData.append('uploaded_by', Cookies.get('keycloak_user_id')); 
             formData.append('document_type', '1'); 
             formData.append('submission_date', new Date().toISOString());
             formData.append('file', file); // Correct file upload
 
             let response;
             try {
-                response = await axios.post('http://192.168.1.120:8000/api/document/', formData, {
+                response = await axios.post('http://192.168.134.136:8000/api/document/', formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
             } catch (err) {
@@ -191,8 +201,7 @@ const BackCapture = ({
             setIsLoading(false);
         }
     }
-};
-
+  };
 
   const handleRetake = () => {
     setCapturedImage(null);
@@ -220,6 +229,14 @@ const BackCapture = ({
     }
   };
 
+  const handleNext = () => {
+    // Update progress in localStorage before navigating
+    
+    navigate('/register/identity-verification/verification/selfie')
+    
+    
+  };
+
   return (
     <div className="max-w-md mx-auto">
       <motion.div
@@ -238,16 +255,16 @@ const BackCapture = ({
               {[1, 2, 3, 4, 5].map((step) => (
                 <div key={step} className="flex items-center">
                   <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    step < currentStep ? 'bg-green-100 text-green-600' :
-                    step === currentStep ? 'bg-blue-600 text-white' :
+                    step < activeStep ? 'bg-green-100 text-green-600' :
+                    step === activeStep ? 'bg-blue-600 text-white' :
                     'bg-gray-100 text-gray-400'
                   }`}>
-                    {step < currentStep ? <FiCheck size={14} /> : step}
+                    {step < activeStep ? <FiCheck size={14} /> : step}
                   </div>
                   
                   {step < 5 && (
                     <div className={`h-1 w-6 ${
-                      step < currentStep ? 'bg-green-100' : 'bg-gray-200'
+                      step < activeStep ? 'bg-green-100' : 'bg-gray-200'
                     }`} />
                   )}
                 </div>
@@ -259,8 +276,8 @@ const BackCapture = ({
                 <span 
                   key={label}
                   className={`text-xs w-12 ${
-                    index + 1 === currentStep ? 'font-medium text-blue-600' :
-                    index + 1 < currentStep ? 'text-green-600' : 'text-gray-400'
+                    index + 1 === activeStep ? 'font-medium text-blue-600' :
+                    index + 1 < activeStep ? 'text-green-600' : 'text-gray-400'
                   }`}
                 >
                   {label}
@@ -339,10 +356,7 @@ const BackCapture = ({
                 <FiRotateCw className="mr-2" /> Retake
               </button>
               <button
-                onClick={(onNext)=>{
-                  navigate('/register/identity-verification/verification/selfie');
-                  onNext
-                }}
+                onClick={handleNext}
                 className="bg-blue-600 text-white py-2 px-4 rounded-full flex-1 flex items-center justify-center"
               >
                 Next <FiArrowRight className="ml-2" />

@@ -1,17 +1,25 @@
 import { useState, useRef, useEffect } from "react";
-import { FiCamera, FiRotateCw, FiCheck, FiAlertCircle, FiUser } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { motion } from "framer-motion";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { setImage, removeImage, setUploading, setError } from "../../redux/selfieSlice";
-
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
+import { 
+  FiCamera, 
+  FiRotateCw, 
+  FiCheck, 
+  FiAlertCircle, 
+  FiUser 
+} from "react-icons/fi";
+import { removeImage } from "../../redux/selfieSlice";
 
 const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }) => {
-  
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [progress, setProgress] = useState(() => {
+    const savedProgress = JSON.parse(localStorage.getItem('registrationProgress') || '{}');
+    return savedProgress;
+  });
   
   const [image, setImage] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -53,6 +61,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
   };
 
   useEffect(() => {
+    console.log('Current progress:', progress);
     const startCamera = async () => {
       try {
         setIsLoading(true);
@@ -152,8 +161,6 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
     animationRef.current = requestAnimationFrame(detectFace);
   };
 
- 
-
   const capturePhoto = async () => {
     if (!videoRef.current || !canvasRef.current) return;
   
@@ -204,7 +211,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
       const formData = new FormData();
       formData.append("selfie", file);
   
-      const response = await axios.post("http://192.168.1.120:8000/api/selfie/", formData, {
+      const response = await axios.post("http://192.168.134.136:8000/api/selfie/", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
   
@@ -216,15 +223,15 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
       // Upload document metadata
       const documentFormData = new FormData();
       documentFormData.append("document_name", "Selfie");
-      documentFormData.append("document_url", file);
-      documentFormData.append("status", "pending");
-      documentFormData.append("uploaded_by", "101");
-      documentFormData.append("document_type", "1");
-      documentFormData.append("submission_date", new Date().toISOString());
-      documentFormData.append("file", file);
+      documentFormData.append('status', 'pending');
+      documentFormData.append('document_url', file);
+      documentFormData.append('uploaded_by', Cookies.get('keycloak_user_id')); 
+      documentFormData.append('document_type', '1'); 
+      documentFormData.append('submission_date', new Date().toISOString());
+      documentFormData.append('file', file);
   
       const documentResponse = await axios.post(
-        "http://192.168.1.120:8000/api/document/",
+        "http://192.168.134.136:8000/api/document/",
         documentFormData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -246,7 +253,6 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
       setIsUploading(false);
     }
   };
-  
 
   const retakePhoto = () => {
     if (imageId) {
@@ -401,6 +407,14 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
               <button
                 onClick={() => {
                   onComplete?.(image);
+                  const updatedProgress = {
+                    step: 5, 
+                    subStep: 5,
+                    phase: 'identity_verification',
+                    subPhase: 'complete'
+                  };
+                  localStorage.setItem('registrationProgress', JSON.stringify(updatedProgress));
+                  setProgress(updatedProgress);
                   navigate('/register/identity-verification/verification/VerificationComplete');
                 }}
                 className="py-3 px-6 bg-green-600 text-white rounded-lg flex items-center justify-center hover:bg-green-700 transition-colors"
@@ -416,4 +430,4 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
   );
 };
 
-export default SelfieCapture;
+export default SelfieCapture.apply;

@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { FiCamera, FiRotateCw, FiArrowRight, FiUpload, FiCheck } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,useParams } from 'react-router-dom';
+import Cookies from "js-cookie";
+
 
 
 const FrontCapture = ({
@@ -20,14 +22,24 @@ const FrontCapture = ({
   const [detectionStatus, setDetectionStatus] = useState('position');
   const [showUploadOption, setShowUploadOption] = useState(false);
   const [capturedImage, setCapturedImage] = useState(initialImage || null);
+  const { user } = useParams();
   const navigate = useNavigate();
- 
+
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const detectionCanvasRef = useRef(null);
   const animationRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [progress, setProgress] = useState(() => {
+    const savedProgress = localStorage.getItem('registrationProgress') || '{}';
+    return {
+      step: savedProgress.step || 5,
+      subStep: savedProgress.subStep || 2,
+      phase: savedProgress.phase || 'identity_verification',
+      subPhase: savedProgress.subPhase || 'document_capture'
+    };
+  });
 
   useEffect(() => {
     const startCamera = async () => {
@@ -185,7 +197,7 @@ const FrontCapture = ({
   
       let response1;
       try {
-        response1 = await axios.post("http://192.168.1.120:8000/api/upload-image/", formDataImage, {
+        response1 = await axios.post("http://192.168.134.136:8000/api/upload-image/", formDataImage, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       } catch (err) {
@@ -200,21 +212,21 @@ const FrontCapture = ({
         setError("Image processing failed. Ensure the document is clear and valid.");
         return;
       }
-  
+      
       // Upload to second API
       const extractedData = response1.data.extracted_data || {};
       const formData = new FormData();
       formData.append("document_name", "National ID Front");
       formData.append("document_url", file);
       formData.append("status", "pending");
-      formData.append("uploaded_by", "101");
+      formData.append('uploaded_by', user); 
       formData.append("document_type", "1");
       formData.append("submission_date", new Date().toISOString());
       formData.append("file", file);
   
       let response2;
       try {
-        response2 = await axios.post("http://192.168.1.120:8000/api/document/", formData, {
+        response2 = await axios.post("http://192.168.134.136:8000/api/document/", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       } catch (err) {
@@ -262,13 +274,13 @@ const FrontCapture = ({
           formData.append('document_name', 'National ID Front');
           formData.append('document_url', file);
           formData.append('status', 'pending');
-          formData.append('uploaded_by', '101');
+          formData.append('uploaded_by',user); 
           formData.append('document_type', '1');
           formData.append('submission_date', new Date().toISOString());
 
           // Make API call
           const response = await axios.post(
-            'http://192.168.1.120:8000/api/document/',
+            'http://192.168.134.136:8000/api/document/',
             formData,
             {
               headers: {
@@ -429,7 +441,20 @@ const FrontCapture = ({
               </button>
               <button
                 onClick={() => {
+
+                  const updatedProgress = {
+                    ...progress,
+                    step: 3, // Moving to step 3 (back capture)
+                    subStep: 1
+                  };
+                  
+                  // Save to localStorage and state
+                  localStorage.setItem('registrationProgress', JSON.stringify(updatedProgress));
+                  setProgress(updatedProgress);
                   navigate('/register/identity-verification/verification/back-document');
+                  
+                  
+                  
                 }}
                 className="bg-blue-600 text-white py-2 px-4 rounded-full flex-1 flex items-center justify-center"
               >

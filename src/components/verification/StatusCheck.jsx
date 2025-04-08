@@ -9,7 +9,10 @@ const VerificationComplete = () => {
   const [error, setError] = useState(null);
   const [uploadStatus, setUploadStatus] = useState('pending');
   const navigate = useNavigate();
-
+  const [progress, setProgress] = useState(() => {
+    const savedProgress = JSON.parse(localStorage.getItem('registrationProgress') || '{}');
+    return savedProgress;
+  });
   const steps = [
     { id: 1, name: 'Select', completed: true },
     { id: 2, name: 'Front', completed: true },
@@ -19,6 +22,7 @@ const VerificationComplete = () => {
   ];
 
   useEffect(() => {
+    console.log(progress)
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -70,7 +74,7 @@ const VerificationComplete = () => {
 
         // Upload with timeout
         const uploadResponse = await timeout(
-          axios.post('http://192.168.1.120:8000/api/publish-event/', formData, {
+          axios.post('http://192.168.134.136:8000/api/publish-event/', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
             validateStatus: () => true // Handle all status codes
           }),

@@ -1,19 +1,25 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import Cookies from 'js-cookie';
 
 const IdentityVerification = () => {
   const [qrCode, setQrCode] = useState("");
   const [verificationLink, setVerificationLink] = useState("");
+  const user = Cookies.get('keycloak_user_id');
 
   useEffect(() => {
+    if (!user) return;
+
     axios
-      .get("http://127.0.0.1:8000/api/generate-qr/")
+      .post("http://127.0.0.1:8000/api/generate-qr/",  {
+        user: user,
+      } )
       .then((response) => {
         setQrCode(response.data.qr_code);
         setVerificationLink(response.data.link);
       })
       .catch((error) => console.error("Error fetching QR Code:", error));
-  }, []);
+  }, [user]);
 
   return (
     <div className="flex h-screen w-full">
@@ -23,9 +29,8 @@ const IdentityVerification = () => {
           <p className="text-gray-600 mt-2 text-lg">
             Complete Your Identity Verification to Proceed Securely
           </p>
-          <span>Scan the qr with your phone</span>
+          <span>Scan the QR with your phone</span>
 
-          {/* QR Code as an Image */}
           <div className="flex space-x-4 justify-center items-center">
             <div className="mt-6 flex justify-center">
               {qrCode ? (
@@ -38,7 +43,6 @@ const IdentityVerification = () => {
                 <p>Loading QR Code...</p>
               )}
             </div>
-           
           </div>
         </div>
       </div>

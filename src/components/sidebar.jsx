@@ -7,6 +7,7 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const isRegisterPage = location.pathname.startsWith('/register');
+  const role = localStorage.getItem('role');
 
   // Animation variants
   const sidebarVariants = {
@@ -48,13 +49,13 @@ const Sidebar = () => {
       title: "Your Details",
       description: "Provide your details"
     },
-    {
+    ...(role !== 'customer' && role !== 'individual' ? [{
       path: "/register/business-details",
       icon: "/assets/businessdetails.png",
       activeIcon: "/assets/documents.png",
       title: "Business Details",
       description: "Company information"
-    },
+    }] : []),
     {
       path: "/register/identity-verification",
       icon: "/assets/identity.png",

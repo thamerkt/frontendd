@@ -61,9 +61,10 @@ const AuthForm = () => {
           Cookies.set('first_name', data.userdata.first_name);
           Cookies.set('last_name', data.userdata.last_name);
         }
+        console.log(data)
 
         toast.success("Google login successful! Redirecting...");
-        setTimeout(() => navigate("/dashboard"), 3000);
+        setTimeout(() => navigate("register/profil"), 3000);
       } else {
         const errorData = await response.json();
         console.error('Authentication error:', errorData);
@@ -128,18 +129,18 @@ const AuthForm = () => {
         
         {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
         
-        <form className="space-y-6 justify-center" onSubmit={handleSubmit}>
+        <form className="space-y-6 justify-center flex flex-col items-center" onSubmit={handleSubmit}>
           <input
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
             placeholder="Email"
-            className="w-1/2 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-2/3 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
             required
           />
 
-          <div className="flex flex-col space-y-6">
+          <div className="flex flex-col space-y-6 w-2/3">
             <div className="relative w-full">
               <input
                 type={passwordVisible ? "text" : "password"}
@@ -180,7 +181,7 @@ const AuthForm = () => {
           </div>
 
           {!isRegister && (
-            <div className="flex justify-end">
+            <div className="flex justify-end w-2/3">
               <button 
                 type="button" 
                 className="text-teal-600 hover:underline"
@@ -191,7 +192,7 @@ const AuthForm = () => {
             </div>
           )}
 
-          <div className="space-y-3">
+          <div className="space-y-3 w-2/3">
             <button
               type="submit"
               className="w-full p-3 bg-teal-500 text-white rounded-md hover:bg-teal-600 transition duration-300 disabled:bg-gray-400"
@@ -214,10 +215,11 @@ const AuthForm = () => {
                 onError={handleError}
                 useOneTap
                 text={isRegister ? "signup_with" : "signin_with"}
+                className="w-full p-3 bg-blue-600 text-white rounded-md flex justify-center items-center"
               />
             </GoogleOAuthProvider>
 
-            {[
+            {[ 
               { img: "f2.png", bg: "bg-blue-600", text: "text-white", hover: "hover:bg-blue-700", label: `Continue with Facebook` },
               { img: "apple.png", bg: "bg-white", text: "text-black", hover: "hover:bg-gray-200", label: `Continue with Apple` }
             ].map(({ img, bg, text, hover, label }, index) => (

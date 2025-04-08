@@ -9,7 +9,7 @@ const getHeaders = () => ({
 
 const request = async (method, url, data = null, auth = false) => {
   try {
-    const res = await axios({ method, url, data, headers: auth ? getHeaders() : undefined });
+    const res = await axios({ method, url, data});
     return res.data;
   } catch (err) {
     const msg = err.response?.data?.message || err.message;
