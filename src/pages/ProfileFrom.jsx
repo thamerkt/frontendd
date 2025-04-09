@@ -227,44 +227,30 @@ const ProfileForm = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 sm:p-8 bg-white rounded-xl shadow-sm border border-gray-100">
+    <div className="max-w-3xl mx-auto p-4 bg-white rounded-xl shadow-sm border border-gray-100">
       <ToastContainer 
         position="top-center" 
         autoClose={3000}
         toastClassName="rounded-lg shadow-sm"
         progressClassName="bg-teal-600"
       />
-      
-      {/* Progress Bar - More subtle */}
-     
 
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Complete your profile</h1>
-      <p className="text-gray-500 mb-8">Let's get to know you better</p>
-
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Profile Picture - More elegant */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Profile Picture - More compact */}
         <div className="flex flex-col items-center">
           <div className="relative group">
             <div
               onClick={() => fileInputRef.current.click()}
-              className="w-28 h-28 rounded-full border-2 border-gray-200 flex items-center justify-center bg-gray-50 hover:border-teal-400 transition-all cursor-pointer overflow-hidden shadow-inner"
+              className="w-20 h-20 rounded-full border-2 border-gray-200 flex items-center justify-center bg-gray-50 hover:border-teal-400 transition-all cursor-pointer overflow-hidden"
             >
               {physicalProfileData.profile_picture ? (
-                <>
-                  <img
-                    src={URL.createObjectURL(physicalProfileData.profile_picture)}
-                    alt="Profile preview"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-                    <FaCamera className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </>
+                <img
+                  src={URL.createObjectURL(physicalProfileData.profile_picture)}
+                  alt="Profile preview"
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                <div className="flex flex-col items-center text-gray-400">
-                  <FaCamera className="w-6 h-6 mb-2" />
-                  <span className="text-xs">Add photo</span>
-                </div>
+                <FaCamera className="text-gray-400 text-xl" />
               )}
             </div>
             {physicalProfileData.profile_picture && (
@@ -273,7 +259,7 @@ const ProfileForm = () => {
                 onClick={removeProfilePicture}
                 className="absolute top-0 right-0 bg-white rounded-full p-1 shadow-sm hover:bg-gray-100 transition-colors"
               >
-                <FiX className="w-4 h-4 text-gray-500" />
+                <FiX className="w-3 h-3 text-gray-500" />
               </button>
             )}
             <input
@@ -284,13 +270,13 @@ const ProfileForm = () => {
               accept="image/*"
             />
           </div>
-          <p className="text-xs text-gray-400 mt-2">JPEG or PNG, max 2MB</p>
+          <p className="text-xs text-gray-400 mt-1">JPEG/PNG, max 2MB</p>
         </div>
 
-        {/* Profile Type - Card style */}
+        {/* Profile Type - More compact */}
         <div>
-          <h2 className="text-sm font-medium text-gray-700 mb-3 uppercase tracking-wider">Profile type</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <h2 className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">Profile type</h2>
+          <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => {
@@ -302,15 +288,14 @@ const ProfileForm = () => {
                   totalSteps: 3
                 });
               }}
-              className={`p-4 border rounded-lg transition-all ${selectedProfile === "physical"
-                ? "border-teal-500 bg-teal-50 shadow-sm"
-                : "border-gray-200 hover:border-teal-300 bg-white"
-                }`}
+              className={`p-3 border rounded-lg transition-all text-left ${
+                selectedProfile === "physical"
+                  ? "border-teal-500 bg-teal-50"
+                  : "border-gray-200 hover:border-teal-300"
+              }`}
             >
-              <div className="flex flex-col items-start">
-                <h3 className="text-base font-semibold text-gray-800">Personal</h3>
-                <p className="text-xs text-gray-500 mt-1 text-left">For individual users</p>
-              </div>
+              <h3 className="text-sm font-medium">Personal</h3>
+              <p className="text-xs text-gray-500 mt-1">Individual users</p>
             </button>
             <button
               type="button"
@@ -323,191 +308,181 @@ const ProfileForm = () => {
                   totalSteps: 4
                 });
               }}
-              className={`p-4 border rounded-lg transition-all ${selectedProfile === "moral"
-                ? "border-teal-500 bg-teal-50 shadow-sm"
-                : "border-gray-200 hover:border-teal-300 bg-white"
-                }`}
+              className={`p-3 border rounded-lg transition-all text-left ${
+                selectedProfile === "moral"
+                  ? "border-teal-500 bg-teal-50"
+                  : "border-gray-200 hover:border-teal-300"
+              }`}
             >
-              <div className="flex flex-col items-start">
-                <h3 className="text-base font-semibold text-gray-800">Business</h3>
-                <p className="text-xs text-gray-500 mt-1 text-left">For companies/organizations</p>
-              </div>
+              <h3 className="text-sm font-medium">Business</h3>
+              <p className="text-xs text-gray-500 mt-1">Companies</p>
             </button>
           </div>
         </div>
 
-        {/* Personal Information - Cleaner layout */}
-        <div className="space-y-6">
-          <div className="border-b border-gray-100 pb-6">
-            <h2 className="text-sm font-medium text-gray-700 mb-4 uppercase tracking-wider">Personal information</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">First name *</label>
-                <input
-                  type="text"
-                  name="first_name"
-                  value={formData.first_name}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
-                  placeholder="John"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Last name *</label>
-                <input
-                  type="text"
-                  name="last_name"
-                  value={formData.last_name}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
-                  placeholder="Doe"
-                  required
-                />
-              </div>
+        {/* Personal Information - More compact */}
+        <div className="space-y-4">
+          <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Personal information</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">First name *</label>
+              <input
+                type="text"
+                name="first_name"
+                value={formData.first_name}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 text-sm"
+                required
+              />
             </div>
-
-            {selectedProfile === "physical" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date of birth</label>
-                  <input
-                    type="date"
-                    name="date_of_birth"
-                    value={physicalProfileData.date_of_birth}
-                    onChange={handlePhysicalProfileChange}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
-                  <select
-                    name="gender"
-                    value={physicalProfileData.gender}
-                    onChange={handlePhysicalProfileChange}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
-                    required
-                  >
-                    <option value="">Select gender</option>
-                    {GENDER_OPTIONS.map(option => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Contact Information */}
-          <div className="border-b border-gray-100 pb-6">
-            <h2 className="text-sm font-medium text-gray-700 mb-4 uppercase tracking-wider">Contact information</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone number *</label>
-                <PhoneInput
-                  country={formData.countryCode}
-                  value={formData.phone}
-                  onChange={handlePhoneChange}
-                  inputClass="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
-                  dropdownClass="border border-gray-200 rounded-lg shadow-sm"
-                  placeholder="Enter phone number"
-                  required
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Last name *</label>
+              <input
+                type="text"
+                name="last_name"
+                value={formData.last_name}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 text-sm"
+                required
+              />
             </div>
           </div>
 
-          {/* Address Information */}
-          <div>
-            <h2 className="text-sm font-medium text-gray-700 mb-4 uppercase tracking-wider">Address information</h2>
-            <div className="space-y-4">
+          {selectedProfile === "physical" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Country *</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Date of birth</label>
+                <input
+                  type="date"
+                  name="date_of_birth"
+                  value={physicalProfileData.date_of_birth}
+                  onChange={handlePhysicalProfileChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Gender *</label>
                 <select
-                  name="country"
-                  value={formData.address.country}
-                  onChange={handleCountryChange}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
+                  name="gender"
+                  value={physicalProfileData.gender}
+                  onChange={handlePhysicalProfileChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 text-sm"
                   required
                 >
-                  <option value="">Select country</option>
-                  {COUNTRIES.map(country => (
-                    <option key={country} value={country}>{country}</option>
+                  <option value="">Select</option>
+                  {GENDER_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
               </div>
+            </div>
+          )}
+        </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">State/Province</label>
-                  <select
-                    name="state"
-                    value={formData.address.state}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
-                    disabled={!formData.address.country}
-                  >
-                    <option value="">Select state</option>
-                    {states.map(state => (
-                      <option key={state.name} value={state.name}>{state.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.address.city}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
-                    placeholder="City"
-                  />
-                </div>
+        {/* Contact Information - More compact */}
+        <div className="space-y-4">
+          <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Contact information</h2>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Phone number *</label>
+            <PhoneInput
+              country={formData.countryCode}
+              value={formData.phone}
+              onChange={handlePhoneChange}
+              inputClass="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 text-sm"
+              dropdownClass="border border-gray-200 rounded-lg shadow-sm text-sm"
+              placeholder=""
+              required
+            />
+          </div>
+        </div>
+
+        {/* Address Information - More compact */}
+        <div className="space-y-4">
+          <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Address information</h2>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Country *</label>
+              <select
+                name="country"
+                value={formData.address.country}
+                onChange={handleCountryChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 text-sm"
+                required
+              >
+                <option value="">Select</option>
+                {COUNTRIES.map(country => (
+                  <option key={country} value={country}>{country}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">State/Province</label>
+                <select
+                  name="state"
+                  value={formData.address.state}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 text-sm"
+                  disabled={!formData.address.country}
+                >
+                  <option value="">Select</option>
+                  {states.map(state => (
+                    <option key={state.name} value={state.name}>{state.name}</option>
+                  ))}
+                </select>
               </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">City</label>
+                <input
+                  type="text"
+                  name="city"
+                  value={formData.address.city}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 text-sm"
+                />
+              </div>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Street address</label>
-                  <input
-                    type="text"
-                    name="street"
-                    value={formData.address.street}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
-                    placeholder="Street"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Postal code</label>
-                  <input
-                    type="text"
-                    name="postal_code"
-                    value={formData.address.postal_code}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
-                    placeholder="Postal code"
-                  />
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Street address</label>
+                <input
+                  type="text"
+                  name="street"
+                  value={formData.address.street}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Postal code</label>
+                <input
+                  type="text"
+                  name="postal_code"
+                  value={formData.address.postal_code}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 text-sm"
+                />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Submit Button - More prominent */}
+        {/* Submit Button */}
         <div className="pt-2">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 px-4 rounded-lg transition-all disabled:bg-teal-400 flex justify-center items-center shadow-sm hover:shadow-md"
+            className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2.5 px-4 rounded-lg transition-all disabled:bg-teal-400 flex justify-center items-center text-sm"
           >
             {isSubmitting ? (
               <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Saving your profile...
+                Saving...
               </>
             ) : (
               "Complete Profile"
@@ -517,6 +492,7 @@ const ProfileForm = () => {
       </form>
     </div>
   );
+
 };
 
 export default ProfileForm;
