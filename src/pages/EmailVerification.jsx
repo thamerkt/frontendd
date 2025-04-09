@@ -8,55 +8,21 @@ import Cookies from "js-cookie";
 const EmailVerification = () => {
   const [code, setCode] = useState(new Array(6).fill(""));
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState({
-    phase: "emailVerification",
-    step: 2,
-    totalSteps: 3
-  });
   const inputsRef = useRef([]);
   const navigate = useNavigate();
-  const toastIdRef = useRef(null); // Reference to track active toast
+  const toastIdRef = useRef(null);
+  const [countdown, setCountdown] = useState(30);
 
-  // Load progress from localStorage
+  // Countdown timer for resend
   useEffect(() => {
-    const savedProgress = localStorage.getItem('registrationProgress');
-    if (savedProgress) {
-      try {
-        const parsedProgress = JSON.parse(savedProgress);
-        if (parsedProgress?.phase) {
-          setProgress(parsedProgress);
-        }
-      } catch (e) {
-        console.error("Error parsing saved progress:", e);
-      }
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
     }
-  }, []);
-
-  // Format phase name for display
-  const formatPhaseName = (phase) => {
-    if (!phase) return "";
-    return String(phase)
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, str => str.toUpperCase())
-      .trim();
-  };
-
-  // Auto-submit when all digits are entered
-  useEffect(() => {
-    if (code.every(digit => digit !== "") && !loading) {
-      // Check if we're not already showing a toast
-      if (!toast.isActive(toastIdRef.current)) {
-        handleVerify();
-      }
-    }
-  }, [code, loading]);
+  }, [countdown]);
 
   const showToast = (message, type = "success") => {
-    // Dismiss any existing toast first
-    if (toastIdRef.current) {
-      toast.dismiss(toastIdRef.current);
-    }
-    
+    if (toastIdRef.current) toast.dismiss(toastIdRef.current);
     toastIdRef.current = toast[type](message, {
       position: "top-center",
       autoClose: 3000,
@@ -71,7 +37,6 @@ const EmailVerification = () => {
       newCode[index] = value;
       setCode(newCode);
 
-      // Move to next input if value entered
       if (value !== "" && index < 5) {
         inputsRef.current[index + 1]?.focus();
       }
@@ -102,24 +67,11 @@ const EmailVerification = () => {
     try {
       setLoading(true);
       const verificationCode = code.join("");
-
       const response = await authStore.verify(verificationCode);
-      
       showToast(response?.message || "Verification successful!");
-
-      // Update progress
-      const newProgress = {
-        phase: "personal",
-        step: 2,
-        totalSteps: 3
-      };
-      setProgress(newProgress);
-      localStorage.setItem('registrationProgress', JSON.stringify(newProgress));
-
-      setTimeout(() => navigate("/register/profil"), 3000);
+      setTimeout(() => navigate("/register/profil"), 1500);
     } catch (error) {
-      console.error("Failed to verify:", error);
-      const errorMessage = error.response?.data?.message || error.message || "Verification failed. Please try again.";
+      const errorMessage = error.response?.data?.message || error.message || "Verification failed";
       showToast(errorMessage, "error");
     } finally {
       setLoading(false);
@@ -127,89 +79,105 @@ const EmailVerification = () => {
   };
 
   const handleResend = () => {
-    showToast("Verification code resent!", "info");
+    showToast("New verification code sent!", "info");
+    setCountdown(30);
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-green-100 p-8 md:p-16 rounded-xl md:rounded-3xl shadow-lg md:shadow-2xl w-full max-w-md md:max-w-2xl">
-        {/* Progress Bar */}
-        <div className="mb-6 md:mb-8">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm md:text-base font-medium text-gray-700 capitalize">
-              {formatPhaseName(progress?.phase)} ({progress?.step || 0}/{progress?.totalSteps || 3})
-            </span>
-            <span className="text-xs md:text-sm text-gray-500">
-              Step {progress?.step || 0} of {progress?.totalSteps || 3}
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div 
-              className="bg-teal-500 h-2.5 rounded-full" 
-              style={{ width: `${((progress?.step || 0) / (progress?.totalSteps || 3)) * 100}%` }}
-            ></div>
-          </div>
-        </div>
-
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-6">Please check your email</h2>
-        <p className="text-base md:text-xl text-center text-gray-700 mb-6 md:mb-10">
-          We have sent a code to <span className="font-medium">{Cookies.get('email')}</span>
-        </p>
-        
-        {/* Code Inputs */}
-        <div 
-          className="flex justify-center gap-3 md:gap-6 mb-8 md:mb-10"
-          onPaste={handlePaste}
-        >
-          {code.map((digit, index) => (
-            <input
-              key={index}
-              ref={(el) => (inputsRef.current[index] = el)}
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength="1"
-              value={digit}
-              onChange={(e) => handleInputChange(e.target.value, index)}
-              onKeyDown={(e) => handleKeyDown(e, index)}
-              onFocus={(e) => e.target.select()}
-              className="w-12 h-12 md:w-20 md:h-20 text-center text-xl md:text-2xl font-bold border rounded-lg md:rounded-xl focus:outline-none focus:ring focus:ring-green-300"
-              autoFocus={index === 0}
-              disabled={loading}
-            />
-          ))}
-        </div>
-        
-        {/* Verify Button */}
-        <button
-          onClick={handleVerify}
-          className="w-full bg-teal-500 text-white py-3 md:py-4 text-base md:text-xl rounded-lg md:rounded-xl hover:bg-teal-600 focus:outline-none focus:ring focus:ring-teal-400 mb-6 md:mb-8 transition-colors"
-          disabled={loading || code.some(digit => digit === "")}
-        >
-          {loading ? (
-            <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="bg-white p-12 rounded-xl shadow-lg w-full max-w-2xl">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <div className="mx-auto mb-8">
+            <div className="w-20 h-20 bg-teal-50 rounded-full flex items-center justify-center mx-auto">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              Verifying...
-            </span>
-          ) : "Verify"}
-        </button>
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">Verify your email address</h1>
+          <p className="text-gray-600 text-lg">
+            We've sent a 6-digit confirmation code to <span className="font-medium text-gray-800">{Cookies.get('email')}</span>
+          </p>
+        </div>
         
-        {/* Resend Link */}
-        <p className="text-base md:text-xl text-center text-gray-700">
-          Didn't receive an email?{" "}
-          <button
-            onClick={handleResend}
-            className="text-teal-600 hover:underline hover:text-teal-800 focus:outline-none"
-            disabled={loading}
+        {/* Code Input - Desktop Optimized */}
+        <div className="mb-10">
+          <div 
+            className="flex justify-center gap-4 mb-8"
+            onPaste={handlePaste}
           >
-            Resend
+            {code.map((digit, index) => (
+              <div key={index} className="relative">
+                <input
+                  ref={(el) => (inputsRef.current[index] = el)}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength="1"
+                  value={digit}
+                  onChange={(e) => handleInputChange(e.target.value, index)}
+                  onKeyDown={(e) => handleKeyDown(e, index)}
+                  onFocus={(e) => e.target.select()}
+                  className="w-16 h-20 text-4xl text-center font-medium border-2 border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 transition-all hover:border-gray-300"
+                  autoFocus={index === 0}
+                  disabled={loading}
+                />
+                {index < 5 && (
+                  <div className="absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 w-2 h-0.5 bg-gray-300"></div>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          <button
+            onClick={handleVerify}
+            disabled={loading || code.some(digit => digit === "")}
+            className={`w-full py-5 px-6 rounded-xl text-xl font-medium transition-all duration-300 ${
+              loading || code.some(digit => digit === "") 
+                ? "bg-teal-400 cursor-not-allowed" 
+                : "bg-teal-600 hover:bg-teal-700 hover:shadow-md"
+            } text-white shadow-sm`}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Verifying...
+              </span>
+            ) : "Verify and Continue"}
           </button>
-        </p>
+        </div>
+        
+        {/* Resend Code */}
+        <div className="text-center">
+          <p className="text-gray-600 text-lg">
+            {countdown > 0 ? (
+              `Didn't receive a code? Resend available in ${countdown}s`
+            ) : (
+              <>
+                Didn't receive a code?{" "}
+                <button
+                  onClick={handleResend}
+                  className="text-teal-600 font-medium hover:text-teal-700 focus:outline-none transition-colors"
+                  disabled={countdown > 0}
+                >
+                  Click to resend
+                </button>
+              </>
+            )}
+          </p>
+        </div>
       </div>
-      <ToastContainer position="top-center" autoClose={3000} />
+      
+      <ToastContainer 
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar
+        toastClassName="rounded-lg shadow-md text-base font-medium"
+        bodyClassName="p-4"
+      />
     </div>
   );
 };

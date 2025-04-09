@@ -12,6 +12,9 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FiX } from "react-icons/fi";
 
+
+
+
 const ProfileForm = () => {
   const [role, setRole] = useState('customer');
   const navigate = useNavigate();
@@ -224,47 +227,43 @@ const ProfileForm = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-4 md:p-6 bg-white rounded-lg shadow-md">
-      <ToastContainer position="top-center" autoClose={3000} />
+    <div className="max-w-3xl mx-auto p-6 sm:p-8 bg-white rounded-xl shadow-sm border border-gray-100">
+      <ToastContainer 
+        position="top-center" 
+        autoClose={3000}
+        toastClassName="rounded-lg shadow-sm"
+        progressClassName="bg-teal-600"
+      />
       
-      {/* Progress Bar */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm md:text-base font-medium text-gray-700 capitalize">
-            {progress.phase.replace(/([A-Z])/g, ' $1').trim()} ({progress.step}/{progress.totalSteps})
-          </span>
-          <span className="text-xs md:text-sm text-gray-500">
-            Step {progress.step} of {progress.totalSteps}
-          </span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
-          <div 
-            className="bg-teal-500 h-2.5 rounded-full" 
-            style={{ width: `${(progress.step / progress.totalSteps) * 100}%` }}
-          ></div>
-        </div>
-      </div>
+      {/* Progress Bar - More subtle */}
+     
 
-      <h1 className="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-4 md:mb-6">Complete Your Profile</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Complete your profile</h1>
+      <p className="text-gray-500 mb-8">Let's get to know you better</p>
 
-      <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
-        {/* Profile Picture Section */}
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Profile Picture - More elegant */}
         <div className="flex flex-col items-center">
           <div className="relative group">
             <div
               onClick={() => fileInputRef.current.click()}
-              className="w-24 h-24 md:w-32 md:h-32 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 hover:border-blue-500 transition-colors cursor-pointer overflow-hidden"
+              className="w-28 h-28 rounded-full border-2 border-gray-200 flex items-center justify-center bg-gray-50 hover:border-teal-400 transition-all cursor-pointer overflow-hidden shadow-inner"
             >
               {physicalProfileData.profile_picture ? (
-                <img
-                  src={URL.createObjectURL(physicalProfileData.profile_picture)}
-                  alt="Profile preview"
-                  className="w-full h-full object-cover"
-                />
+                <>
+                  <img
+                    src={URL.createObjectURL(physicalProfileData.profile_picture)}
+                    alt="Profile preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                    <FaCamera className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </>
               ) : (
                 <div className="flex flex-col items-center text-gray-400">
-                  <FaCamera className="w-6 h-6 md:w-8 md:h-8 mb-1 md:mb-2" />
-                  <span className="text-xs md:text-sm">Upload Photo</span>
+                  <FaCamera className="w-6 h-6 mb-2" />
+                  <span className="text-xs">Add photo</span>
                 </div>
               )}
             </div>
@@ -272,9 +271,9 @@ const ProfileForm = () => {
               <button
                 type="button"
                 onClick={removeProfilePicture}
-                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                className="absolute top-0 right-0 bg-white rounded-full p-1 shadow-sm hover:bg-gray-100 transition-colors"
               >
-                <FiX className="w-3 h-3 md:w-4 md:h-4" />
+                <FiX className="w-4 h-4 text-gray-500" />
               </button>
             )}
             <input
@@ -285,13 +284,13 @@ const ProfileForm = () => {
               accept="image/*"
             />
           </div>
-          <p className="text-xs md:text-sm text-gray-500 mt-1 md:mt-2">Max 2MB (JPEG, PNG)</p>
+          <p className="text-xs text-gray-400 mt-2">JPEG or PNG, max 2MB</p>
         </div>
 
-        {/* Profile Type Selection */}
+        {/* Profile Type - Card style */}
         <div>
-          <h2 className="text-base md:text-lg font-semibold text-gray-700 mb-2 md:mb-3">Profile Type</h2>
-          <div className="grid grid-cols-2 gap-3 md:gap-4">
+          <h2 className="text-sm font-medium text-gray-700 mb-3 uppercase tracking-wider">Profile type</h2>
+          <div className="grid grid-cols-2 gap-4">
             <button
               type="button"
               onClick={() => {
@@ -303,13 +302,15 @@ const ProfileForm = () => {
                   totalSteps: 3
                 });
               }}
-              className={`p-3 md:p-4 border-2 rounded-lg transition-all ${selectedProfile === "physical"
-                ? "border-teal-600 bg-blue-50"
-                : "border-gray-300 hover:border-teal-400"
+              className={`p-4 border rounded-lg transition-all ${selectedProfile === "physical"
+                ? "border-teal-500 bg-teal-50 shadow-sm"
+                : "border-gray-200 hover:border-teal-300 bg-white"
                 }`}
             >
-              <h3 className="text-base md:text-lg font-semibold">Personal</h3>
-              <p className="text-xs md:text-sm text-gray-600">For individual users</p>
+              <div className="flex flex-col items-start">
+                <h3 className="text-base font-semibold text-gray-800">Personal</h3>
+                <p className="text-xs text-gray-500 mt-1 text-left">For individual users</p>
+              </div>
             </button>
             <button
               type="button"
@@ -322,139 +323,191 @@ const ProfileForm = () => {
                   totalSteps: 4
                 });
               }}
-              className={`p-3 md:p-4 border-2 rounded-lg transition-all ${selectedProfile === "moral" ? "border-teal-600 bg-teal-50" : "border-gray-300 hover:border-teal-400"}`}
+              className={`p-4 border rounded-lg transition-all ${selectedProfile === "moral"
+                ? "border-teal-500 bg-teal-50 shadow-sm"
+                : "border-gray-200 hover:border-teal-300 bg-white"
+                }`}
             >
-              <h3 className="text-base md:text-lg font-semibold">Business</h3>
-              <p className="text-xs md:text-sm text-gray-600">For companies/organizations</p>
+              <div className="flex flex-col items-start">
+                <h3 className="text-base font-semibold text-gray-800">Business</h3>
+                <p className="text-xs text-gray-500 mt-1 text-left">For companies/organizations</p>
+              </div>
             </button>
           </div>
         </div>
 
-        {/* Personal Information Section */}
-        <div className="space-y-3 md:space-y-4">
-          <h2 className="text-base md:text-lg font-semibold text-gray-700">Personal Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-            <TextInput
-              label="First Name *"
-              name="first_name"
-              value={formData.first_name}
-              onChange={handleChange}
-              placeholder={'First Name'}
-              required
-            />
-            <TextInput
-              label="Last Name *"
-              name="last_name"
-              value={formData.last_name}
-              onChange={handleChange}
-              placeholder={'Last Name'}
-              required
-            />
-          </div>
-
-          {selectedProfile === "physical" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-              <TextInput
-                type="date"
-                label="Date of Birth"
-                name="date_of_birth"
-                value={physicalProfileData.date_of_birth}
-                onChange={handlePhysicalProfileChange}
-              />
-              <SelectInput
-                label="Gender *"
-                name="gender"
-                options={GENDER_OPTIONS}
-                value={physicalProfileData.gender}
-                onChange={handlePhysicalProfileChange}
-                placeholder={'Select Your Gender'}
-                required
-              />
+        {/* Personal Information - Cleaner layout */}
+        <div className="space-y-6">
+          <div className="border-b border-gray-100 pb-6">
+            <h2 className="text-sm font-medium text-gray-700 mb-4 uppercase tracking-wider">Personal information</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First name *</label>
+                <input
+                  type="text"
+                  name="first_name"
+                  value={formData.first_name}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
+                  placeholder="John"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last name *</label>
+                <input
+                  type="text"
+                  name="last_name"
+                  value={formData.last_name}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
+                  placeholder="Doe"
+                  required
+                />
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Contact Information Section */}
-        <div className="space-y-3 md:space-y-4">
-          <h2 className="text-base md:text-lg font-semibold text-gray-700">Contact Information</h2>
+            {selectedProfile === "physical" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date of birth</label>
+                  <input
+                    type="date"
+                    name="date_of_birth"
+                    value={physicalProfileData.date_of_birth}
+                    onChange={handlePhysicalProfileChange}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
+                  <select
+                    name="gender"
+                    value={physicalProfileData.gender}
+                    onChange={handlePhysicalProfileChange}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
+                    required
+                  >
+                    <option value="">Select gender</option>
+                    {GENDER_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Contact Information */}
+          <div className="border-b border-gray-100 pb-6">
+            <h2 className="text-sm font-medium text-gray-700 mb-4 uppercase tracking-wider">Contact information</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone number *</label>
+                <PhoneInput
+                  country={formData.countryCode}
+                  value={formData.phone}
+                  onChange={handlePhoneChange}
+                  inputClass="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
+                  dropdownClass="border border-gray-200 rounded-lg shadow-sm"
+                  placeholder="Enter phone number"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Address Information */}
           <div>
-            <label className="block text-sm md:text-base font-medium text-gray-700 mb-1">Phone Number *</label>
-            <PhoneInput
-              country={formData.countryCode}
-              value={formData.phone}
-              onChange={handlePhoneChange}
-              inputClass="w-full p-2 md:p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              dropdownClass="border border-gray-300 rounded-md shadow-lg"
-              placeholder="Enter phone number"
-              required
-            />
+            <h2 className="text-sm font-medium text-gray-700 mb-4 uppercase tracking-wider">Address information</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Country *</label>
+                <select
+                  name="country"
+                  value={formData.address.country}
+                  onChange={handleCountryChange}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
+                  required
+                >
+                  <option value="">Select country</option>
+                  {COUNTRIES.map(country => (
+                    <option key={country} value={country}>{country}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">State/Province</label>
+                  <select
+                    name="state"
+                    value={formData.address.state}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
+                    disabled={!formData.address.country}
+                  >
+                    <option value="">Select state</option>
+                    {states.map(state => (
+                      <option key={state.name} value={state.name}>{state.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={formData.address.city}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
+                    placeholder="City"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Street address</label>
+                  <input
+                    type="text"
+                    name="street"
+                    value={formData.address.street}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
+                    placeholder="Street"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Postal code</label>
+                  <input
+                    type="text"
+                    name="postal_code"
+                    value={formData.address.postal_code}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all"
+                    placeholder="Postal code"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Address Information Section */}
-        <div className="space-y-3 md:space-y-4">
-          <h2 className="text-base md:text-lg font-semibold text-gray-700">Address Information</h2>
-          <SelectInput
-            label="Country *"
-            name="country"
-            value={formData.address.country}
-            onChange={handleCountryChange}
-            options={COUNTRIES.map(country => ({ value: country, label: country }))}
-            placeholder="Select country"
-            required
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-            <SelectInput
-              label="State/Province"
-              name="state"
-              value={formData.address.state}
-              onChange={handleChange}
-              options={states.map(state => ({ value: state.name, label: state.name }))}
-              placeholder="Select state"
-              disabled={!formData.address.country}
-            />
-            <TextInput
-              label="City"
-              name="city"
-              value={formData.address.city}
-              onChange={handleChange}
-              placeholder={'City'}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <TextInput
-              label="Street Address"
-              name="street"
-              value={formData.address.street}
-              onChange={handleChange}
-              placeholder={'Street'}
-            />
-            <TextInput
-              label="Postal Code"
-              name="postal_code"
-              value={formData.address.postal_code}
-              onChange={handleChange}
-              placeholder={'Postal Code'}
-            />
-          </div>
-        </div>
-
-        {/* Submit Button */}
-        <div className="pt-3 md:pt-4">
+        {/* Submit Button - More prominent */}
+        <div className="pt-2">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-teal-500 hover:bg-teal-700 text-white font-medium py-2 md:py-3 px-4 rounded-md transition-colors disabled:bg-teal-400 flex justify-center items-center"
+            className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 px-4 rounded-lg transition-all disabled:bg-teal-400 flex justify-center items-center shadow-sm hover:shadow-md"
           >
             {isSubmitting ? (
               <>
-                <svg className="animate-spin -ml-1 mr-3 h-4 w-4 md:h-5 md:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Processing...
+                Saving your profile...
               </>
             ) : (
               "Complete Profile"
