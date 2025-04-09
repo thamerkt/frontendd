@@ -74,7 +74,7 @@ const VerificationComplete = () => {
 
         // Upload with timeout
         const uploadResponse = await timeout(
-          axios.post('http://192.168.134.136:8000/api/publish-event/', formData, {
+          axios.post(`http://${ip}:8000/api/publish-event/`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
             validateStatus: () => true // Handle all status codes
           }),

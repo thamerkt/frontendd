@@ -31,6 +31,7 @@ const FrontCapture = ({
   const detectionCanvasRef = useRef(null);
   const animationRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [ip, setIP] = useState('');
   const [progress, setProgress] = useState(() => {
     const savedProgress = localStorage.getItem('registrationProgress') || '{}';
     return {
@@ -42,6 +43,17 @@ const FrontCapture = ({
   });
 
   useEffect(() => {
+
+    const url = new URL(window.location.href);
+    const hostname = url.hostname;
+
+    // Optional: Regex to make sure it's an IPv4 address
+    const ipv4Regex = /^(?:\d{1,3}\.){3}\d{1,3}$/;
+    if (ipv4Regex.test(hostname)) {
+      setIP(hostname);
+    } else {
+      setIP('Not an IPv4 address');
+    }
     const startCamera = async () => {
       try {
         setIsLoading(true);
@@ -197,7 +209,7 @@ const FrontCapture = ({
   
       let response1;
       try {
-        response1 = await axios.post("http://192.168.134.136:8000/api/upload-image/", formDataImage, {
+        response1 = await axios.post(`http://${ip}:8000/api/upload-image/`, formDataImage, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       } catch (err) {
@@ -226,7 +238,7 @@ const FrontCapture = ({
   
       let response2;
       try {
-        response2 = await axios.post("http://192.168.134.136:8000/api/document/", formData, {
+        response2 = await axios.post(`http://${ip}:8000/api/document/`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       } catch (err) {
@@ -280,7 +292,7 @@ const FrontCapture = ({
 
           // Make API call
           const response = await axios.post(
-            'http://192.168.134.136:8000/api/document/',
+            `http://${ip}:8000/api/document/`,
             formData,
             {
               headers: {
