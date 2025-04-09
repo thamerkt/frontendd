@@ -211,7 +211,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
       const formData = new FormData();
       formData.append("selfie", file);
   
-      const response = await axios.post("http://192.168.134.136:8000/api/selfie/", formData, {
+      const response = await axios.post(`http://${ip}:8000/api/selfie/`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
   
@@ -231,7 +231,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
       documentFormData.append('file', file);
   
       const documentResponse = await axios.post(
-        "http://192.168.134.136:8000/api/document/",
+        `http://${ip}:8000/api/document/`,
         documentFormData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );

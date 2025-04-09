@@ -174,11 +174,11 @@ const BackCapture = ({
             formData.append('uploaded_by', Cookies.get('keycloak_user_id')); 
             formData.append('document_type', '1'); 
             formData.append('submission_date', new Date().toISOString());
-            formData.append('file', file); // Correct file upload
+            formData.append('file', file); 
 
             let response;
             try {
-                response = await axios.post('http://192.168.134.136:8000/api/document/', formData, {
+                response = await axios.post(`http://${ip}:8000/api/document/`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
             } catch (err) {
