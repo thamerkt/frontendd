@@ -1,12 +1,13 @@
 import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
 import SidebarAdmin from '../../components/Admin/sidebar';
-import { FaBell, FaSearch } from "react-icons/fa";
+import { FaBell, FaSearch, FaTools, FaChartLine, FaUserCog, FaBolt } from "react-icons/fa";
 import { IoPersonCircle } from "react-icons/io5";
 import "chart.js/auto";
 import { useState } from "react";
 import BookingComponent from '../../components/Admin/Booking';
 import ClientComponent from "../../components/Admin/clients";
+import { motion } from "framer-motion";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -78,7 +79,7 @@ const Dashboard = () => {
             {/* Main Content */}
             <div className="flex-1 overflow-auto">
                 {/* Top Navigation */}
-                <header className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center">
+                <header className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shadow-sm">
                     <div className="relative w-64">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <FaSearch className="text-gray-400" />
@@ -123,7 +124,12 @@ const Dashboard = () => {
                             { title: "Active Clients", value: "6", icon: "/assets/customer.png", change: "+5%", trend: "up" },
                             { title: "Total Balance", value: "$4,780,000", icon: "/assets/dollar-symbol.png", change: "+18%", trend: "up" }
                         ].map((stat, index) => (
-                            <div key={index} className="bg-white rounded-lg shadow-sm p-5 border border-gray-100 hover:shadow-md transition-shadow">
+                            <motion.div 
+                                key={index} 
+                                className="bg-white rounded-lg shadow-sm p-5 border border-gray-100 hover:shadow-md transition-all"
+                                whileHover={{ y: -5 }}
+                                transition={{ duration: 0.2 }}
+                            >
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">{stat.title}</p>
@@ -147,9 +153,63 @@ const Dashboard = () => {
                                         )}
                                     </span>
                                 </div>
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
+
+                    {/* Rental Performance Metrics */}
+                    <motion.div 
+                        className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        {[
+                            { 
+                                title: "Avg. Rental Duration", 
+                                value: "3.2 days", 
+                                change: "+0.5 days", 
+                                icon: <FaChartLine className="text-2xl text-teal-500" />,
+                                trend: "up"
+                            },
+                            { 
+                                title: "Peak Rental Days", 
+                                value: "Weekends", 
+                                change: "+15% demand", 
+                                icon: <FaChartLine className="text-2xl text-teal-500" />,
+                                trend: "up"
+                            },
+                            { 
+                                title: "Item Utilization", 
+                                value: "68%", 
+                                change: "+8% MoM", 
+                                icon: <FaChartLine className="text-2xl text-teal-500" />,
+                                trend: "up"
+                            },
+                            { 
+                                title: "Cancellation Rate", 
+                                value: "5%", 
+                                change: "-2%", 
+                                icon: <FaChartLine className="text-2xl text-teal-500" />,
+                                trend: "down"
+                            }
+                        ].map((stat, index) => (
+                            <div key={index} className="bg-white rounded-lg shadow-sm p-5 border border-gray-100 hover:shadow-md transition-all">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-teal-50 rounded-lg">
+                                        {stat.icon}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-500">{stat.title}</p>
+                                        <p className="text-xl font-bold text-teal-600">{stat.value}</p>
+                                        <p className={`text-xs ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                                            {stat.change}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </motion.div>
 
                     {/* Charts and Recent Payments */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
@@ -161,7 +221,7 @@ const Dashboard = () => {
                                     {["Days", "Weeks", "Months", "Years"].map(option => (
                                         <button
                                             key={option}
-                                            className={`px-3 py-1 text-xs rounded-md ${timeframe === option ? "bg-teal-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                                            className={`px-3 py-1 text-xs rounded-md transition-all ${timeframe === option ? "bg-teal-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
                                             onClick={() => setTimeframe(option)}
                                         >
                                             {option}
@@ -185,7 +245,12 @@ const Dashboard = () => {
                                     { name: "Johnson A", date: "9 Dec", amount: "+1,200,000", status: "completed" },
                                     { name: "Williams B", date: "8 Dec", amount: "+950,000", status: "completed" }
                                 ].map((payment, index) => (
-                                    <div key={index} className="flex items-center">
+                                    <motion.div 
+                                        key={index} 
+                                        className="flex items-center p-2 rounded-lg hover:bg-gray-50"
+                                        whileHover={{ x: 5 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
                                         <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${payment.status === 'completed' ? 'bg-green-100' : 'bg-yellow-100'}`}>
                                             {payment.status === 'completed' ? (
                                                 <svg className="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
@@ -207,11 +272,121 @@ const Dashboard = () => {
                                                 {payment.status}
                                             </p>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 ))}
                             </div>
                         </div>
                     </div>
+
+                    {/* Maintenance & Item Health */}
+                    <motion.div 
+                        className="bg-white rounded-lg shadow-sm p-5 border border-gray-100 mb-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                <FaTools className="text-teal-500" /> Maintenance & Item Health
+                            </h2>
+                            <button className="text-xs text-teal-600 hover:text-teal-700">View All</button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="border-l-4 border-red-500 pl-3 py-1">
+                                <h3 className="font-medium text-gray-700">🔴 High Priority (2)</h3>
+                                <p className="text-sm text-gray-500">Drill Set #D-102 - Battery replacement</p>
+                            </div>
+                            <div className="border-l-4 border-yellow-500 pl-3 py-1">
+                                <h3 className="font-medium text-gray-700">🟡 Medium Priority (3)</h3>
+                                <p className="text-sm text-gray-500">Camping Tent #T-205 - Zipper repair</p>
+                            </div>
+                            <div className="border-l-4 border-green-500 pl-3 py-1">
+                                <h3 className="font-medium text-gray-700">🟢 Routine Checks (5)</h3>
+                                <p className="text-sm text-gray-500">Projector #P-301 - Lens cleaning</p>
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    {/* Admin Quick Actions */}
+                    <motion.div 
+                        className="bg-white rounded-lg shadow-sm p-5 border border-gray-100 mb-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.3 }}
+                    >
+                        <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                            <FaBolt className="text-teal-500" /> Quick Actions
+                        </h2>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {[
+                                { title: "Add New Item", icon: <FaTools className="text-teal-600" />, color: "bg-teal-50 hover:bg-teal-100" },
+                                { title: "Process Return", icon: <FaTools className="text-blue-600" />, color: "bg-blue-50 hover:bg-blue-100" },
+                                { title: "Create Invoice", icon: <FaTools className="text-purple-600" />, color: "bg-purple-50 hover:bg-purple-100" },
+                                { title: "Send Notification", icon: <FaTools className="text-orange-600" />, color: "bg-orange-50 hover:bg-orange-100" }
+                            ].map((action, index) => (
+                                <motion.button 
+                                    key={index}
+                                    className={`flex flex-col items-center p-4 rounded-lg ${action.color} transition-all`}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    <span className="text-2xl mb-2">{action.icon}</span>
+                                    <span className="text-sm font-medium">{action.title}</span>
+                                </motion.button>
+                            ))}
+                        </div>
+                    </motion.div>
+
+                    {/* Staff Management */}
+                    <motion.div 
+                        className="bg-white rounded-lg shadow-sm p-5 border border-gray-100 mb-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.5, delay: 0.4 }}
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                <FaUserCog className="text-teal-500" /> Staff Management
+                            </h2>
+                            <button className="text-xs text-teal-600 hover:text-teal-700">Manage Team</button>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Staff</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Action</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {[
+                                        { name: "Alex M.", role: "Admin", action: "Processed 3 returns", status: "Active" },
+                                        { name: "Sam P.", role: "Support", action: "Replied to 5 tickets", status: "Active" },
+                                        { name: "Jordan K.", role: "Maintenance", action: "Marked 2 repairs", status: "On Break" }
+                                    ].map((staff, index) => (
+                                        <motion.tr 
+                                            key={index}
+                                            className="hover:bg-gray-50"
+                                            whileHover={{ backgroundColor: "#f9fafb" }}
+                                        >
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{staff.name}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.role}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.action}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                                    staff.status === "Active" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                                                }`}>
+                                                    {staff.status}
+                                                </span>
+                                            </td>
+                                        </motion.tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </motion.div>
 
                     {/* Booking and Client Components */}
                     <BookingComponent />

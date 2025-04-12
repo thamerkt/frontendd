@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import AuthForm from "./components/authentication";
-import Navbar from "./components/Navbar";
+import Navbar from "./components/navbar";
 import Sidebar from "./components/sidebar";
 import Login from "./components/login";
 import EmailVerification from "./pages/EmailVerification";
