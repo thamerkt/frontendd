@@ -11,9 +11,11 @@ import Home from "./pages/Home";
 import IdentityVerification from "./pages/identityverification";
 import ProfileForm from "./pages/ProfileFrom";
 import Dashboard from "./pages/Admin/dashbord";
+import SettingsPage from "./components/Admin/settings";
 import BookingComponent from "./components/Admin/Booking";
 import SidebarAdmin from "./components/Admin/sidebar"
 import ClientComponent from "./components/Admin/clients"
+import ProductsPage from "./components/Admin/products";
 import LandingPage from "./pages/LandingPage";
 import History from "./pages/Admin/History";
 import HistoryPage from "./pages/HistoryPage";
@@ -34,7 +36,10 @@ import FrontCapture from "./components/verification/FrontCapture";
 import { Provider } from 'react-redux';
 import store from './redux/store';
 import ShopGrid from './pages/shopGrid'
+
 import RegistrationProgressGuard from "./components/RegistrationProgressGuard";
+import { Settings } from "lucide-react";
+
 const App = () => {
   return (
     <Provider store={store}>
@@ -42,11 +47,13 @@ const App = () => {
         <div className="min-h-screen flex flex-col">
           {/* Navbar */}
           <Navbar />
-
+          <div className="flex"> 
+          <SidebarAdmin />
 
           <div className="flex flex-1">
             {/* Sidebar */}
             <Sidebar />
+           
 
 
 
@@ -83,12 +90,14 @@ const App = () => {
                 <Route path="/admin/booking" element={<BookingComponent />} />
                 <Route path="/admin/clients" element={<ClientComponent />} />
                 <Route path="/admin/history" element={<HistoryPage />} />
-
+                <Route path="/admin/settings" element={<SettingsPage />} />
+                <Route path="/admin/products" element={<ProductsPage />} />
                 <Route path="/home" element={<LandingPage />} />
 
 
               </Routes>
             </main>
+          </div>
           </div>
         </div>
       </Router>

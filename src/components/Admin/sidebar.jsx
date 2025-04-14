@@ -10,14 +10,15 @@ const SidebarAdmin = () => {
   const isAdminPage = location.pathname.startsWith('/admin');
 
   const menuItems = [
-    { name: "Dashboard", icon: Home, path: "/admin/dashboard" },
+    { name: "Dashboard", icon: Home, path: "/admin/dashbord" },
     { name: "Analytics", icon: BarChart2, path: "/admin/analytics" },
     { name: "Clients", icon: Users, path: "/admin/clients" },
-    { name: "Bookings", icon: CalendarDays, path: "/admin/bookings" },
+    { name: "Bookings", icon: CalendarDays, path: "/admin/booking" },
     { name: "Products", icon: Box, path: "/admin/products" },
-    { name: "History", icon: History, path: "/admin/history" }, // Added History item
+    { name: "History", icon: History, path: "/admin/history" },
     { name: "Settings", icon: Settings, path: "/admin/settings" },
   ];
+  
 
   if (!isAdminPage) return null;
 
@@ -26,7 +27,7 @@ const SidebarAdmin = () => {
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`h-screen bg-white border-r border-gray-100 flex flex-col ${isExpanded ? "w-64" : "w-20"}`}
+      className={`h-screen bg-white border-r border-gray-100 flex flex-col fixed overflow-y-hidden ${isExpanded ? "w-64" : "w-20"}`}
     >
       {/* Logo Section */}
       <motion.div 
@@ -138,16 +139,6 @@ const SidebarAdmin = () => {
                       )}
                     </AnimatePresence>
                   </motion.div>
-
-                  {isActive && isExpanded && (
-                    <motion.div 
-                      layoutId="activeIndicator"
-                      className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-1.5 bg-teal-500 rounded-l-full"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ type: "spring", stiffness: 500 }}
-                    />
-                  )}
                 </>
               )}
             </NavLink>

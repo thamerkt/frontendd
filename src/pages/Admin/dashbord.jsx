@@ -6,7 +6,6 @@ import { IoPersonCircle } from "react-icons/io5";
 import "chart.js/auto";
 import { useState } from "react";
 import BookingComponent from '../../components/Admin/Booking';
-import ClientComponent from "../../components/Admin/clients";
 import { motion } from "framer-motion";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -77,7 +76,7 @@ const Dashboard = () => {
             <SidebarAdmin />
             
             {/* Main Content */}
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 ml-20 lg:ml-64 overflow-y-auto h-screen">
                 {/* Top Navigation */}
                 <header className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shadow-sm">
                     <div className="relative w-64">
@@ -390,7 +389,6 @@ const Dashboard = () => {
 
                     {/* Booking and Client Components */}
                     <BookingComponent />
-                    <ClientComponent />
                 </main>
             </div>
         </div>
