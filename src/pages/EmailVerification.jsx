@@ -4,6 +4,8 @@ import "react-toastify/dist/ReactToastify.css";
 import authStore from "../redux/authStore";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import saveProgress from "../components/utils/saveProgress";
+import useProgressGuard from "../components/utils/ProccessGuard";
 
 const EmailVerification = () => {
   const [code, setCode] = useState(new Array(6).fill(""));
@@ -12,8 +14,26 @@ const EmailVerification = () => {
   const navigate = useNavigate();
   const toastIdRef = useRef(null);
   const [countdown, setCountdown] = useState(30);
+  //useProgressGuard(1, 1); 
 
-  // Countdown timer for resend
+  const userId = Cookies.get("keycloak_user_id");
+  const email = "kthirithamer1@gmail.com";
+
+  // Save initial progress on mount
+  useEffect(() => {
+    const saveInitialProgress = async () => {
+      if (!userId) {
+        showToast("Missing user ID in cookies", "error");
+        return;
+      }
+
+      
+    };
+
+    saveInitialProgress();
+  }, [userId]);
+
+  // Countdown timer
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -36,7 +56,6 @@ const EmailVerification = () => {
       const newCode = [...code];
       newCode[index] = value;
       setCode(newCode);
-
       if (value !== "" && index < 5) {
         inputsRef.current[index + 1]?.focus();
       }
@@ -45,10 +64,9 @@ const EmailVerification = () => {
 
   const handlePaste = (e) => {
     e.preventDefault();
-    const pasteData = e.clipboardData.getData('text/plain').trim();
-    const pasteDigits = pasteData.split('').slice(0, 6);
-    
-    if (pasteDigits.every(d => !isNaN(d))) {
+    const pasteData = e.clipboardData.getData("text/plain").trim();
+    const pasteDigits = pasteData.split("").slice(0, 6);
+    if (pasteDigits.every((d) => !isNaN(d))) {
       const newCode = [...code];
       pasteDigits.forEach((digit, i) => {
         if (i < 6) newCode[i] = digit;
@@ -66,9 +84,18 @@ const EmailVerification = () => {
   const handleVerify = async () => {
     try {
       setLoading(true);
+      if (!userId) throw new Error("Missing user ID in cookies.");
       const verificationCode = code.join("");
       const response = await authStore.verify(verificationCode);
       showToast(response?.message || "Verification successful!");
+      
+      await saveProgress(userId, {
+        phase: 1,
+        currentStep: 1,
+        email,
+        verified: true,
+      });
+      
       setTimeout(() => navigate("/register/profil"), 1500);
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || "Verification failed";

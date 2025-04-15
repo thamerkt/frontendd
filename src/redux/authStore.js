@@ -9,6 +9,7 @@ const authStore = {
       const response = await axios.post(`${API_URL}/login/`, { email,password });
       Cookies.set("token", response.data.token.access_token);
       Cookies.set('keycloak_user_id', response.data.user_id);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
       return response.data;
     } catch (error) {
       throw error.response?.data?.message || "Login failed";

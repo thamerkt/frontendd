@@ -1,0 +1,230 @@
+.checkoutContainer {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 1rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  .progressBar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    position: relative;
+    counter-reset: step;
+  }
+  
+  .progressBar::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #e0e0e0;
+    z-index: 1;
+  }
+  
+  .progressStep {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    width: 20%;
+  }
+  
+  .progressStep span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 10px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    color: #666;
+    font-weight: bold;
+  }
+  
+  .progressStep.active span {
+    background-color: #1976d2;
+    color: white;
+  }
+  
+  .progressStep p {
+    color: #666;
+    font-size: 0.9rem;
+  }
+  
+  .progressStep.active p {
+    color: #1976d2;
+    font-weight: 500;
+  }
+  
+  .checkoutStep {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .checkoutStep h2 {
+    margin-top: 0;
+    color: #333;
+    font-size: 1.5rem;
+  }
+  
+  .checkoutStep h3 {
+    color: #444;
+    font-size: 1.2rem;
+    margin: 1.5rem 0 1rem;
+  }
+  
+  .formGroup {
+    margin-bottom: 1.2rem;
+  }
+  
+  .formGroup label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #555;
+  }
+  
+  .formGroup input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  
+  .formGroup input:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+  }
+  
+  .buttonGroup {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+  
+  .primaryButton {
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .primaryButton:hover {
+    background-color: #1565c0;
+  }
+  
+  .primaryButton:disabled {
+    background-color: #90caf9;
+    cursor: not-allowed;
+  }
+  
+  .secondaryButton {
+    background-color: white;
+    color: #1976d2;
+    border: 1px solid #1976d2;
+    padding: 0.8rem 1.5rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .secondaryButton:hover {
+    background-color: #e3f2fd;
+  }
+  
+  .optionGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  
+  .option {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .option:hover {
+    background-color: #f5f5f5;
+  }
+  
+  .optionSelected {
+    background-color: #e3f2fd;
+    border-color: #1976d2;
+  }
+  
+  .option input[type="radio"] {
+    margin-right: 1rem;
+  }
+  
+  .summaryBox {
+    border: 1px solid #eee;
+    padding: 1.5rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .summaryBox p {
+    margin: 0.5rem 0;
+    color: #555;
+  }
+  
+  .cartItem {
+    padding: 0.8rem 0;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .priceBreakdown {
+    margin-top: 1.5rem;
+  }
+  
+  .priceBreakdown p {
+    display: flex;
+    justify-content: space-between;
+    margin: 0.5rem 0;
+  }
+  
+  .priceBreakdown span {
+    font-weight: 500;
+  }
+  
+  .total {
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-top: 1rem !important;
+    padding-top: 1rem;
+    border-top: 1px solid #ddd;
+  }
+  
+  .cardForm {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+  }
+  
+  .formRow {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .formRow .formGroup {
+    flex: 1;
+  }

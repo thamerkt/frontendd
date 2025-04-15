@@ -1,18 +1,34 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import authStore from "../redux/authStore";
-import { FormContainer } from "../Customcss/custom";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import Cookies from "js-cookie";
 
 const clientId = '348131616981-85ms78t7eshj5l60pg07adpe9fc00tbt.apps.googleusercontent.com';
 
 const AuthForm = () => {
   const location = useLocation();
   const isRegister = location.pathname === "/register";
-  
+  const navigate = useNavigate();
+
+  // Check for user data in localStorage and redirect if found
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        const { role } = JSON.parse(userData);
+        if (role === 'customer') {
+          navigate('/home');
+        } else {
+          navigate('/collaboration');
+        }
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+  }, [navigate]);
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -26,8 +42,6 @@ const AuthForm = () => {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
-
-  const navigate = useNavigate();
 
   const validatePassword = (password) => {
     const regex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
@@ -54,16 +68,24 @@ const AuthForm = () => {
         const data = await response.json();
         console.log('User authenticated:', data);
 
-        if (data.userdata.access_token) {
-          localStorage.setItem('access_token', data.userdata.access_token);
-          Cookies.set('token', data.userdata.access_token);
-          Cookies.set('keycloak_user_id', data.userdata.user_id);
-          Cookies.set('first_name', data.userdata.first_name);
-          Cookies.set('last_name', data.userdata.last_name);
+        if (data.userdata) {
+          localStorage.setItem('user', JSON.stringify({
+            email: data.userdata.email,
+            role: data.userdata.role || 'customer',
+            first_name: data.userdata.first_name,
+            last_name: data.userdata.last_name
+          }));
         }
 
         toast.success("Google login successful! Redirecting...");
-        setTimeout(() => navigate("register/profil"), 3000);
+        setTimeout(() => {
+          const role = data.userdata?.role || 'customer';
+          if (role === 'customer') {
+            navigate('/home');
+          } else {
+            navigate('/collaboration');
+          }
+        }, 3000);
       } else {
         const errorData = await response.json();
         console.error('Authentication error:', errorData);
@@ -105,9 +127,22 @@ const AuthForm = () => {
         toast.success("Registration successful! Redirecting...");
         setTimeout(() => navigate("/register/email-verification"), 3000);
       } else {
-        await authStore.login(formData.email, formData.password);
+        const userData = await authStore.login(formData.email, formData.password);
+        localStorage.setItem('user', JSON.stringify({
+          email: userData.email,
+          role: userData.role || 'customer',
+          first_name: userData.first_name,
+          last_name: userData.last_name
+        }));
+        
         toast.success("Login successful! Redirecting...");
-        setTimeout(() => navigate("/"), 3000);
+        setTimeout(() => {
+          if (userData.role === 'customer') {
+            navigate('/home');
+          } else {
+            navigate('/collaboration');
+          }
+        }, 3000);
       }
     } catch (error) {
       console.error(error);

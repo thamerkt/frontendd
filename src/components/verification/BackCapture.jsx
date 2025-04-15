@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Cookies from "js-cookie";
 
-const BackCapture = ({ 
+const BackCapture = ({
   onNext,
   onCapture,
   onRetake,
@@ -19,14 +19,16 @@ const BackCapture = ({
   const [detectionStatus, setDetectionStatus] = useState('position');
   const [showUploadOption, setShowUploadOption] = useState(false);
   const [capturedImage, setCapturedImage] = useState(initialImage || null);
-  
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const detectionCanvasRef = useRef(null);
   const animationRef = useRef(null);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
-  
+  const [ip, setIP] = useState('');
+
+
   const [progress, setProgress] = useState(() => {
     const savedProgress = JSON.parse(localStorage.getItem('registrationProgress') || '{}');
     return savedProgress;
@@ -36,14 +38,25 @@ const BackCapture = ({
   const activeStep = currentStep || progress?.step || 3;
 
   useEffect(() => {
-    console.log('Current progress:',progress);
+    console.log('Current progress:', progress);
+    const url = new URL(window.location.href);
+    const hostname = url.hostname;
+
+    // Optional: Regex to make sure it's an IPv4 address
+    const ipv4Regex = /^(?:\d{1,3}\.){3}\d{1,3}$/;
+    if (ipv4Regex.test(hostname)) {
+      setIP(hostname);
+    } else {
+      setIP('Not an IPv4 address');
+    }
+
     const startCamera = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         const constraints = {
-          video: { 
+          video: {
             facingMode: 'environment',
             width: { ideal: 1280 },
             height: { ideal: 720 }
@@ -96,34 +109,34 @@ const BackCapture = ({
       const video = videoRef.current;
       const canvas = detectionCanvasRef.current;
       const ctx = canvas.getContext('2d');
-      
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       // Adjusted capture zone for back card
       const zoneWidth = (video.videoWidth * 80) / 100;
       const zoneHeight = (video.videoHeight * 55) / 100; // Slightly taller than front
       const zoneX = (video.videoWidth * 10) / 100;
       const zoneY = (video.videoHeight * 22.5) / 100; // Positioned slightly lower
-      
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
+
       const pulse = 0.7 + 0.3 * Math.sin(timestamp / 300);
-      
-      ctx.strokeStyle = 
+
+      ctx.strokeStyle =
         detectionStatus === 'ready' ? `rgba(74, 222, 128, ${pulse})` :
-        detectionStatus === 'aligned' ? `rgba(250, 204, 21, ${pulse})` :
-        `rgba(239, 68, 68, ${pulse})`;
-      
+          detectionStatus === 'aligned' ? `rgba(250, 204, 21, ${pulse})` :
+            `rgba(239, 68, 68, ${pulse})`;
+
       ctx.lineWidth = 4;
       ctx.setLineDash([10, 10]);
       ctx.strokeRect(zoneX, zoneY, zoneWidth, zoneHeight);
       ctx.setLineDash([]);
-      
+
       if (timestamp - lastUpdate > 1000) {
         detectionProgress = (detectionProgress + 0.2) % 1;
         lastUpdate = timestamp;
-        
+
         if (detectionProgress < 0.4) {
           setDetectionStatus('position');
         } else if (detectionProgress < 0.8) {
@@ -141,65 +154,65 @@ const BackCapture = ({
 
   const capturePhoto = async () => {
     if (!isCameraActive || detectionStatus !== 'ready') {
-        setError("Camera is not ready. Please try again.");
-        return;
+      setError("Camera is not ready. Please try again.");
+      return;
     }
 
     if (!navigator.onLine) {
-        setError("No internet connection. Please check your network.");
-        return;
+      setError("No internet connection. Please check your network.");
+      return;
     }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (video && canvas) {
-        const context = canvas.getContext("2d");
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = canvas.toDataURL("image/png");
+      const context = canvas.getContext("2d");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = canvas.toDataURL("image/png");
 
+      try {
+        setIsLoading(true);
+
+        // Convert base64 image to Blob
+        const blob = await (await fetch(imageData)).blob();
+        const file = new File([blob], "national_id_backend.jpg", { type: "image/jpeg" });
+
+        // ✅ Upload directly to /api/document/
+        const formData = new FormData();
+        formData.append('document_name', 'National ID Back');
+        formData.append('status', 'pending');
+        formData.append('document_url', file);
+        formData.append('uploaded_by', Cookies.get('keycloak_user_id'));
+        formData.append('document_type', '1');
+        formData.append('submission_date', new Date().toISOString());
+        formData.append('file', file);
+
+        let response;
         try {
-            setIsLoading(true);
-
-            // Convert base64 image to Blob
-            const blob = await (await fetch(imageData)).blob();
-            const file = new File([blob], "national_id_backend.jpg", { type: "image/jpeg" });
-
-            // ✅ Upload directly to /api/document/
-            const formData = new FormData();
-            formData.append('document_name', 'National ID Back');
-            formData.append('status', 'pending');
-            formData.append('document_url',file);
-            formData.append('uploaded_by', Cookies.get('keycloak_user_id')); 
-            formData.append('document_type', '1'); 
-            formData.append('submission_date', new Date().toISOString());
-            formData.append('file', file); 
-
-            let response;
-            try {
-                response = await axios.post(`http://${ip}:8000/api/document/`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-            } catch (err) {
-                console.error("Document API error:", err.response?.data || err.message);
-                setError("Failed to save document. Please try again.");
-                return;
-            }
-
-            // ✅ Set image after successful upload
-            setCapturedImage(imageData);
-            if (onCapture) onCapture(imageData);
-
-            console.log("Upload successful:", response.data);
-            return response.data;
-
+          response = await axios.post(`http://${ip}:8001/api/document/`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
         } catch (err) {
-            console.error("Unexpected error:", err);
-            setError("An unexpected error occurred. Please try again.");
-        } finally {
-            setIsLoading(false);
+          console.error("Document API error:", err.response?.data || err.message);
+          setError("Failed to save document. Please try again.");
+          return;
         }
+
+        // ✅ Set image after successful upload
+        setCapturedImage(imageData);
+        if (onCapture) onCapture(imageData);
+
+        console.log("Upload successful:", response.data);
+        return response.data;
+
+      } catch (err) {
+        console.error("Unexpected error:", err);
+        setError("An unexpected error occurred. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -221,7 +234,7 @@ const BackCapture = ({
   };
 
   const getStatusMessage = () => {
-    switch(detectionStatus) {
+    switch (detectionStatus) {
       case 'position': return "Move the back of your ID into the frame";
       case 'aligned': return "Align the back with the outline";
       case 'ready': return "Ready to capture! Hold steady";
@@ -231,10 +244,10 @@ const BackCapture = ({
 
   const handleNext = () => {
     // Update progress in localStorage before navigating
-    
+
     navigate('/register/identity-verification/verification/selfie')
-    
-    
+
+
   };
 
   return (
@@ -248,37 +261,34 @@ const BackCapture = ({
         <div className="mb-6 text-center">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">Back of ID Card</h2>
           <p className="text-sm sm:text-base text-gray-600">Ensure all details are clearly visible</p>
-          
+
           {/* Progress Stepper */}
           <div className="mt-6 overflow-x-auto px-2">
             <div className="flex justify-center min-w-max">
               {[1, 2, 3, 4, 5].map((step) => (
                 <div key={step} className="flex items-center">
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    step < activeStep ? 'bg-green-100 text-green-600' :
-                    step === activeStep ? 'bg-blue-600 text-white' :
-                    'bg-gray-100 text-gray-400'
-                  }`}>
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${step < activeStep ? 'bg-green-100 text-green-600' :
+                      step === activeStep ? 'bg-blue-600 text-white' :
+                        'bg-gray-100 text-gray-400'
+                    }`}>
                     {step < activeStep ? <FiCheck size={14} /> : step}
                   </div>
-                  
+
                   {step < 5 && (
-                    <div className={`h-1 w-6 ${
-                      step < activeStep ? 'bg-green-100' : 'bg-gray-200'
-                    }`} />
+                    <div className={`h-1 w-6 ${step < activeStep ? 'bg-green-100' : 'bg-gray-200'
+                      }`} />
                   )}
                 </div>
               ))}
             </div>
-            
+
             <div className="flex justify-between mt-2 px-1 text-center">
               {['Select', 'Front', 'Back', 'Selfie', 'Confirm'].map((label, index) => (
-                <span 
+                <span
                   key={label}
-                  className={`text-xs w-12 ${
-                    index + 1 === activeStep ? 'font-medium text-blue-600' :
-                    index + 1 < activeStep ? 'text-green-600' : 'text-gray-400'
-                  }`}
+                  className={`text-xs w-12 ${index + 1 === activeStep ? 'font-medium text-blue-600' :
+                      index + 1 < activeStep ? 'text-green-600' : 'text-gray-400'
+                    }`}
                 >
                   {label}
                 </span>
@@ -316,11 +326,10 @@ const BackCapture = ({
         </div>
 
         <div className="mb-4 text-center">
-          <p className={`text-sm font-medium ${
-            detectionStatus === 'ready' ? 'text-green-600' :
-            detectionStatus === 'aligned' ? 'text-yellow-500' :
-            'text-red-500'
-          }`}>
+          <p className={`text-sm font-medium ${detectionStatus === 'ready' ? 'text-green-600' :
+              detectionStatus === 'aligned' ? 'text-yellow-500' :
+                'text-red-500'
+            }`}>
             {capturedImage ? "Back captured successfully" : getStatusMessage()}
           </p>
         </div>
@@ -366,11 +375,10 @@ const BackCapture = ({
             <button
               onClick={capturePhoto}
               disabled={!isCameraActive || detectionStatus !== 'ready'}
-              className={`py-2 px-4 rounded-full flex-1 flex items-center justify-center ${
-                (!isCameraActive || detectionStatus !== 'ready') 
-                  ? 'bg-gray-300 text-gray-500' 
+              className={`py-2 px-4 rounded-full flex-1 flex items-center justify-center ${(!isCameraActive || detectionStatus !== 'ready')
+                  ? 'bg-gray-300 text-gray-500'
                   : 'bg-blue-600 text-white'
-              }`}
+                }`}
             >
               <FiCamera className="mr-2" /> Capture Back
             </button>

@@ -209,7 +209,7 @@ const FrontCapture = ({
   
       let response1;
       try {
-        response1 = await axios.post(`http://${ip}:8000/api/upload-image/`, formDataImage, {
+        response1 = await axios.post(`http://${ip}:8001/api/upload-image/`, formDataImage, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       } catch (err) {
@@ -238,7 +238,7 @@ const FrontCapture = ({
   
       let response2;
       try {
-        response2 = await axios.post(`http://${ip}:8000/api/document/`, formData, {
+        response2 = await axios.post(`http://${ip}:8001/api/document/`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       } catch (err) {
@@ -292,7 +292,7 @@ const FrontCapture = ({
 
           // Make API call
           const response = await axios.post(
-            `http://${ip}:8000/api/document/`,
+            `http://${ip}:8001/api/document/`,
             formData,
             {
               headers: {

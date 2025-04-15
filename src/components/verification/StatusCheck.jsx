@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiCheckCircle, FiMail, FiClock, FiArrowRight, FiCheck, FiAlertCircle } from 'react-icons/fi';
 import axios from 'axios';
+import Cookies from 'js-cookie'
 
 const VerificationComplete = () => {
   const [countdown, setCountdown] = useState(5);
   const [error, setError] = useState(null);
   const [uploadStatus, setUploadStatus] = useState('pending');
   const navigate = useNavigate();
+  const [ip, setIP] = useState('');
   const [progress, setProgress] = useState(() => {
     const savedProgress = JSON.parse(localStorage.getItem('registrationProgress') || '{}');
     return savedProgress;
@@ -22,6 +24,28 @@ const VerificationComplete = () => {
   ];
 
   useEffect(() => {
+    // Safely get hostname
+    let hostname = '';
+    try {
+      if (typeof window !== 'undefined' && window.location) {
+        hostname = window.location.hostname;
+      } else {
+        throw new Error('Window location not available');
+      }
+    } catch (err) {
+      console.error('Error getting hostname:', err);
+      setIP('localhost');
+      hostname = 'localhost';
+    }
+
+    // Optional: Regex to make sure it's an IPv4 address
+    const ipv4Regex = /^(?:\d{1,3}\.){3}\d{1,3}$/;
+    if (ipv4Regex.test(hostname)) {
+      setIP(hostname);
+    } else {
+      setIP('localhost'); // Default to localhost if not IP
+    }
+
     console.log(progress)
     const timer = setInterval(() => {
       setCountdown(prev => {
@@ -37,11 +61,11 @@ const VerificationComplete = () => {
     const uploadFiles = async () => {
       try {
         setUploadStatus('uploading');
-        
+
         // Validate localStorage data exists
         const storedImageJson = localStorage.getItem('capturedImage');
         const selfieStoredJson = localStorage.getItem('selfie');
-        
+
         if (!storedImageJson || !selfieStoredJson) {
           throw new Error('Missing document data in storage');
         }
@@ -49,7 +73,7 @@ const VerificationComplete = () => {
         // Parse with error handling
         const storedImage = safeJsonParse(storedImageJson);
         const selfieStored = safeJsonParse(selfieStoredJson);
-        
+
         if (!storedImage?.imageData || !selfieStored?.imageData) {
           throw new Error('Invalid image data format');
         }
@@ -60,7 +84,7 @@ const VerificationComplete = () => {
         }
 
         const formData = new FormData();
-        
+
         // Process files with timeout
         const fileProcessing = Promise.all([
           processImage(storedImage),
@@ -71,10 +95,14 @@ const VerificationComplete = () => {
 
         formData.append('image', docFile);
         formData.append('selfie', selfieFile);
+        formData.append('keycloak_user',Cookies.get('keycloak_user_id'))
+
+        // Use the IP state or fallback to localhost
+        const apiUrl = `http://${ip || 'localhost'}:8001/api/publish-event/`;
 
         // Upload with timeout
         const uploadResponse = await timeout(
-          axios.post(`http://${ip}:8000/api/publish-event/`, formData, {
+          axios.post(apiUrl, formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
             validateStatus: () => true // Handle all status codes
           }),
@@ -96,7 +124,7 @@ const VerificationComplete = () => {
     uploadFiles();
 
     return () => clearInterval(timer);
-  }, [navigate]);
+  }, [navigate, ip]);
 
   // Helper functions
   const safeJsonParse = (str) => {
@@ -172,14 +200,36 @@ const VerificationComplete = () => {
 
       {/* Progress Stepper */}
       <div className="mb-8">
-        {/* ... (keep existing stepper code) ... */}
+        <nav className="flex items-center justify-center">
+          <ol className="flex items-center space-x-4">
+            {steps.map((step) => (
+              <li key={step.name} className="flex items-center">
+                {step.completed ? (
+                  <span className={`flex items-center justify-center w-8 h-8 rounded-full ${step.current ? 'bg-blue-600 text-white' : 'bg-green-100 text-green-800'}`}>
+                    {step.current ? (
+                      <FiClock className="w-4 h-4" />
+                    ) : (
+                      <FiCheck className="w-4 h-4" />
+                    )}
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-800">
+                    {step.id}
+                  </span>
+                )}
+                {step.id !== steps.length && (
+                  <span className="ml-4 h-px w-12 bg-gray-300"></span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </nav>
       </div>
 
       {/* Success Illustration */}
       <div className="relative w-32 h-32 mx-auto mb-6">
-        <div className={`absolute inset-0 rounded-full flex items-center justify-center ${
-          uploadStatus === 'failed' ? 'bg-red-100 text-red-500' : 'bg-blue-100 text-blue-500'
-        }`}>
+        <div className={`absolute inset-0 rounded-full flex items-center justify-center ${uploadStatus === 'failed' ? 'bg-red-100 text-red-500' : 'bg-blue-100 text-blue-500'
+          }`}>
           {uploadStatus === 'failed' ? (
             <FiAlertCircle className="text-5xl" />
           ) : (
@@ -194,8 +244,8 @@ const VerificationComplete = () => {
       {/* Success/Error Message */}
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">
-          {uploadStatus === 'failed' 
-            ? 'Documents submitted with issues' 
+          {uploadStatus === 'failed'
+            ? 'Documents submitted with issues'
             : 'Your Documents are submitted'}
         </h2>
         <p className="text-gray-600">
@@ -206,10 +256,26 @@ const VerificationComplete = () => {
       </div>
 
       {/* Next Steps */}
-      <div className={`p-4 rounded-lg mb-6 ${
-        uploadStatus === 'failed' ? 'bg-orange-50' : 'bg-teal-50'
-      }`}>
-        {/* ... (keep existing next steps content) ... */}
+      <div className={`p-4 rounded-lg mb-6 ${uploadStatus === 'failed' ? 'bg-orange-50' : 'bg-teal-50'
+        }`}>
+        <h3 className="font-medium mb-2">
+          {uploadStatus === 'failed' ? 'What to do next:' : 'Next steps:'}
+        </h3>
+        <ul className="list-disc pl-5 space-y-1 text-sm">
+          {uploadStatus === 'failed' ? (
+            <>
+              <li>You can continue using your account</li>
+              <li>Try uploading your documents again later</li>
+              <li>Contact support if the problem persists</li>
+            </>
+          ) : (
+            <>
+              <li>Access all account features immediately</li>
+              <li>Check your email for confirmation</li>
+              <li>Set up additional security options</li>
+            </>
+          )}
+        </ul>
       </div>
 
       {/* Countdown */}

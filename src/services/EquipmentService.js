@@ -31,6 +31,7 @@ const EquipmentService = {
   createCategory: (data) => request("post", `${API_URL}/categories/`, data, true),
   updateCategory: (id, data) => request("put", `${API_URL}/categories/${id}/`, data, true),
   deleteCategory: (id) => request("delete", `${API_URL}/categories/${id}/`, null, true),
+  fetchImages: () => request("get", `${API_URL}/images/`),
 };
 
 export default EquipmentService;

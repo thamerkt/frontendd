@@ -1,37 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-// Category data structure
-const EQUIPMENT_CATEGORIES = {
-  'Sports Equipment': {
-    'Team Sports': ['Football', 'Basketball', 'Baseball', 'Soccer', 'Volleyball'],
-    'Individual Sports': ['Tennis', 'Golf', 'Boxing', 'Martial Arts', 'Cycling'],
-    'Fitness': ['Cardio Machines', 'Strength Training', 'Yoga & Pilates', 'CrossFit', 'Recovery']
-  },
-  'Medical Equipment': {
-    'Diagnostic': ['Stethoscopes', 'Blood Pressure Monitors', 'Thermometers', 'Otoscopes'],
-    'Treatment': ['Nebulizers', 'Infusion Pumps', 'Surgical Instruments'],
-    'Mobility Aids': ['Wheelchairs', 'Walkers', 'Canes', 'Crutches']
-  },
-  'Construction Equipment': {
-    'Heavy Machinery': ['Excavators', 'Bulldozers', 'Cranes', 'Loaders'],
-    'Tools': ['Power Tools', 'Hand Tools', 'Measuring Tools', 'Safety Equipment'],
-    'Materials Handling': ['Forklifts', 'Hoists', 'Conveyors']
-  },
-  'Audio Equipment': {
-    'Recording': ['Microphones', 'Audio Interfaces', 'Studio Monitors'],
-    'Live Sound': ['PA Systems', 'Mixers', 'Amplifiers'],
-    'DJ Equipment': ['Turntables', 'Controllers', 'Lighting']
-  },
-  'Kitchen Equipment': {
-    'Commercial': ['Ovens', 'Refrigerators', 'Food Processors', 'Dishwashers'],
-    'Home': ['Blenders', 'Coffee Makers', 'Toasters', 'Cookware'],
-    'Baking': ['Mixers', 'Ovens', 'Measuring Tools', 'Decorating']
-  }
-};
+const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const CATEGORIES_URL = `${API_BASE_URL}/categories/`;
+const SUBCATEGORIES_URL = `${API_BASE_URL}/subcatgeory/`;
 
 const EquipmentCategories = () => {
+  const [categories, setCategories] = useState({});
   const [expandedCategories, setExpandedCategories] = useState({});
   const [selectedCategories, setSelectedCategories] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        // Fetch both categories and subcategories in parallel
+        const [categoriesResponse, subcategoriesResponse] = await Promise.all([
+          axios.get(CATEGORIES_URL),
+          axios.get(SUBCATEGORIES_URL)
+        ]);
+
+        const categoriesData = categoriesResponse.data;
+        const subcategoriesData = subcategoriesResponse.data;
+
+        // Process the data into the required structure
+        const processedCategories = {};
+
+        // First filter out categories with empty names
+        const validCategories = categoriesData.filter(cat => cat.name.trim() !== '');
+
+        validCategories.forEach(category => {
+          // Get all subcategories for this category
+          const categorySubs = subcategoriesData
+            .filter(sub => sub.category === category.id)
+            .map(sub => sub.name);
+
+          // Only add to our structure if there are subcategories
+          if (categorySubs.length > 0) {
+            processedCategories[category.name] = {
+              // For now we'll just use the subcategory names as both keys and values
+              // You might want to adjust this based on your actual needs
+              ...categorySubs.reduce((acc, sub) => {
+                acc[sub] = [sub]; // Using sub as both the key and the single item
+                return acc;
+              }, {})
+            };
+          }
+        });
+
+        setCategories(processedCategories);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   // Toggle category expansion
   const toggleCategory = (category) => {
@@ -72,11 +99,15 @@ const EquipmentCategories = () => {
     return selectedCategories[mainCat]?.[subCat]?.includes(item) || false;
   };
 
+  if (loading) return <div className="p-4 text-center">Loading categories...</div>;
+  if (error) return <div className="p-4 text-center text-red-500">Error: {error}</div>;
+  if (Object.keys(categories).length === 0) return <div className="p-4 text-center">No categories found</div>;
+
   return (
     <div className="w-full max-w-md bg-white rounded-lg shadow-sm p-4">
       <h2 className="text-lg font-semibold mb-4 text-gray-800">Equipment Categories</h2>
       <div className="space-y-3">
-        {Object.entries(EQUIPMENT_CATEGORIES).map(([mainCategory, subCategories]) => (
+        {Object.entries(categories).map(([mainCategory, subCategories]) => (
           <div key={mainCategory} className="border-b border-gray-100 pb-2 last:border-0">
             <div className="flex items-center justify-between">
               <label className="flex items-center cursor-pointer">

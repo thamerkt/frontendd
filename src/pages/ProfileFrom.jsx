@@ -11,6 +11,7 @@ import { Country, State } from "country-state-city";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FiX } from "react-icons/fi";
+import useProgressGuard from "../components/utils/ProccessGuard"
 
 
 
@@ -19,11 +20,8 @@ const ProfileForm = () => {
   const [role, setRole] = useState('customer');
   const navigate = useNavigate();
   const [newProgress, setNewProgress] = useState({});
-  const [progress, setProgress] = useState({
-    phase: "profile",
-    step: 3,
-    totalSteps: 3
-  });
+  
+  //useProgressGuard(1, 2); 
   
   // Form state management
   const [formData, setFormData] = useState({
@@ -65,23 +63,23 @@ const ProfileForm = () => {
 
   // Effects
   useEffect(() => {
-    const savedProgress = localStorage.getItem('registrationProgress');
-    if (savedProgress) {
-      setProgress(JSON.parse(savedProgress));
-    }
-    if (selectedCountry) {
-      const countryStates = State.getStatesOfCountry(selectedCountry);
-      setStates(countryStates);
-      setFormData(prev => ({
-        ...prev,
-        address: {
-          ...prev.address,
-          state: countryStates.length ? countryStates[0].name : ""
-        },
-      }));
-    } else {
-      setStates([]);
-    }
+   
+  
+    
+      if (selectedCountry) {
+        const countryStates = State.getStatesOfCountry(selectedCountry);
+        setStates(countryStates);
+        setFormData(prev => ({
+          ...prev,
+          address: {
+            ...prev.address,
+            state: countryStates.length ? countryStates[0].name : ""
+          },
+        }));
+      } else {
+        setStates([]);
+      }
+    
   }, [selectedCountry]);
 
   // Handlers
@@ -173,36 +171,61 @@ const ProfileForm = () => {
     }
 
     try {
-      const formDataToSend = new FormData();
-
-      // Append form data
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'address') {
-          Object.entries(value).forEach(([subKey, subValue]) => {
-            formDataToSend.append(`address[${subKey}]`, subValue);
-          });
-        } else if (value) {
-          formDataToSend.append(key, value);
-        }
-      });
-
-      // Append physical profile data
+      // Create the structured data object
+      const requestData = {
+        address: {
+          street: formData.address.street || "",
+          city: formData.address.city || "",
+          state: formData.address.state || "",
+          country: formData.address.country || "",
+          postal_code: formData.address.postal_code || ""
+        },
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        phone: formData.phone,
+        user: formData.user
+      };
+  
+      // For physical profile, add additional fields
       if (selectedProfile === "physical") {
-        Object.entries(physicalProfileData).forEach(([key, value]) => {
-          if (key !== 'profile_picture' && value) {
-            formDataToSend.append(key, value);
-          }
-        });
-
+        requestData.date_of_birth = physicalProfileData.date_of_birth || "";
+        requestData.gender = physicalProfileData.gender || "";
+      }
+  
+      // Create FormData for potential file upload
+      const formDataToSend = new FormData();
+  
+      // Append all fields including the nested address
+      formDataToSend.append('first_name', requestData.first_name);
+      formDataToSend.append('last_name', requestData.last_name);
+      formDataToSend.append('phone', requestData.phone);
+      formDataToSend.append('user', requestData.user);
+  
+      // Append address fields individually
+      formDataToSend.append('address[street]', requestData.address.street);
+      formDataToSend.append('address[city]', requestData.address.city);
+      formDataToSend.append('address[state]', requestData.address.state);
+      formDataToSend.append('address[country]', requestData.address.country);
+      formDataToSend.append('address[postal_code]', requestData.address.postal_code);
+  
+      // Append physical profile fields if needed
+      if (selectedProfile === "physical") {
+        if (requestData.date_of_birth) {
+          formDataToSend.append('date_of_birth', requestData.date_of_birth);
+        }
+        if (requestData.gender) {
+          formDataToSend.append('gender', requestData.gender);
+        }
         if (physicalProfileData.profile_picture) {
           formDataToSend.append('profile_picture', physicalProfileData.profile_picture);
         }
       }
-
+  
       // Submit data
       const response = await Profileservice.addProfil(formDataToSend, role);
       Cookies.set('id', response.id);
-
+      localStorage.setItem("role", role);
+  
       if (selectedProfile === "physical") {
         formDataToSend.append('profil', response.id);
         await Profileservice.addPhysicalProfile(formDataToSend);
@@ -214,10 +237,10 @@ const ProfileForm = () => {
           navigate("/register/business-details");
         }, 3000);
       }
-
+  
       localStorage.setItem('registrationProgress', JSON.stringify(newProgress));
       toast.success('Profile created successfully!');
-
+  
     } catch (error) {
       console.error("Profile creation error:", error);
       toast.error(error.response?.data?.message || "Failed to create profile");

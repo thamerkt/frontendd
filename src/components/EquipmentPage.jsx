@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import EquipmentService from "../services/EquipmentService";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
 import { 
   FaCreditCard, 
   FaMapMarkerAlt, 
@@ -11,398 +11,519 @@ import {
   FaShoppingBag, 
   FaStore,
   FaStar, 
-  FaRegStar, 
-  FaChevronDown, 
-  FaChevronUp,
+  FaRegStar,
   FaChevronLeft,
-  FaChevronRight
+  FaChevronRight,
+  FaHeart,
+  FaTag,
+  FaBox,
+  FaSearchPlus,
+  FaTimes
 } from "react-icons/fa";
+import { FiCheckCircle } from "react-icons/fi";
+
+const DEFAULT_PRODUCT_IMAGE = "/assets/default-product.jpg";
 
 export default function ProductDetail() {
-  const [selectedImage, setSelectedImage] = useState("data:image/jpeg;base64,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");
-
-  const contractLink = "/terms-and-conditions";
-  const [showFullDescription, setShowFullDescription] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(0);
   const [activeTab, setActiveTab] = useState('description');
   const [currentIndex, setCurrentIndex] = useState(0);
-  const carouselRef = useRef(null);
-  const [id,setId]=useState(1)
-  const [product,setProduct]=useState({})
-  const [products,setProducts]=useState([])
-  const [categorie,setCategorie]=useState("Electronics")
+  const [product, setProduct] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [wishlist, setWishlist] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [isHovering, setIsHovering] = useState(false);
+  const [showZoomModal, setShowZoomModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [images, setImages] = useState([]);
 
-  // Related products data
-  
+  const productId = 2; // Fixed ID as per requirement
 
-  // Reviews data
-  const reviews = [
-    {
-      id: 1,
-      name: "Alex Johnson",
-      rating: 5,
-      date: "2023-10-15",
-      comment: "Absolutely love these joggers! The fit is perfect and they're so comfortable."
-    },
-    {
-      id: 2,
-      name: "Sam Wilson",
-      rating: 4,
-      date: "2023-09-28",
-      comment: "Great quality fabric, though they run slightly large. Would recommend sizing down."
-    },
-    {
-      id: 3,
-      name: "Taylor Smith",
-      rating: 5,
-      date: "2023-08-10",
-      comment: "My go-to pants for casual Fridays. Get compliments every time I wear them!"
-    }
-  ];
+  // Memoized product images
+  const productImages = useMemo(() => {
+    return images.length > 0 ? images.map(img => img.url) : [DEFAULT_PRODUCT_IMAGE];
+  }, [images]);
 
-  // Product specifications
-  const specifications = [
-    { name: "Material", value: "100% Cotton" },
-    { name: "Fit", value: "Relaxed" },
-    { name: "Length", value: "Ankle" },
-    { name: "Closure", value: "Elastic Waist" },
-    { name: "Care Instructions", value: "Machine Wash Cold" },
-    { name: "Origin", value: "Made in USA" }
-  ];
+  // Memoized visible products for carousel
+  const visibleProducts = useMemo(() => {
+    return relatedProducts.slice(currentIndex * 5, (currentIndex * 5) + 5);
+  }, [relatedProducts, currentIndex]);
+
+  // Fetch all required data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch all data in parallel
+        const [productData, allProducts, productImages] = await Promise.all([
+          EquipmentService.fetchRentalById(productId),
+          EquipmentService.fetchRentals(),
+          axios.get(`http://0.0.0.0:8000/api/images/?stuff=${productId}`)
+        ]);
+
+        setProduct(productData);
+        setImages(productImages.data || []);
+        
+        // Filter related products by category and exclude current product
+        const relatedByCategory = productData?.category?.name 
+          ? await EquipmentService.fetchRentalsBy(productData.category.name)
+          : [];
+        
+        setRelatedProducts([
+          ...allProducts.filter(p => p.id !== productId),
+          ...relatedByCategory.filter(p => p.id !== productId)
+        ].slice(0, 10)); // Limit to 10 related products
+
+      } catch (err) {
+        console.error("Failed to fetch product data:", err);
+        setError("Failed to load product details");
+        toast.error("Failed to load product details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [productId]);
+
+  // Handlers
+  const handleImageSelect = (index) => setSelectedImage(index);
+  const increaseQuantity = () => setQuantity(prev => prev + 1);
+  const decreaseQuantity = () => quantity > 1 && setQuantity(prev => prev - 1);
 
   const prevSlide = () => {
-    setCurrentIndex(prev => (prev === 0 ? Math.ceil(products.length / 3) - 1 : prev - 1));
+    setCurrentIndex(prev => (prev === 0 ? Math.ceil(relatedProducts.length / 5) - 1 : prev - 1));
   };
 
   const nextSlide = () => {
-    setCurrentIndex(prev => (prev === Math.ceil(products.length / 3) - 1 ? 0 : prev + 1));
+    setCurrentIndex(prev => (prev === Math.ceil(relatedProducts.length / 5) - 1 ? 0 : prev + 1));
   };
 
-  const getTransformValue = () => {
-    return `translateX(-${currentIndex * 100}%)`;
-  };
-  useEffect(() => {
-    const fetchData = async () => {
-      if (id) {
-        try {
-          const response = await EquipmentService.fetchRentalById(id);
-          setProduct(response)
-          console.log("Equipment:", response);
-        } catch (error) {
-          console.log("Failed to get product", error);
-        }
-      }
-      if(categorie){
-        try {
-          const response1 = await EquipmentService.fetchRentalsBy(categorie);
-          setProducts(response1)
-          console.log("Equipments:", response1);
-        } catch (error) {
-          console.log("Failed to get product", error);
-        }
+  // Loading and error states
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
+      </div>
+    );
+  }
 
-      }
-    };
-  
-    fetchData();
-  }, [id]);
+  if (error || !product) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error || "Product not found"}
+        </div>
+      </div>
+    );
+  }
+
+  // Tab content components
+  const tabContent = {
+    description: (
+      <div className="prose max-w-none text-gray-700">
+        {product.detailed_description ? (
+          <div dangerouslySetInnerHTML={{ __html: product.detailed_description }} />
+        ) : (
+          <p>No description available for this product.</p>
+        )}
+      </div>
+    ),
+    specs: (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {product.specifications?.length > 0 ? (
+          product.specifications.map((spec, index) => (
+            <motion.div 
+              key={index} 
+              className="flex p-3 hover:bg-gray-50 rounded-lg transition-colors"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <span className="text-gray-600 w-40 font-medium">{spec.name}</span>
+              <span className="text-gray-800">{spec.value}</span>
+            </motion.div>
+          ))
+        ) : (
+          <p className="text-gray-500">No specifications available.</p>
+        )}
+      </div>
+    ),
+    reviews: (
+      <div className="space-y-6">
+        {product.reviews?.length > 0 ? (
+          product.reviews.map((review, index) => (
+            <motion.div 
+              key={review.id} 
+              className="border-b border-gray-100 pb-6 last:border-0"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <div className="flex justify-between mb-2">
+                <span className="font-medium text-gray-900">{review.name}</span>
+                <span className="text-gray-500 text-sm">{review.date}</span>
+              </div>
+              <div className="flex text-teal-500 mb-2">
+                {[...Array(5)].map((_, i) => (
+                  i < review.rating ? <FaStar key={i} /> : <FaRegStar key={i} />
+                ))}
+              </div>
+              <p className="text-gray-700">{review.comment}</p>
+            </motion.div>
+          ))
+        ) : (
+          <p className="text-gray-500">No reviews yet. Be the first to review!</p>
+        )}
+      </div>
+    )
+  };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Image Section */}
-        <div>
-        <div className="w-full aspect-square rounded-lg shadow-md mb-4 overflow-hidden">
-            <Zoom
-              zoomMargin={40}
-              overlayBgColorEnd="rgba(255, 255, 255, 0.95)"
-              zoomImage={{
-                src: selectedImage.replace('-thumb', '-full') || selectedImage,
-                alt: 'Grey Acid Wash Wide Leg Jogger - Zoomed View'
-              }}
-            >
-              <img
-                alt="Grey Acid Wash Wide Leg Jogger"
-                src={selectedImage}
-                className="w-full h-full object-cover cursor-zoom-in"
-                style={{ display: 'block' }}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Product Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="grid md:grid-cols-2 gap-8 md:gap-12"
+      >
+        {/* Image Gallery */}
+        <div className="space-y-4">
+          <div 
+            className="relative w-full h-96 bg-gray-50 rounded-xl overflow-hidden shadow-sm"
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+          >
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={selectedImage}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                src={productImages[selectedImage]}
+                alt={product.stuffname}
+                className={`w-full h-full object-contain cursor-pointer ${isHovering ? 'scale-110' : 'scale-100'} transition-transform duration-300`}
               />
-            </Zoom>
+            </AnimatePresence>
+            
+            {isHovering && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 cursor-pointer"
+                onClick={() => setShowZoomModal(true)}
+              >
+                <div className="p-3 bg-white bg-opacity-80 rounded-full">
+                  <FaSearchPlus className="text-gray-700 text-2xl" />
+                </div>
+              </motion.div>
+            )}
+            
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setWishlist(!wishlist)}
+              className={`absolute top-4 right-4 p-3 rounded-full shadow-md ${wishlist ? 'bg-teal-500 text-white' : 'bg-white text-gray-700'} transition-colors duration-300 z-10`}
+            >
+              <FaHeart className={`${wishlist ? 'fill-current' : ''}`} />
+            </motion.button>
           </div>
-          <div className="flex gap-2">
-            {["/img1.jpg", "/img2.jpg", "/img3.jpg"].map((img, index) => (
-              <div key={index} className="w-20 h-20 rounded-md overflow-hidden">
+          
+          <div className="grid grid-cols-4 gap-3">
+            {images.map((img, index) => (
+              <motion.div
+                key={index}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`relative aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all duration-300 ${
+                  selectedImage === index ? "border-teal-500 shadow-md" : "border-transparent hover:border-gray-200"
+                }`}
+                onClick={() => handleImageSelect(index)}
+              >
                 <img
-                  src={img}
+                  src={img.url}
                   alt={`Thumbnail ${index + 1}`}
-                  className={`w-full h-full object-cover cursor-pointer border-2 ${
-                    selectedImage === img ? "border-black" : "border-transparent hover:border-gray-300"
-                  }`}
-                  onClick={() => setSelectedImage(img)}
+                  className="w-full h-full object-cover"
                 />
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
 
-        {/* Details Section */}
-        <div className="space-y-4">
-          <h1 className="text-3xl font-bold">{product.stuffname}</h1>
-          <div className="flex items-center gap-2">
-            <p className="text-green-600 font-medium">{product.stuff_management?.availability}</p>
-          </div>
+        {/* Product Info */}
+        <div className="space-y-6">
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{product.stuffname}</h1>
           
-          {/* Rating */}
-          <div className="flex items-center gap-1 text-yellow-500">
-            {[...Array(4)].map((_, i) => (
-              <FaStar key={i} />
-            ))}
-            <FaRegStar />
-            <span className="text-gray-600 text-sm ml-2">{product.stuff_management?.rating} (212 reviews)</span>
-          </div>
-          
-          {/* Price */}
-          <div>
-            <span className="text-2xl font-semibold">{product.price_per_day}</span>
-            <span className="text-gray-400 line-through ml-2">$290.00</span>
-            <span className="text-gray-600 text-sm ml-1">per day</span>
-          </div>
-          
-          <p className="text-gray-700">
-            {product.short_description}
-          </p>
-          
-          {/* Product State */}
-          <div>
-            <span className="text-gray-600">Condition:</span>
-            <span className="text-green-600 font-medium ml-2">{product.state}</span>
-          </div>
-          
-          {/* Rental Location */}
-          <div className="flex items-center gap-2 text-gray-700">
-            <FaMapMarkerAlt className="text-gray-500" />
-            <span className="font-medium">Rental Location:</span>
-            <span>{product.rental_location}</span>
-          </div>
-          
-          {/* Contract Requirement */}
-          <div className="flex items-center justify-between text-gray-700">
-            <div className="flex items-center gap-2">
-              <FaFileContract className="text-gray-500" />
-              <span className="font-medium">Contract Required:</span>
+          <div className="flex items-center">
+            <div className="flex text-teal-500 mr-2">
+              {[...Array(4)].map((_, i) => (
+                <FaStar key={i} className="text-sm" />
+              ))}
+              <FaRegStar className="text-sm" />
             </div>
-            <a 
-              href={contractLink} 
-              className="text-blue-600 hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View Rental Agreement
-            </a>
+            <span className="text-gray-500 text-sm">4.0 (212 reviews)</span>
           </div>
           
-          {/* Action Buttons */}
-          <div className="flex justify-between items-center pt-2">
-            <button className="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 w-2/3">
+          <div className="flex items-baseline gap-3 mt-2">
+            <span className="text-2xl font-bold text-teal-700">${product.price_per_day}/day</span>
+            {product.original_price && (
+              <span className="text-gray-400 text-sm line-through">${product.original_price}</span>
+            )}
+          </div>
+          
+          <p className="text-gray-700 mt-4">{product.short_description}</p>
+          
+          <div className="flex flex-wrap gap-4 mt-4">
+            <div className="flex items-center text-sm text-gray-600">
+              <FaBox className="mr-2 text-gray-400" />
+              <span>SKU: <span className="font-medium">PRD-{product.id}</span></span>
+            </div>
+            <div className="flex items-center text-sm text-gray-600">
+              <FaTag className="mr-2 text-gray-400" />
+              <span>Category: <span className="font-medium">{product.category?.name || 'Uncategorized'}</span></span>
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Rental Quantity</label>
+            <div className="flex items-center">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={decreaseQuantity}
+                className="px-3 py-2 border border-gray-300 rounded-l-md bg-gray-50 text-gray-600 hover:bg-gray-100 focus:outline-none"
+              >
+                -
+              </motion.button>
+              <div className="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-900 text-center w-16">
+                {quantity}
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={increaseQuantity}
+                className="px-3 py-2 border border-gray-300 rounded-r-md bg-gray-50 text-gray-600 hover:bg-gray-100 focus:outline-none"
+              >
+                +
+              </motion.button>
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 mt-6">
+            <motion.button
+              whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(13, 148, 136, 0.3)" }}
+              whileTap={{ scale: 0.98 }}
+              className="flex-1 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-all duration-300 shadow-md"
+            >
               <FaShoppingBag />
               Rent Now
-            </button>
-            <a href="/store" className="flex items-center gap-2 text-gray-700 hover:text-black">
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)" }}
+              whileTap={{ scale: 0.98 }}
+              className="flex-1 border border-gray-200 hover:border-teal-500 bg-white hover:bg-gray-50 py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-all duration-300 shadow-sm"
+            >
               <FaStore />
               View in Store
-            </a>
+            </motion.button>
           </div>
           
-          <p className="text-gray-500 text-sm">
-            Enjoy <span className="font-semibold">FREE express shipping & Free Returns</span> on orders over $35!
-          </p>
+          <div className="mt-6 space-y-3">
+            <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+              <FiCheckCircle className="text-teal-500 flex-shrink-0" />
+              <span className="text-gray-700">Condition: <span className="font-medium">{product.stuff_management?.condition || 'Excellent'}</span></span>
+            </div>
+            
+            <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+              <FaMapMarkerAlt className="text-gray-400 flex-shrink-0" />
+              <span className="text-gray-700">Location: <span className="font-medium">{product.rental_location || 'Main Warehouse'}</span></span>
+            </div>
+            
+            <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+              <FaFileContract className="text-gray-400 flex-shrink-0" />
+              <span className="text-gray-700">Contract: </span>
+              <a href={product.stuff_management?.required_file || "#"} className="text-teal-600 hover:underline font-medium">View Agreement</a>
+            </div>
+          </div>
           
-          {/* Payment Methods */}
-          <div className="pt-4 border-t border-gray-200">
+          <div className="mt-6 pt-4 border-t border-gray-100">
             <div className="flex items-center gap-2 text-gray-700 mb-3">
-              <FaCreditCard className="text-gray-500" />
+              <FaCreditCard className="text-gray-400" />
               <span className="font-medium">Payment Methods:</span>
             </div>
             <div className="flex flex-wrap gap-4">
-              <img width={60} src="/assets/visa.png" alt="Visa" className="h-8 object-contain" />
-              <img width={60} src="/assets/master-card.png" alt="Mastercard" className="h-8 object-contain" />
-              <img width={60} src="/assets/flousi.png" alt="Flousi" className="h-8 object-contain" />
-              <img width={60} src="/assets/D17.png" alt="D17" className="h-8 object-contain" />
+              <img src="/assets/visa.png" alt="Visa" className="h-8 object-contain filter grayscale hover:grayscale-0 transition-all" />
+              <img src="/assets/master-card.png" alt="Mastercard" className="h-8 object-contain filter grayscale hover:grayscale-0 transition-all" />
+              <img src="/assets/flousi.png" alt="Flousi" className="h-8 object-contain filter grayscale hover:grayscale-0 transition-all" />
+              <img src="/assets/D17.png" alt="D17" className="h-8 object-contain filter grayscale hover:grayscale-0 transition-all" />
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
+
+      {/* Zoom Modal */}
+      <AnimatePresence>
+        {showZoomModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowZoomModal(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="relative max-w-6xl w-full max-h-screen"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={productImages[selectedImage]}
+                alt="Zoomed product"
+                className="w-full h-full max-h-[90vh] object-contain"
+              />
+              <button 
+                onClick={() => setShowZoomModal(false)}
+                className="absolute top-4 right-4 p-3 bg-white bg-opacity-80 rounded-full hover:bg-opacity-100 transition-all"
+              >
+                <FaTimes className="text-gray-800 text-xl" />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Product Details Tabs */}
-      <div className="mt-8 border-t pt-6">
-        <div className="flex border-b">
-          <button
-            className={`px-4 py-2 font-medium ${activeTab === 'description' ? 'text-black border-b-2 border-black' : 'text-gray-500'}`}
-            onClick={() => setActiveTab('description')}
-          >
-            Description
-          </button>
-          <button
-            className={`px-4 py-2 font-medium ${activeTab === 'specs' ? 'text-black border-b-2 border-black' : 'text-gray-500'}`}
-            onClick={() => setActiveTab('specs')}
-          >
-            Specifications
-          </button>
-          <button
-            className={`px-4 py-2 font-medium ${activeTab === 'reviews' ? 'text-black border-b-2 border-black' : 'text-gray-500'}`}
-            onClick={() => setActiveTab('reviews')}
-          >
-            Reviews ({reviews.length})
-          </button>
-        </div>
-
-        {/* Description Tab */}
-        {activeTab === 'description' && (
-          <div className="py-4">
-            <div 
-              className={`prose max-w-none ${showFullDescription ? '' : 'max-h-32 overflow-hidden'}`}
-              dangerouslySetInnerHTML={{ __html: product.detailed_description }}
-            />
-            <button 
-              className="text-blue-600 flex items-center mt-2"
-              onClick={() => setShowFullDescription(!showFullDescription)}
-            >
-              {showFullDescription ? (
-                <>
-                  <FaChevronUp className="mr-1" /> Show Less
-                </>
-              ) : (
-                <>
-                  <FaChevronDown className="mr-1" /> Read More
-                </>
-              )}
-            </button>
-          </div>
-        )}
-
-        {/* Specifications Tab */}
-        {activeTab === 'specs' && (
-          <div className="py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {specifications.map((spec, index) => (
-                <div key={index} className="flex">
-                  <span className="text-gray-600 w-40">{spec.name}:</span>
-                  <span className="font-medium">{spec.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Reviews Tab */}
-        {activeTab === 'reviews' && (
-          <div className="py-4">
-            <div className="flex items-center mb-6">
-              <div className="flex items-center mr-4">
-                {[...Array(5)].map((_, i) => (
-                  i < 4 ? <FaStar key={i} className="text-yellow-500" /> : <FaRegStar key={i} className="text-yellow-500" />
-                ))}
-                <span className="ml-2 font-medium">4.5 out of 5</span>
-              </div>
-              <span className="text-gray-600">{reviews.length} customer reviews</span>
-            </div>
-
-            <div className="space-y-6">
-              {reviews.map(review => (
-                <div key={review.id} className="border-b pb-4">
-                  <div className="flex justify-between mb-2">
-                    <span className="font-medium">{review.name}</span>
-                    <span className="text-gray-500 text-sm">{review.date}</span>
-                  </div>
-                  <div className="flex mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      i < review.rating ? 
-                        <FaStar key={i} className="text-yellow-500 text-sm" /> : 
-                        <FaRegStar key={i} className="text-yellow-500 text-sm" />
-                    ))}
-                  </div>
-                  <p className="text-gray-700">{review.comment}</p>
-                </div>
-              ))}
-            </div>
-
-            <button className="mt-6 px-4 py-2 border border-black rounded hover:bg-gray-100 transition">
-              Write a Review
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Related Products Carousel */}
-      <div className="mt-12">
-        <h2 className="text-2xl font-semibold mb-6">Related Products</h2>
-        <div className="relative overflow-hidden">
-          <button 
-            onClick={prevSlide} 
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
-            disabled={currentIndex === 0}
-          >
-            <FaChevronLeft className="text-gray-700" />
-          </button>
-          
-          <div 
-            ref={carouselRef}
-            className="flex transition-transform duration-300 ease-in-out"
-            style={{ transform: getTransformValue() }}
-          >
-            {Array.from({ length: Math.ceil(products.length / 3) }).map((_, groupIndex) => (
-              <div key={groupIndex} className="w-full flex-shrink-0 grid grid-cols-1 md:grid-cols-3 gap-6 px-2">
-                {products.slice(groupIndex * 3, groupIndex * 3 + 3).map(product => (
-                  <div
-                    key={product.id}
-                    className="border rounded-lg shadow p-5 flex flex-col items-center hover:shadow-lg transition-all duration-300"
-                  >
-                    <div className="w-full h-40 mb-4 overflow-hidden">
-                      <img
-                        src={product.image}
-                        alt={product.stuffname}
-                        className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <div className="text-xs text-gray-500 uppercase"></div>
-                    <h3 className="text-lg font-semibold text-center">{product.stuffname}</h3>
-                    <div className="flex gap-2 items-center mt-2">
-                      <span className="text-xl font-bold">${product.price_per_day}</span>
-                      <span className="text-gray-400 line-through">$</span>
-                    </div>
-                    <div className="mt-2 flex gap-2">
-                      {product.hot && <span className="bg-green-500 text-white px-2 py-1 text-xs rounded">HOT</span>}
-                      <span className="bg-red-500 text-white px-2 py-1 text-xs rounded"></span>
-                    </div>
-                    <button className="mt-4 px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors w-full">
-                      View Details
-                    </button>
-                  </div>
-                ))}
-              </div>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="mt-16"
+      >
+        <div className="border-b border-gray-200">
+          <div className="flex">
+            {['description', 'specs', 'reviews'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`relative px-6 py-4 font-medium text-sm tracking-wide ${
+                  activeTab === tab ? 'text-teal-600' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {activeTab === tab && (
+                  <motion.div 
+                    layoutId="tabIndicator"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-500"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+              </button>
             ))}
           </div>
-          
-          <button 
-            onClick={nextSlide} 
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
-            disabled={currentIndex === Math.ceil(products.length / 3) - 1}
-          >
-            <FaChevronRight className="text-gray-700" />
-          </button>
         </div>
 
-        {/* Dots indicator */}
-        <div className="flex justify-center mt-4 gap-2">
-          {Array.from({ length: Math.ceil(products.length / 3) }).map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={`w-3 h-3 rounded-full ${currentIndex === index ? 'bg-black' : 'bg-gray-300'}`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
+        <div className="py-8">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              {tabContent[activeTab]}
+            </motion.div>
+          </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
+
+      {/* Related Products */}
+      {relatedProducts.length > 0 && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="mt-16"
+        >
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Related Products</h2>
+            <div className="flex gap-2">
+              <motion.button 
+                whileHover={{ backgroundColor: "#f3f4f6" }}
+                whileTap={{ scale: 0.95 }}
+                onClick={prevSlide}
+                className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors"
+                disabled={currentIndex === 0}
+              >
+                <FaChevronLeft className="text-gray-700" />
+              </motion.button>
+              <motion.button 
+                whileHover={{ backgroundColor: "#f3f4f6" }}
+                whileTap={{ scale: 0.95 }}
+                onClick={nextSlide}
+                className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors"
+                disabled={currentIndex === Math.ceil(relatedProducts.length / 5) - 1}
+              >
+                <FaChevronRight className="text-gray-700" />
+              </motion.button>
+            </div>
+          </div>
+          
+          <div className="relative">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
+              {visibleProducts.map(product => (
+                <motion.div 
+                  key={product.id}
+                  whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="border border-gray-200 rounded-xl p-4 bg-white hover:shadow-lg transition-all"
+                >
+                  <div className="relative w-full aspect-square bg-gray-50 rounded-lg overflow-hidden mb-3">
+                    <img
+                      src={product.equipment_images?.[0]?.url || DEFAULT_PRODUCT_IMAGE}
+                      alt={product.stuffname}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                    <button className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-sm hover:bg-teal-50 transition-colors">
+                      <FaHeart className="text-gray-400 hover:text-teal-500" />
+                    </button>
+                  </div>
+                  <h3 className="font-medium text-gray-900 line-clamp-1">{product.stuffname}</h3>
+                  <div className="flex items-center mt-1">
+                    {[...Array(5)].map((_, i) => (
+                      i < Math.floor(product.rating || 4) ? 
+                      <FaStar key={i} className="text-teal-500 text-xs" /> : 
+                      <FaRegStar key={i} className="text-teal-500 text-xs" />
+                    ))}
+                    <span className="text-xs text-gray-500 ml-1">({product.rating || 4}.0)</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-teal-600 font-bold">${product.price_per_day}/day</span>
+                    <motion.button 
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="text-sm bg-teal-600 text-white px-3 py-1 rounded-md hover:bg-teal-700 transition-colors"
+                    >
+                      View
+                    </motion.button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      <ToastContainer position="bottom-right" />
     </div>
   );
 }

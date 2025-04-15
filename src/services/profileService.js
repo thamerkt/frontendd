@@ -34,6 +34,31 @@ const Profileservice = {
       throw new Error(error.response?.data?.message || "Adding profile failed");
     }
   },
+  fetchProfile: async () => {
+    try {
+     // const token = Cookies.get("token");
+      let user_id = Cookies.get("keycloak_user_id");
+      
+
+    /*  if (!token) {
+        console.error("Token not found in cookies");
+        throw new Error("Unauthorized: Token is missing");
+      }*/
+      const response = await axios.get(`${API_URL}/profil/?user=${user_id}`,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data"
+            //"Authorization": `Bearer ${token}`
+          }
+        }
+      )
+    
+      return response.data;
+    } catch (error) {
+      console.error("Error adding profile:", error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || "Adding profile failed");
+    }
+  },
 
   addPhysicalProfile: async (formData) => {
     try {

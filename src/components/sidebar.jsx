@@ -9,9 +9,10 @@ const Sidebar = () => {
 
   // Check if the current route is one of the specified ones
   const isRegisterPage =
-    location.pathname === '/register/profil' ||
-    location.pathname === '/register/email-verification' ||
-    location.pathname === '/register/identity-verification';
+  location.pathname === '/register/profil' ||
+  location.pathname === '/register/email-verification' ||
+  location.pathname === '/register/identity-verification' ||
+  location.pathname === '/register/business-details';
 
   const role = localStorage.getItem('role');
 
@@ -61,7 +62,7 @@ const Sidebar = () => {
       description: "Provide your details",
       step: 2
     },
-    ...(role !== 'customer' && role !== 'individual' ? [{
+    ...(role !== 'customer' && role !== 'equipment_manager_individual' ? [{
       path: "/register/business-details",
       icon: "/assets/businessdetails.png",
       activeIcon: "/assets/documents.png",
@@ -75,7 +76,7 @@ const Sidebar = () => {
       activeIcon: "/assets/identitychecked.png",
       title: "Identity Verification",
       description: "Secure your account",
-      step: role !== 'customer' && role !== 'individual' ? 4 : 3
+      step: role !== 'customer' && role !== 'equipment_manager_individual' ? 4 : 3
     }
   ];
 

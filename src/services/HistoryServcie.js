@@ -1,13 +1,9 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8000/history/"; // Update with your API URL
+const API_URL = "http://localhost:8000/history/"; 
 
-// Function to get the token (Modify as per your auth system)
-const getAuthToken = () => {
-    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc0MTQwNDg1NiwiaWF0IjoxNzQxMzE4NDU2LCJqdGkiOiJiMmRkYmI1ZDg4MDk0Y2Y4ODRiYTRmNGI2NzQ5NGRkZSIsInVzZXJfaWQiOjMsImlzcyI6ImF1dGhtaWNyb3NlcnZpY2Uta2V5In0.1HwbVwrvlSIcXbsXSE2XQsUcBReaxTqluRTIwr-gbdY'; // Assuming token is stored in localStorage
-};
 
-// Common function to handle errors
+
 const handleError = (error) => {
     if (error.response) {
         console.error("Server Error:", error.response.data);
@@ -25,13 +21,8 @@ const HistoryService = {
    fetchHistory : async () => {
     try {
         
-        const response = await axios.get(`${API_URL}historiques/`, {
-            headers: {
-                "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc0MTQwNDg1NiwiaWF0IjoxNzQxMzE4NDU2LCJqdGkiOiJiMmRkYmI1ZDg4MDk0Y2Y4ODRiYTRmNGI2NzQ5NGRkZSIsInVzZXJfaWQiOjMsImlzcyI6ImF1dGhtaWNyb3NlcnZpY2Uta2V5In0.1HwbVwrvlSIcXbsXSE2XQsUcBReaxTqluRTIwr-gbdY`,
-                "Content-Type": "application/json",
-            },
-            withCredentials: true, // Ensures credentials are sent
-        });
+        const response = await axios.get(`${API_URL}historiques/`, 
+        );
         console.log(response.data);
         return response.data
     } catch (error) {

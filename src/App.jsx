@@ -35,6 +35,10 @@ import { Provider } from 'react-redux';
 import store from './redux/store';
 import ShopGrid from './pages/shopGrid'
 import RegistrationProgressGuard from "./components/RegistrationProgressGuard";
+import unauthorized from "./components/unauthorized";
+import RoleRoute from "./components/RoleRoute"
+import CheckoutProcess from "./components/paymentProcess"
+import ContractSigner from "./components/signature"
 const App = () => {
   return (
     <Provider store={store}>
@@ -47,44 +51,121 @@ const App = () => {
           <div className="flex flex-1">
             {/* Sidebar */}
             <Sidebar />
+            <SidebarAdmin />
 
 
 
             {/* Main Content */}
             <main className="flex-1 p-4">
+
               <Routes>
                 <Route path="/collaboration" element={<LandingPagee />} />
                 <Route path="/register/" element={<AuthForm />} />
                 <Route path="/shopgrid/" element={<ShopGrid />} />
                 <Route path="/login/" element={<AuthForm />} />
-                
-                  <Route path="/register/email-verification" element={<EmailVerification />} />
-                  <Route path="/register/profil" element={<ProfileForm />} />
-                  <Route path="/register/business-details" element={<BusinessDetail />} />
-                  <Route path="/qr" element={<QRScanner />} />
-                  <Route path="/register/identity-verification/verification/document-type" element={<DocumentTypeSelection />} />
-                  <Route path="/register/identity-verification/verification/front-document/:user" element={<FrontCapture />} />
-                  <Route path="/register/identity-verification/verification/back-document" element={<BackCapture />} />
-                  <Route path="/register/identity-verification/verification/selfie" element={<SelfieCapture />} />
-                  <Route path="/register/identity-verification/verification/verification-complete" element={<VerificationComplete />} />
-                
+                <Route path="/unauthorized" element={<unauthorized />} />
+                <Route path="/signature" element={<ContractSigner />} />
+
+                {/* CUSTOMER ONLY */}
+                <Route
+                  path="/register/email-verification"
+                  element={
+               
+                      <EmailVerification />
+           
+                  }
+                />
+                <Route
+                  path="/register/profil"
+                  element={
+<ProfileForm />
+                  
+                  }
+                />
+                <Route
+                  path="/register/business-details"
+                  element={
+                    
+                      <BusinessDetail />
+                  
+                  }
+                />
+                <Route
+                  path="/register/identity-verification"
+                  element={
+                      <IdentityVerification />
+              
+                  }
+                />
+                <Route
+                  path="/register/identity-verification/verification/document-type"
+                  element={
+                      <DocumentTypeSelection />
+
+                  }
+                />
+                <Route
+                  path="/register/identity-verification/verification/front-document/:user"
+                  element={
+               
+                      <FrontCapture />
+   
+                  }
+
+                />
+                <Route
+                  path="/payment"
+                  element={
+               
+                      <CheckoutProcess />
+   
+                  }
+
+                />
+                <Route
+                  path="/register/identity-verification/verification/back-document"
+                  element={
+                 
+                      <BackCapture />
+
+                  }
+                />
+                <Route
+                  path="/register/identity-verification/verification/selfie"
+                  element={
+       
+                      <SelfieCapture />
+        
+                  }
+                />
+                <Route
+                  path="/register/identity-verification/verification/verification-complete"
+                  element={
+               
+                      <VerificationComplete />
+
+                  }
+                />
+                {/* END CUSTOMER ONLY */}
+
                 <Route path="/register/test/" element={<ImageGallery />} />
                 <Route path="/equipment/" element={<ProductDetails />} />
-
-
-
+                <Route path="/qr" element={<QRScanner />} />
+                <Route path="/add" element={<AddProductForm />} />
                 <Route path="/contact-us" element={<ContactUs />} />
-
                 <Route path="/callback" element={<CallbackPage />} />
 
-                <Route path="/register/identity-verification" element={<IdentityVerification />} />
-
+                {/* Admin routes (not protected yet) */}
                 <Route path="/admin/dashbord" element={<Dashboard />} />
                 <Route path="/admin/booking" element={<BookingComponent />} />
                 <Route path="/admin/clients" element={<ClientComponent />} />
                 <Route path="/admin/history" element={<HistoryPage />} />
+                <Route path="/" element={<LandingPage />} />
 
-                <Route path="/home" element={<LandingPage />} />
+                {/* Fallback for unauthorized */}
+                <Route path="/unauthorized" element={<h1>403 - Unauthorized</h1>} />
+
+
 
 
               </Routes>

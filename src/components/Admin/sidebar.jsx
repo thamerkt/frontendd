@@ -10,8 +10,8 @@ const SidebarAdmin = () => {
   const isAdminPage = location.pathname.startsWith('/admin');
 
   const menuItems = [
-    { name: "Dashboard", icon: <Home />, key: "Dashboard", path: "/admin/dashbord" }, // Fixed typo in 'dashboard' path
-    { name: "Statics", icon: <BarChart />, key: "Statics", path: "/admin/statics" }, // Fixed typo in path
+    { name: "Dashboard", icon: <Home />, key: "Dashboard", path: "/admin/dashbord" },
+    { name: "Statics", icon: <BarChart />, key: "Statics", path: "/admin/statics" }, 
     { name: "Clients", icon: <Users />, key: "Clients", path: "/admin/clients" },
     { name: "Booking", icon: <Calendar />, key: "Booking", path: "/admin/booking" },
     { name: "Products", icon: <Package />, key: "Products", path: "/admin/products" },

@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Cookies from 'js-cookie';
+import useProgressGuard from "../components/utils/ProccessGuard";
 
 const IdentityVerification = () => {
   const [qrCode, setQrCode] = useState("");
   const [verificationLink, setVerificationLink] = useState("");
   const user = Cookies.get('keycloak_user_id');
+  //useProgressGuard(1, 3); 
 
   useEffect(() => {
     if (!user) return;
 
     axios
-      .post("http://127.0.0.1:8000/api/generate-qr/",  {
+      .post("http://127.0.0.1:8001/api/generate-qr/",  {
         user: user,
       } )
       .then((response) => {

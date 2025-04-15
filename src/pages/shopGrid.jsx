@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { FiHeart, FiShoppingBag, FiSearch, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiHeart, FiShoppingBag, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { BsStarFill, BsStarHalf, BsStar } from "react-icons/bs";
 import { RiFilter2Line } from "react-icons/ri";
 import EquipmentCategories from "./categorie";
@@ -17,23 +17,45 @@ const ShopGrid = () => {
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedConditions, setSelectedConditions] = useState([]);
   const [selectedLocations, setSelectedLocations] = useState([]);
+  const [images, setImages] = useState([]);
 
-  // Memoized fetch function
-  const fetchProducts = useCallback(async () => {
+  // Fetch products and images
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const mockProducts = await EquipmentService.fetchRentals();
-      setProducts(mockProducts);
-      setLoading(false);
+      const [productsData, imagesData] = await Promise.all([
+        EquipmentService.fetchRentals(),
+        EquipmentService.fetchImages()
+      ]);
+      setProducts(productsData);
+      setImages(imagesData);
     } catch (error) {
-      console.error("Error fetching products:", error);
+      console.error("Error fetching data:", error);
+    } finally {
       setLoading(false);
     }
   }, []);
+  
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    fetchData();
+    console.log(products)
+    console.log(images)
+
+  }, [fetchData]);
+
+  // Get product image URL
+  const getProductImage = useCallback((productId) => {
+    if (!Array.isArray(images) || images.length === 0) return null;
+  
+    const productImages = images.filter(img => img.stuff === productId);
+    if (productImages.length === 0) return null;
+  
+    const mainImage = productImages.find(img => img.position === 1);
+    console.log(mainImage?.url || productImages[0]?.url || null)
+    return mainImage?.url || productImages[0]?.url || null;
+  }, [images]);
+  
 
   // Extract unique brands, conditions, and locations for filters
   const { brands, conditions, locations } = useMemo(() => {
@@ -102,18 +124,12 @@ const ShopGrid = () => {
       location: setSelectedLocations
     };
     
-    const stateSetters = {
-      brand: selectedBrands,
-      condition: selectedConditions,
-      location: selectedLocations
-    };
-
     setters[filterType](prev => 
       prev.includes(value) 
         ? prev.filter(item => item !== value) 
         : [...prev, value]
     );
-  }, [selectedBrands, selectedConditions, selectedLocations]);
+  }, []);
 
   const renderStars = useCallback((rating) => {
     const stars = [];
@@ -134,7 +150,7 @@ const ShopGrid = () => {
   }, []);
 
   const formatPrice = useCallback((price) => {
-    return `$${price.toFixed(2)}/day`;
+    return `$${price?.toFixed(2) || '0.00'}/day`;
   }, []);
 
   // Filter products based on selected filters
@@ -192,7 +208,7 @@ const ShopGrid = () => {
         return (b.rating || 0) - (a.rating || 0);
       } else {
         // Default: popularity
-        return (b.id || 0) - (a.id || 0); // Using ID as proxy for popularity in this example
+        return (b.id || 0) - (a.id || 0);
       }
     });
   }, [filteredProducts, sortOption]);
@@ -524,7 +540,7 @@ const ShopGrid = () => {
                   <select
                     value={sortOption}
                     onChange={(e) => setSortOption(e.target.value)}
-                    className="appearance-none border rounded pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                    className="appearance-none border rounded pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black focus:ring-offset-1"
                   >
                     <option value="popular">Most Popular</option>
                     <option value="price-low">Price: Low to High</option>
@@ -597,10 +613,17 @@ const ShopGrid = () => {
                       {/* Product Image */}
                       <div className="bg-gray-100 h-64 relative overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 group-hover:opacity-30 transition"></div>
-                        {/* Placeholder for product image */}
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          {product.category?.name || 'Equipment'} Image
-                        </div>
+                        {getProductImage(product.id) ? (
+                          <img 
+                            src="http://host.docker.internal:8006/equipment_images/book.jpg" 
+                            alt={product.stuffname}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                            {product.category?.name || 'Equipment'} Image
+                          </div>
+                        )}
                         {/* Quick View */}
                         <button className="absolute bottom-4 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition bg-black text-white px-4 py-2 rounded text-sm">
                           Quick View

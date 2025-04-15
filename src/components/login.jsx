@@ -47,7 +47,7 @@ const Login = () => {
   
           // Store the access token (if returned by the backend)
           if (data.userdata.access_token) {
-            localStorage.setItem('access_token', data.userdata.access_token);
+            
             Cookies.set('token',data.userdata.access_token)
             Cookies.set('keycloak_user_id',data.userdata.user_id)
             Cookies.set('first_name',data.userdata.first_name)

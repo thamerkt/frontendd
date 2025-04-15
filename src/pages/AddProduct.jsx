@@ -5,16 +5,68 @@ import MyEditor from './WordPressEditor';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+const categories = ["Electronics", "Clothing", "Furniture", "Tools"];
+const subCategories = {
+  "Electronics": ["Laptops", "Phones", "Speakers", "Cameras"],
+  "Clothing": ["Shirts", "Pants", "Jackets", "Shoes"],
+  "Furniture": ["Chairs", "Tables", "Sofas", "Beds"],
+  "Tools": ["Power Tools", "Hand Tools", "Garden Tools"]
+};
+const states = ["new", "used", "refurbished"];
+const conditions = ["excellent", "good", "fair", "poor"];
+const availabilityOptions = ["Available", "Unavailable", "Coming Soon"];
+
 const AddProductForm = () => {
   const [images, setImages] = useState([]);
   const [description, setDescription] = useState('');
   const [contractFile, setContractFile] = useState(null);
   const editorRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const handleImageUploadd = async (file) => {
+    try {
+      if (!file) return null;
+      
+      // Create a unique ID for the image
+      const imageId = Math.random().toString(36).substring(2, 9);
+      
+      // Return the image data in the format the editor expects
+      return {
+        src: URL.createObjectURL(file), // Preview URL
+        id: imageId,
+        file: file, // Keep the file object for later upload
+        alt: file.name,
+        title: file.name
+      };
+    } catch (error) {
+      console.error("Error handling image upload:", error);
+      toast.error("Image handling failed. Please try again.");
+      throw error;
+    }
+  };
   
+
+  const handleImageDelete = async (imageId, imageUrl) => {
+    // Implement your actual image deletion logic here
+    await fetch(`/api/images/${imageId}`, {
+      method: 'DELETE'
+    });
+  };
+
+  const handleSave = () => {
+    if (editorRef.current) {
+      const html = editorRef.current.getHTML();
+      console.log('Saved content:', html);
+
+      const images = editorRef.current.getUploadedImages();
+      console.log('Associated images:', images);
+    }
+  };
+
   const initialProductData = {
     stuffname: '',
     short_description: '',
     state: 'new',
+    name: "test",
     rental_location: 'Tunis',
     price_per_day: '',
     availability: 'Available',
@@ -28,7 +80,7 @@ const AddProductForm = () => {
     equipment_images: [],
     user: 2,
     stuff_management: {
-      name: '',
+      name: 'test',
       last_maintenance: '',
       condition: 'good',
       rental_location: 'Tunis',
@@ -36,32 +88,16 @@ const AddProductForm = () => {
       availability: 'Available',
       rental_zone: 'North',
       location: 'Tunis City Center',
-      contract_required: '',
     }
   };
 
   const [productData, setProductData] = useState(initialProductData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const fileInputRef = useRef(null);
 
-  const categories = ["Electronics", "Clothing", "Furniture", "Tools"];
-  const subCategories = {
-    "Electronics": ["Laptops", "Phones", "Speakers", "Cameras"],
-    "Clothing": ["Shirts", "Pants", "Jackets", "Shoes"],
-    "Furniture": ["Chairs", "Tables", "Sofas", "Beds"],
-    "Tools": ["Power Tools", "Hand Tools", "Garden Tools"]
-  };
-  const states = ["new", "used", "refurbished"];
-  const conditions = ["excellent", "good", "fair", "poor"];
-  const availabilityOptions = ["Available", "Unavailable", "Coming Soon"];
-
-  // Clean up object URLs when component unmounts
   useEffect(() => {
     return () => {
-      images.forEach(image => {
-        URL.revokeObjectURL(image.preview);
-      });
+      images.forEach(image => URL.revokeObjectURL(image.preview));
     };
   }, [images]);
 
@@ -78,55 +114,32 @@ const AddProductForm = () => {
       alt: `Image ${images.length + index + 1}`,
       position: images.length + index + 1
     }));
-    setImages(prevImages => [...prevImages, ...newImages]);
+    setImages(prev => [...prev, ...newImages]);
     setError(null);
-  };
-
-  const handleContractUpload = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      // Validate file type and size
-      const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      
-      if (!validTypes.includes(file.type)) {
-        setError('Please upload a PDF or Word document');
-        return;
-      }
-      
-      if (file.size > maxSize) {
-        setError('File size must be less than 5MB');
-        return;
-      }
-      
-      setContractFile(file);
-      setError(null);
-    }
   };
 
   const removeImage = (index) => {
     const newImages = [...images];
     URL.revokeObjectURL(newImages[index].preview);
     newImages.splice(index, 1);
-    const updatedImages = newImages.map((img, idx) => ({
-      ...img,
-      position: idx + 1
-    }));
+    const updatedImages = newImages.map((img, idx) => ({ ...img, position: idx + 1 }));
     setImages(updatedImages);
   };
 
   const updateImageAltText = (index, alt) => {
     const newImages = [...images];
-    newImages[index] = {
-      ...newImages[index],
-      alt
-    };
+    newImages[index] = { ...newImages[index], alt };
     setImages(newImages);
+  };
+
+  const handleContractUpload = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setContractFile(e.target.files[0]);
+    }
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setProductData(prev => ({
@@ -137,10 +150,7 @@ const AddProductForm = () => {
         }
       }));
     } else {
-      setProductData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      setProductData(prev => ({ ...prev, [name]: value }));
     }
   };
 
@@ -149,141 +159,197 @@ const AddProductForm = () => {
       setError('Please fill all required fields');
       return false;
     }
-    
     if (!images.length) {
       setError('Please upload at least one image');
       return false;
     }
-    
     if (!productData.price_per_day || isNaN(productData.price_per_day)) {
       setError('Please enter a valid price');
       return false;
     }
-    
     if (!productData.category.name || !productData.category.subcategory) {
       setError('Please select both category and subcategory');
       return false;
     }
-    
     return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
-    if (editorRef.current) {
-      const htmlContent = editorRef.current.getHTML();
-      setDescription(htmlContent);
-    }
-  
+
     if (!validateForm()) return;
-  
+
     setIsSubmitting(true);
     setError(null);
-  
+
     try {
-      // Prepare the JSON data structure that matches your serializer
-      const requestData = {
-        stuffname: productData.stuffname,
-        short_description: productData.short_description,
-        state: productData.state,
-        rental_location: productData.rental_location,
-        price_per_day: productData.price_per_day,
-        detailed_description: description,
-        location: productData.location,
-        brand: productData.brand,
-        user: productData.user,
-        
-        // Nested category data
-        category: {
+      // --- Step 1: Create Category ---
+      let categoryId;
+      try {
+        const categoryRes = await axios.post('http://127.0.0.1:8000/api/categories/', {
           name: productData.category.name,
-          subcategory: productData.category.subcategory
-        },
-        
-        // Nested stuff_management data
-        stuff_management: {
-          name: productData.stuff_management.name,
-          last_maintenance: productData.stuff_management.last_maintenance,
-          condition: productData.stuff_management.condition,
-          rental_location: productData.stuff_management.rental_location,
-          deposit: productData.stuff_management.deposit,
-          availability: productData.stuff_management.availability,
-          rental_zone: productData.stuff_management.rental_zone,
-          location: productData.stuff_management.location,
-          contract_required: productData.stuff_management.contract_required
-        },
-        
-        // Array of equipment images
-        equipment_images: images.map((img, index) => ({
-          image: img.file, // This assumes img.file is a File object - you'll need to handle this differently
-          alt: img.alt,
-          position: img.position || index
-        }))
-      };
-  
-      // For file uploads, you still need FormData
-      if (images.length > 0) {
-        const formData = new FormData();
-        formData.append('data', JSON.stringify(requestData));
-        
-        // Append each image file separately
-        images.forEach((img, index) => {
-          formData.append(`equipment_images_${index}`, img.file);
+          subcategory: productData.category.subcategory,
         });
-  
-        const response = await axios.post('http://127.0.0.1:8000/api/stuffs/', formData, {
+        categoryId = categoryRes.data.id;
+      } catch (err) {
+        throw new Error("Failed to create category: " + extractErrorMsg(err));
+      }
+
+      // --- Step 2: Create Stuff Management ---
+      let stuffManagementId;
+      try {
+        const managementFormData = new FormData();
+        managementFormData.append('name', 'test');
+        managementFormData.append('last_maintenance', productData.stuff_management.last_maintenance || '');
+        managementFormData.append('condition', productData.stuff_management.condition);
+        managementFormData.append('rental_location', productData.stuff_management.rental_location);
+        managementFormData.append('deposit', productData.stuff_management.deposit || '');
+        managementFormData.append('availability', productData.stuff_management.availability);
+        managementFormData.append('rental_zone', productData.stuff_management.rental_zone);
+        managementFormData.append('location', productData.stuff_management.location);
+
+        if (contractFile) {
+          managementFormData.append('required_file', contractFile);
+        }
+
+        const managementRes = await axios.post(
+          'http://127.0.0.1:8000/api/stuffmanagment/',
+          managementFormData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Accept': 'application/json'
+            }
+          }
+        );
+
+        if (managementRes.data && managementRes.data.id) {
+          stuffManagementId = managementRes.data.id;
+        } else {
+          throw new Error("Invalid response from server when creating stuff management");
+        }
+      } catch (err) {
+        console.error('Full error:', err);
+        console.error('Error response:', err.response);
+        throw new Error("Failed to create stuff management: " + extractErrorMsg(err));
+      }
+
+      // --- Step 3: Create Stuff ---
+      let stuffId;
+      try {
+        const stuffFormData = new FormData();
+        stuffFormData.append('stuffname', productData.stuffname);
+        stuffFormData.append('short_description', productData.short_description);
+        stuffFormData.append('state', productData.state);
+        stuffFormData.append('rental_location', productData.rental_location);
+        stuffFormData.append('price_per_day', productData.price_per_day);
+        
+        // Get HTML content from editor
+        if (editorRef.current) {
+          const html = editorRef.current.getHTML();
+          stuffFormData.append('detailed_description', html);
+        }
+        
+        stuffFormData.append('location', productData.stuff_management.location);
+        stuffFormData.append('category', categoryId);
+        stuffFormData.append('brand', productData.brand);
+        stuffFormData.append('stuff_management', stuffManagementId);
+        stuffFormData.append('user', productData.user);
+
+        const stuffRes = await axios.post('http://127.0.0.1:8000/api/stuffs/', stuffFormData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
-  
-        if (response.status === 201) {
-          toast.success('Product added successfully!');
-          // Reset form
-          setProductData(initialProductData);
-          setImages([]);
-          setDescription('');
-          if (editorRef.current) {
-            editorRef.current.clearContent();
-          }
+
+        stuffId = stuffRes.data.id;
+      } catch (err) {
+        throw new Error("Failed to create stuff: " + extractErrorMsg(err));
+      }
+
+      // --- Step 4: Upload Images ---
+      // First upload images from the main image uploader
+      for (let i = 0; i < images.length; i++) {
+        const img = images[i];
+        const imgFormData = new FormData();
+        imgFormData.append('stuff', stuffId);
+        imgFormData.append('url', img.file);
+        imgFormData.append('alt', img.alt || '');
+        imgFormData.append('position', Number.isInteger(img.position) ? img.position : i);
+
+        try {
+          await axios.post('http://127.0.0.1:8000/api/images/', imgFormData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+        } catch (imgErr) {
+          console.error(`Failed to upload image ${i + 1}:`, imgErr);
+          // Continue with other images even if one fails
         }
-      } else {
-        // If no images, send as pure JSON
-        const response = await axios.post('http://127.0.0.1:8000/api/stuffs/', requestData, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-  
-        if (response.status === 201) {
-          toast.success('Product added successfully!');
-          // Reset form
-          setProductData(initialProductData);
-          setImages([]);
-          setDescription('');
-          if (editorRef.current) {
-            editorRef.current.clearContent();
+      }
+
+      // Then upload any images that were added via the editor
+      if (editorRef.current) {
+        const editorImages = editorRef.current.getUploadedImages();
+        for (const img of editorImages) {
+          if (img.file) { // Only upload if it's a new file
+            const imgFormData = new FormData();
+            imgFormData.append('stuff', stuffId);
+            imgFormData.append('url', img.file);
+            imgFormData.append('alt', img.alt || '');
+            imgFormData.append('position', 0); // Default position for editor images
+
+            try {
+              await axios.post('http://127.0.0.1:8000/api/images/', imgFormData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+              });
+            } catch (imgErr) {
+              console.error(`Failed to upload editor image:`, imgErr);
+            }
           }
         }
       }
+
+      toast.success('Product and images added successfully!');
+      resetForm();
+
     } catch (error) {
-      console.error('Submission error:', error);
-      let errorMessage = 'Failed to create product';
-      if (error.response) {
-        if (error.response.data) {
-          errorMessage = Object.values(error.response.data).flat().join(', ');
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      setError(errorMessage);
+      console.error(error);
+      setError(error.message || 'Something went wrong.');
     } finally {
       setIsSubmitting(false);
     }
   };
+  const extractErrorMsg = (error) => {
+    if (error.response) {
+      // Check if response is HTML
+      if (error.response.headers['content-type']?.includes('text/html')) {
+        return "Server returned an HTML error page (likely a 500 error)";
+      }
 
-  
-  
+      // Handle JSON response
+      if (error.response.data) {
+        // If it's a validation error with details
+        if (typeof error.response.data === 'object') {
+          return Object.entries(error.response.data)
+            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+            .join('; ');
+        }
+        // If it's a simple error message
+        return error.response.data.toString();
+      }
+    }
+    return error.message || 'Unknown error occurred';
+  };
+
+
+  const resetForm = () => {
+    setProductData(initialProductData);
+    setImages([]);
+    setDescription('');
+    setContractFile(null);
+    if (editorRef.current) editorRef.current.clearContent();
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <form onSubmit={handleSubmit}>
@@ -300,7 +366,7 @@ const AddProductForm = () => {
                 <h2 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                   Basic Information
                 </h2>
-                
+
                 <div className="space-y-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
@@ -356,11 +422,12 @@ const AddProductForm = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Detailed Description *</label>
-                    <MyEditor 
+                    <MyEditor
                       ref={editorRef}
-                      content={description}
-                      onChange={(html) => setDescription(html)}
+                      onImageUpload={handleImageUploadd}
+                      onImageDelete={handleImageDelete}
                     />
+                    <button onClick={handleSave}>Save</button>
                   </div>
                 </div>
               </div>
@@ -370,7 +437,7 @@ const AddProductForm = () => {
                 <h2 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                   Pricing
                 </h2>
-                
+
                 <div className="space-y-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Price Per Day (DT) *</label>
@@ -411,7 +478,7 @@ const AddProductForm = () => {
                 <h2 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                   Product Images
                 </h2>
-                
+
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {images.map((image, index) => (
@@ -439,7 +506,7 @@ const AddProductForm = () => {
                         </button>
                       </div>
                     ))}
-                    
+
                     {images.length < 6 && (
                       <div
                         className="border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 transition-colors h-32"
@@ -469,7 +536,7 @@ const AddProductForm = () => {
                 <h2 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                   Category & Brand
                 </h2>
-                
+
                 <div className="space-y-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
@@ -523,7 +590,7 @@ const AddProductForm = () => {
                 <h2 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                   Management Information
                 </h2>
-                
+
                 <div className="space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
