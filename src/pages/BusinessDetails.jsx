@@ -22,7 +22,45 @@ const SECTOR_OPTIONS = [
   { value: "health", label: "Healthcare" },
   { value: "construction", label: "Construction" },
 ];
+const REGION_OPTIONS = [
+  { value: "API Sfax", label: "API Sfax" },
+  { value: "API Sousse", label: "API Sousse" },
+  { value: "API Tunis", label: "API Tunis" },
+  { value: "Ariana", label: "Ariana" },
+  { value: "Auto entrepreneur", label: "Auto entrepreneur" },
+  { value: "Baja", label: "Baja" },
+  { value: "Ben Arous", label: "Ben Arous" },
+  { value: "Bizerte", label: "Bizerte" },
+  { value: "Gabes", label: "Gabes" },
+  { value: "Gafsa", label: "Gafsa" },
+  { value: "Gasserine", label: "Gasserine" },
+  { value: "Grombalia", label: "Grombalia" },
+  { value: "Guchet Central", label: "Guchet Central" },
+  { value: "Instance Tunisienne d'Investissement", label: "Instance Tunisienne d'Investissement" },
+  { value: "Jandouba", label: "Jandouba" },
+  { value: "Juridiction web", label: "Juridiction web" },
+  { value: "Kairouan", label: "Kairouan" },
+  { value: "Kebelli", label: "Kebelli" },
+  { value: "Le Kef", label: "Le Kef" },
+  { value: "Mahdia", label: "Mahdia" },
+  { value: "Mannouba", label: "Mannouba" },
+  { value: "Mednine", label: "Mednine" },
+  { value: "Monastir", label: "Monastir" },
+  { value: "Nabeul", label: "Nabeul" },
+  { value: "RNE", label: "RNE" },
+  { value: "Seliana", label: "Seliana" },
+  { value: "Sfax", label: "Sfax" },
+  { value: "Sfax 2", label: "Sfax 2" },
+  { value: "Sidi Bou Zid", label: "Sidi Bou Zid" },
+  { value: "Sousse", label: "Sousse" },
+  { value: "Sousse 2", label: "Sousse 2" },
+  { value: "Tataouin", label: "Tataouin" },
+  { value: "Tozeur", label: "Tozeur" },
+  { value: "Tunis 1", label: "Tunis 1" },
+  { value: "Tunis 2", label: "Tunis 2" },
+  { value: "Zaghouan", label: "Zaghouan" },
 
+]
 const BusinessDetail = () => {
   const navigate = useNavigate();
   const [progress, setProgress] = useState({
@@ -42,6 +80,7 @@ const BusinessDetail = () => {
     secteur_activite: "",
     business_phone: "",
     logo: null,
+    region: "",
     profil: Cookies.get('id'),
   });
   
@@ -85,13 +124,15 @@ const BusinessDetail = () => {
         formDataToSend.append(key, formData[key]);
       }
     }
-    const campany = new FormData();
-    campany.append('company_name', formData.raison_social);
+  
+    const company = new FormData();
+    company.append('company_name', formData.raison_social);
+    company.append('region', formData.region);
   
     try {
       const response = await axios.post(
         'http://127.0.0.1:8000/api/verification/company/',
-        campany
+        company
       );
   
       if ((response.data && response.data.success === true) || (response.success === true)) {
@@ -108,14 +149,31 @@ const BusinessDetail = () => {
   
         setTimeout(() => navigate("/register/identity-verification"), 2000);
       } else {
-        toast.error("Failed to verify company details");
+        toast.error(
+          response.data?.message || 
+          "Company verification failed. Please check the company name and region."
+        );
       }
     } catch (error) {
-      toast.error(error.message || "Failed to submit business details");
+      console.error("Submission Error:", error);
+      if (error.response) {
+        // Server responded with a status outside the 2xx range
+        toast.error(
+          error.response.data?.message ||
+          `Error ${error.response.status}: ${error.response.statusText}`
+        );
+      } else if (error.request) {
+        // Request was made but no response received
+        toast.error("No response from the server. Please try again later.");
+      } else {
+        // Something else happened
+        toast.error(error.message || "An unexpected error occurred.");
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+  
   
   const triggerFileInput = () => {
     fileInputRef.current.click();
@@ -216,7 +274,7 @@ const BusinessDetail = () => {
               required
             />
           </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
           <SelectInput
             label="Business Sector *"
             name="secteur_activite"
@@ -226,6 +284,16 @@ const BusinessDetail = () => {
             placeholder="Select your business sector"
             required
           />
+          <SelectInput
+            label="region *"
+            name="region"
+            value={formData.region}
+            onChange={handleChange}
+            options={REGION_OPTIONS}
+            placeholder="Select your Region"
+            required
+          />
+          </div>
         </div>
 
         {/* Legal Details Section */}

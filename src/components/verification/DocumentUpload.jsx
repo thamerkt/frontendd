@@ -1,6 +1,7 @@
 import { FiArrowRight } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import Cookies from "js-cookie";
 
 const DocumentTypeSelection = ({ onNext, setDocumentType }) => {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ const DocumentTypeSelection = ({ onNext, setDocumentType }) => {
       <h2 className="text-2xl font-bold text-gray-800 mb-2">Select Document Type</h2>
       <p className="text-gray-600 mb-6">Please select the type of document you want to verify</p>
       
-      <div className="grid grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 gap-4 mb-8">
         <button
           onClick={() => {
             setSelectedDocumentType('passport');
@@ -24,6 +25,19 @@ const DocumentTypeSelection = ({ onNext, setDocumentType }) => {
           }`}
         >
           Passport
+        </button>
+        <button
+          onClick={() => {
+            setSelectedDocumentType('driving license');
+            setDocumentType?.('driving license'); 
+          }}
+          className={`py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center ${
+            selectedDocumentType === 'driving license' 
+              ? 'border-teal-500 bg-teal-50 text-teal-700 font-medium shadow-sm' 
+              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          driving license
         </button>
         <button
           onClick={() => {
@@ -44,6 +58,9 @@ const DocumentTypeSelection = ({ onNext, setDocumentType }) => {
         onClick={() => {
           onNext?.();
           navigate('/register/identity-verification/verification/front-document');
+          Cookies.set("SelectedDocumentType",selectedDocumentType)
+          
+          
         }}
         disabled={!selectedDocumentType}
         className={`w-full py-3 px-6 rounded-lg flex items-center justify-center transition-all ${

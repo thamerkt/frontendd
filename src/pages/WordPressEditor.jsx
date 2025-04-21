@@ -27,109 +27,109 @@ import {
 } from 'react-icons/fa';
 import { BiTable } from 'react-icons/bi';
 
-const CustomImage = Image.extend({
-  addAttributes() {
-    return {
-      ...this.parent?.(),
-      src: {
-        default: null,
-        parseHTML: element => element.getAttribute('src'),
-        renderHTML: attributes => {
-          return {
-            src: attributes.src,
-            'data-src': attributes.src
-          };
-        }
-      },
-      alt: {
-        default: null,
-        parseHTML: element => element.getAttribute('alt'),
-        renderHTML: attributes => {
-          return {
-            alt: attributes.alt || ''
-          };
-        }
-      },
-      title: {
-        default: null,
-        parseHTML: element => element.getAttribute('title'),
-        renderHTML: attributes => {
-          return {
-            title: attributes.title || ''
-          };
-        }
-      },
-      'data-id': {
-        default: null,
-        parseHTML: element => element.getAttribute('data-id'),
-        renderHTML: attributes => {
-          return {
-            'data-id': attributes['data-id'] || ''
-          };
-        }
-      },
-      'data-file': {
-        default: null,
-        parseHTML: element => element.getAttribute('data-file'),
-        renderHTML: attributes => {
-          return {
-            'data-file': attributes['data-file'] || ''
-          };
-        }
-      }
-    };
-  },
-  addNodeView() {
-    return ({ node, editor, getPos }) => {
-      const container = document.createElement('div');
-      container.className = 'image-container relative inline-block';
-
-      const img = document.createElement('img');
-      img.src = node.attrs.src;
-      img.alt = node.attrs.alt || '';
-      img.title = node.attrs.title || '';
-      img.className = 'max-w-full h-auto';
-      img.setAttribute('data-id', node.attrs['data-id'] || '');
-      img.setAttribute('data-file', node.attrs['data-file'] || '');
-
-      const deleteButton = document.createElement('button');
-      deleteButton.className = 'absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 text-xs opacity-0 hover:opacity-100 transition-opacity';
-      deleteButton.innerHTML = '<FaTrash />';
-      deleteButton.onclick = () => {
-        const pos = getPos();
-        editor.commands.deleteRange({ from: pos, to: pos + 1 });
-        
-        if (onImageDelete) {
-          onImageDelete(node.attrs['data-id'], node.attrs.src);
-        }
-      };
-
-      container.appendChild(img);
-      container.appendChild(deleteButton);
-
-      container.onmouseenter = () => {
-        deleteButton.style.opacity = '1';
-      };
-      container.onmouseleave = () => {
-        deleteButton.style.opacity = '0';
-      };
-
-      return {
-        dom: container,
-        update: (updatedNode) => {
-          if (updatedNode.type.name !== 'image') return false;
-          img.src = updatedNode.attrs.src;
-          img.alt = updatedNode.attrs.alt || '';
-          img.title = updatedNode.attrs.title || '';
-          return true;
-        }
-      };
-    };
-  }
-});
-
 const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }, ref) => {
   const [uploadedImages, setUploadedImages] = useState([]);
+
+  const CustomImage = Image.extend({
+    addAttributes() {
+      return {
+        ...this.parent?.(),
+        src: {
+          default: null,
+          parseHTML: element => element.getAttribute('src'),
+          renderHTML: attributes => {
+            return {
+              src: attributes.src,
+              'data-src': attributes.src
+            };
+          }
+        },
+        alt: {
+          default: null,
+          parseHTML: element => element.getAttribute('alt'),
+          renderHTML: attributes => {
+            return {
+              alt: attributes.alt || ''
+            };
+          }
+        },
+        title: {
+          default: null,
+          parseHTML: element => element.getAttribute('title'),
+          renderHTML: attributes => {
+            return {
+              title: attributes.title || ''
+            };
+          }
+        },
+        'data-id': {
+          default: null,
+          parseHTML: element => element.getAttribute('data-id'),
+          renderHTML: attributes => {
+            return {
+              'data-id': attributes['data-id'] || ''
+            };
+          }
+        },
+        'data-file': {
+          default: null,
+          parseHTML: element => element.getAttribute('data-file'),
+          renderHTML: attributes => {
+            return {
+              'data-file': attributes['data-file'] || ''
+            };
+          }
+        }
+      };
+    },
+    addNodeView() {
+      return ({ node, editor, getPos }) => {
+        const container = document.createElement('div');
+        container.className = 'image-container relative inline-block';
+
+        const img = document.createElement('img');
+        img.src = node.attrs.src;
+        img.alt = node.attrs.alt || '';
+        img.title = node.attrs.title || '';
+        img.className = 'max-w-full h-auto';
+        img.setAttribute('data-id', node.attrs['data-id'] || '');
+        img.setAttribute('data-file', node.attrs['data-file'] || '');
+
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 text-xs opacity-0 hover:opacity-100 transition-opacity';
+        deleteButton.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="trash" class="svg-inline--fa fa-trash fa-w-14 w-3 h-3" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="currentColor" d="M432 32H312l-9.4-18.7A24 24 0 0 0 281.1 0H166.8a23.72 23.72 0 0 0-21.4 13.3L136 32H16A16 16 0 0 0 0 48v32a16 16 0 0 0 16 16h416a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16zM53.2 467a48 48 0 0 0 47.9 45h245.8a48 48 0 0 0 47.9-45L416 128H32z"></path></svg>';
+        deleteButton.onclick = () => {
+          const pos = getPos();
+          editor.commands.deleteRange({ from: pos, to: pos + 1 });
+          
+          if (onImageDelete) {
+            onImageDelete(node.attrs['data-id'], node.attrs.src);
+          }
+        };
+
+        container.appendChild(img);
+        container.appendChild(deleteButton);
+
+        container.onmouseenter = () => {
+          deleteButton.style.opacity = '1';
+        };
+        container.onmouseleave = () => {
+          deleteButton.style.opacity = '0';
+        };
+
+        return {
+          dom: container,
+          update: (updatedNode) => {
+            if (updatedNode.type.name !== 'image') return false;
+            img.src = updatedNode.attrs.src;
+            img.alt = updatedNode.attrs.alt || '';
+            img.title = updatedNode.attrs.title || '';
+            return true;
+          }
+        };
+      };
+    }
+  });
 
   const editor = useEditor({
     extensions: [
@@ -177,54 +177,72 @@ const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }
 
   const handleImageUpload = useCallback(async (event) => {
     if (!editor) return;
-    
+  
     const file = event.target.files[0];
-    if (!file) return;
-    
-    if (!file.type.match('image.*')) {
-      alert('Please select a valid image file');
+    if (!file || !file.type.startsWith('image/')) {
+      alert('Please select a valid image');
       return;
     }
-    
+  
+    const tempId = Math.random().toString(36).substring(2, 9);
+    const tempUrl = URL.createObjectURL(file);
+  
+    // Insert temp image
+    editor.chain().focus().setImage({
+      src: tempUrl,
+      'data-id': tempId,
+      alt: file.name,
+      title: file.name,
+    }).run();
+  
     try {
-      // Create a preview URL
-      const previewUrl = URL.createObjectURL(file);
-      const imageId = Math.random().toString(36).substring(2, 9);
-      
-      // Insert the image with preview URL
-      editor.chain().focus().setImage({
-        src: previewUrl,
-        'data-id': imageId,
-        'data-file': file.name,
-        alt: file.name,
-        title: file.name
-      }).run();
-      
-      // Call the onImageUpload callback if provided
-      let uploadedImage = null;
-      if (onImageUpload) {
-        uploadedImage = await onImageUpload(file);
+      // Upload image
+      const uploaded = await onImageUpload(file);
+      const filename = uploaded?.filename || file.name;
+      const finalUrl = `http://host.docker.internal:8006/equipment_images/${filename}`;
+  
+      // Replace image node with matching data-id
+      const { state, view } = editor;
+      const { doc, tr } = state;
+      let found = false;
+  
+      doc.descendants((node, pos) => {
+        if (node.type.name === 'image' && node.attrs['data-id'] === tempId) {
+          const newAttrs = {
+            ...node.attrs,
+            src: finalUrl,
+            'data-src': finalUrl,
+          };
+          tr.setNodeMarkup(pos, undefined, newAttrs);
+          found = true;
+          return false; // stop iteration
+        }
+      });
+  
+      if (found) {
+        view.dispatch(tr);
       }
-      
-      // Update our state with the image info
+  
+      // Save image to local state (optional)
       setUploadedImages(prev => [
         ...prev,
         {
-          src: uploadedImage?.src || previewUrl,
-          id: imageId,
-          file: file,
+          src: finalUrl,
+          file,
+          id: tempId,
           alt: file.name,
-          title: file.name
-        }
+          title: file.name,
+        },
       ]);
-    } catch (error) {
-      console.error('Image upload failed:', error);
-      alert(`Image upload failed: ${error.message || 'Please try again.'}`);
+  
+    } catch (err) {
+      console.error('Upload error:', err);
+      alert('Failed to upload image.');
     } finally {
-      event.target.value = '';
+      event.target.value = ''; // reset file input
     }
   }, [editor, onImageUpload]);
-
+  
   const addImage = useCallback(() => {
     if (!editor) return;
     
@@ -276,7 +294,6 @@ const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }
   }));
 
   if (!editor) return <div className="border p-4 rounded-md min-h-[200px]">Loading editor...</div>;
-
 
   return (
     <div className="border border-gray-200 rounded-lg shadow-sm overflow-hidden">

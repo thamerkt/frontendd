@@ -5,7 +5,7 @@ import authStore from "../redux/authStore";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import saveProgress from "../components/utils/saveProgress";
-import useProgressGuard from "../components/utils/ProccessGuard";
+import useProgressGuard from "../components/utils/ProcessGuard";
 
 const EmailVerification = () => {
   const [code, setCode] = useState(new Array(6).fill(""));
@@ -24,6 +24,7 @@ const EmailVerification = () => {
     const saveInitialProgress = async () => {
       if (!userId) {
         showToast("Missing user ID in cookies", "error");
+        navigate('/register')
         return;
       }
 

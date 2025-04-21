@@ -20,7 +20,8 @@ const request = async (method, url, data = null, auth = false) => {
 
 const EquipmentService = {
   fetchRentals: () => request("get", `${API_URL}/stuffs/`),
-  fetchRentalsBy: (filter) => request("get", `${API_URL}/stuffs/?${filter}`, null, true),
+  fetchRentalsmanagementbyid: (id) => request("get", `${API_URL}/stuffmanagment/${id}/`),
+  fetchRentalsBy: (filter,data) => request("get", `${API_URL}/stuffs/?${filter}=${data}`, null, true),
   fetchRentalById: (id) => request("get", `${API_URL}/stuffs/${id}/`, null, true),
   createRental: (data) => request("post", `${API_URL}/stuffs/`, data, true),
   updateRental: (id, data) => request("put", `${API_URL}/stuffs/${id}/`, data, true),

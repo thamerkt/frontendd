@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Cookies from 'js-cookie';
-import useProgressGuard from "../components/utils/ProccessGuard";
+import useProgressGuard from "../components/utils/ProcessGuard";
 
 const IdentityVerification = () => {
   const [qrCode, setQrCode] = useState("");

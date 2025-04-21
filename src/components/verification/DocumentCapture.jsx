@@ -12,13 +12,10 @@ const DocumentCapture = ({
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [detectionStatus, setDetectionStatus] = useState('position');
   const [showUploadOption, setShowUploadOption] = useState(false);
   
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const detectionCanvasRef = useRef(null);
-  const animationRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const title = step === 'front' 
@@ -28,9 +25,9 @@ const DocumentCapture = ({
       : 'Take a Selfie';
 
   const instructions = step === 'front' 
-    ? `Position the front of your ${documentType === 'passport' ? 'passport' : 'ID card'} within the frame`
+    ? `Take a clear photo of the front of your ${documentType === 'passport' ? 'passport' : 'ID card'}`
     : step === 'back' 
-      ? 'Position the back of your ID card within the frame'
+      ? 'Take a clear photo of the back of your ID card'
       : 'Position your face within the frame and look directly at the camera';
 
   useEffect(() => {
@@ -42,8 +39,8 @@ const DocumentCapture = ({
         const constraints = {
           video: { 
             facingMode: step === 'selfie' ? 'user' : 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+            width: { ideal: 720 },
+            height: { ideal: 1280 }
           }
         };
 
@@ -55,7 +52,6 @@ const DocumentCapture = ({
           videoRef.current.playsInline = true;
           await videoRef.current.play();
           setIsCameraActive(true);
-          startDetectionSimulation();
         }
       } catch (err) {
         console.error("Camera error:", err);
@@ -71,77 +67,14 @@ const DocumentCapture = ({
     }
 
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
       if (videoRef.current?.srcObject) {
         videoRef.current.srcObject.getTracks().forEach(track => track.stop());
       }
     };
   }, [step, initialImage]);
 
-  const startDetectionSimulation = () => {
-    let detectionProgress = 0;
-    let lastUpdate = 0;
-
-    const detect = (timestamp) => {
-      if (!videoRef.current || !detectionCanvasRef.current) {
-        animationRef.current = requestAnimationFrame(detect);
-        return;
-      }
-
-      const video = videoRef.current;
-      const canvas = detectionCanvasRef.current;
-      const ctx = canvas.getContext('2d');
-      
-      // Set canvas dimensions
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      
-      // Calculate detection zone
-      const zoneWidth = (video.videoWidth * 80) / 100;
-      const zoneHeight = (video.videoHeight * 60) / 100;
-      const zoneX = (video.videoWidth * 10) / 100;
-      const zoneY = (video.videoHeight * 20) / 100;
-      
-      // Clear previous drawings
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Draw detection zone with animation
-      const pulse = 0.7 + 0.3 * Math.sin(timestamp / 300);
-      
-      ctx.strokeStyle = 
-        detectionStatus === 'ready' ? `rgba(74, 222, 128, ${pulse})` :
-        detectionStatus === 'aligned' ? `rgba(250, 204, 21, ${pulse})` :
-        `rgba(239, 68, 68, ${pulse})`;
-      
-      ctx.lineWidth = 4;
-      ctx.setLineDash([10, 10]);
-      ctx.strokeRect(zoneX, zoneY, zoneWidth, zoneHeight);
-      ctx.setLineDash([]);
-      
-      // Simulate detection progress
-      if (timestamp - lastUpdate > 1000) {
-        detectionProgress = (detectionProgress + 0.2) % 1;
-        lastUpdate = timestamp;
-        
-        if (detectionProgress < 0.4) {
-          setDetectionStatus('position');
-        } else if (detectionProgress < 0.8) {
-          setDetectionStatus('aligned');
-        } else {
-          setDetectionStatus('ready');
-        }
-      }
-
-      animationRef.current = requestAnimationFrame(detect);
-    };
-
-    animationRef.current = requestAnimationFrame(detect);
-  };
-
   const capturePhoto = () => {
-    if (!isCameraActive || detectionStatus !== 'ready') return;
+    if (!isCameraActive || isLoading) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -165,15 +98,6 @@ const DocumentCapture = ({
     }
   };
 
-  const getStatusMessage = () => {
-    switch(detectionStatus) {
-      case 'position': return "Move the document into the frame";
-      case 'aligned': return "Align the document with the outline";
-      case 'ready': return "Ready to capture! Hold steady";
-      default: return "Position your document";
-    }
-  };
-
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
@@ -186,21 +110,15 @@ const DocumentCapture = ({
             <p className="text-gray-500">Starting camera...</p>
           </div>
         ) : initialImage ? (
-          <img src={initialImage} alt="Captured" className="w-full h-full object-cover" />
+          <img src={initialImage} alt="Captured" className="w-full h-full object-contain" />
         ) : (
-          <>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
-            <canvas
-              ref={detectionCanvasRef}
-              className="absolute top-0 left-0 w-full h-full pointer-events-none"
-            />
-          </>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover"
+          />
         )}
       </div>
 
@@ -223,26 +141,11 @@ const DocumentCapture = ({
         </div>
       )}
 
-      {!initialImage && (
-        <div className={`mb-4 p-3 rounded-lg ${
-          detectionStatus === 'ready' ? 'bg-green-50 border-l-4 border-green-500' :
-          detectionStatus === 'aligned' ? 'bg-yellow-50 border-l-4 border-yellow-500' :
-          'bg-red-50 border-l-4 border-red-500'
-        }`}>
+      {!initialImage && isCameraActive && (
+        <div className="mb-4 p-3 rounded-lg bg-blue-50 border-l-4 border-blue-500">
           <div className="flex items-center">
-            {detectionStatus === 'ready' ? (
-              <FiCheck className="text-green-500 mr-2" />
-            ) : (
-              <FiAlertCircle className={
-                detectionStatus === 'aligned' ? 'text-yellow-500 mr-2' : 'text-red-500 mr-2'
-              } />
-            )}
-            <p className={
-              detectionStatus === 'ready' ? 'text-green-700' :
-              detectionStatus === 'aligned' ? 'text-yellow-700' : 'text-red-700'
-            }>
-              {getStatusMessage()}
-            </p>
+            <FiCheck className="text-blue-500 mr-2" />
+            <p className="text-blue-700">Camera ready - take a clear photo of the entire document</p>
           </div>
         </div>
       )}
@@ -261,15 +164,15 @@ const DocumentCapture = ({
           <>
             <button
               onClick={capturePhoto}
-              disabled={!isCameraActive || isLoading || detectionStatus !== 'ready'}
+              disabled={!isCameraActive || isLoading}
               className={`py-3 px-6 rounded-lg flex items-center justify-center ${
-                (!isCameraActive || isLoading || detectionStatus !== 'ready') ?
+                (!isCameraActive || isLoading) ?
                 'bg-gray-300 text-gray-500 cursor-not-allowed' :
                 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
             >
               <FiCamera className="mr-2" />
-              {isLoading ? 'Loading...' : 'Capture'}
+              {isLoading ? 'Loading...' : 'Take Photo'}
             </button>
             {showUploadOption && (
               <button
