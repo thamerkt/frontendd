@@ -11,7 +11,6 @@ const SidebarClient = () => {
   const menuItems = [
     { name: "Dashboard", icon: Home, path: "/client/dashboard" },
     { name: "Bookings", icon: CalendarDays, path: "/client/bookings" },
-    { name: "Payments", icon: CreditCard, path: "/client/payments" },
     { name: "Favorites", icon: Heart, path: "/client/favorite" },
     { name: "Requests", icon: Mailbox, path: "/client/request" },
     { name: "Settings", icon: Settings, path: "/client/settings" },

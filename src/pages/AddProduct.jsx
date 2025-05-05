@@ -53,7 +53,7 @@ const AddProductForm = () => {
   };
 
   const handleImageDelete = async (imageId, imageUrl) => {
-    await fetch(`https://5b22-197-29-209-95.ngrok-free.app/api/images/${imageId}`, {
+    await fetch(`https://674c-165-50-136-134.ngrok-free.app/api/images/${imageId}`, {
       method: 'DELETE'
     });
   };
@@ -193,7 +193,7 @@ const AddProductForm = () => {
     try {
       let categoryId;
       try {
-        const categoryRes = await axios.post('https://5b22-197-29-209-95.ngrok-free.app/api/categories/', {
+        const categoryRes = await axios.post('https://674c-165-50-136-134.ngrok-free.app/api/categories/', {
           name: productData.category.name,
           subcategory: productData.category.subcategory,
         });
@@ -219,7 +219,7 @@ const AddProductForm = () => {
         }
 
         const managementRes = await axios.post(
-          'https://5b22-197-29-209-95.ngrok-free.app/api/stuffmanagment/',
+          'https://674c-165-50-136-134.ngrok-free.app/api/stuffmanagment/',
           managementFormData,
           {
             headers: {
@@ -258,7 +258,7 @@ const AddProductForm = () => {
         stuffFormData.append('stuff_management', stuffManagementId);
         stuffFormData.append('user', productData.user);
 
-        const stuffRes = await axios.post('https://5b22-197-29-209-95.ngrok-free.app/api/stuffs/', stuffFormData, {
+        const stuffRes = await axios.post('https://674c-165-50-136-134.ngrok-free.app/api/stuffs/', stuffFormData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -278,7 +278,7 @@ const AddProductForm = () => {
         imgFormData.append('position', Number.isInteger(img.position) ? img.position : i);
 
         try {
-          await axios.post('https://5b22-197-29-209-95.ngrok-free.app/api/images/', imgFormData, {
+          await axios.post('https://674c-165-50-136-134.ngrok-free.app/api/images/', imgFormData, {
             headers: { 'Content-Type': 'multipart/form-data' },
           });
         } catch (imgErr) {
@@ -297,7 +297,7 @@ const AddProductForm = () => {
             imgFormData.append('position', 0);
 
             try {
-              await axios.post('https://5b22-197-29-209-95.ngrok-free.app/api/images/', imgFormData, {
+              await axios.post('https://674c-165-50-136-134.ngrok-free.app/api/images/', imgFormData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
               });
             } catch (imgErr) {

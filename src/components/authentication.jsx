@@ -80,7 +80,7 @@ const AuthForm = () => {
     const { credential } = credentialResponse;
 
     try {
-      const response = await fetch('https://5b22-197-29-209-95.ngrok-free.app/user/auth/google/', {
+      const response = await fetch('https://674c-165-50-136-134.ngrok-free.app/user/auth/google/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential }),
@@ -146,7 +146,7 @@ const AuthForm = () => {
       // Get user info
       window.FB.api('/me', { fields: 'name,email' }, async (userInfo) => {
         try {
-          const fbResponse = await fetch('https://5b22-197-29-209-95.ngrok-free.app/user/auth/facebook/', {
+          const fbResponse = await fetch('https://674c-165-50-136-134.ngrok-free.app/user/auth/facebook/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -174,7 +174,7 @@ const AuthForm = () => {
             setTimeout(() => {
               const role = data.userdata?.role || 'customer';
               if (role === 'customer') {
-                navigate('/home');
+                navigate('/');
               } else {
                 navigate('/collaboration');
               }

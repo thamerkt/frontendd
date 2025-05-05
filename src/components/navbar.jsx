@@ -141,7 +141,7 @@ const Navbar = () => {
     const handleLogout = () => {
         localStorage.removeItem('user');
         localStorage.removeItem('token');
-        navigate('/login');
+        navigate('/');
         setIsDropdownOpen(false);
     };
 
