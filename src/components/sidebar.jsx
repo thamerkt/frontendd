@@ -115,12 +115,12 @@ const Sidebar = () => {
               <div>
                 <div className="flex items-center space-x-3">
                   <img 
-                    src="/assets/logo.png" 
+                    src="/assets/logo-ekrini.png" 
                     alt="Logo" 
-                    className="w-10 h-10"
+                    className="w-30 h-5"
                     loading="lazy"
                   />
-                  <h1 className="text-xl font-bold text-gray-800">Everything Rentals</h1>
+                  
                 </div>
                 <p className="text-gray-500 mt-2 text-sm font-medium">ONBOARDING PROCESS</p>
               </div>

@@ -31,7 +31,7 @@ const FrontCapture = ({
   const detectionCanvasRef = useRef(null);
   const animationRef = useRef(null);
   const fileInputRef = useRef(null);
-  const [ip, setIP] = useState('');
+  const [ip, setIP] = useState(Cookies.get('local_ip'));
   const [progress, setProgress] = useState(() => {
     const savedProgress = localStorage.getItem('registrationProgress') || '{}';
     return {
@@ -47,13 +47,7 @@ const FrontCapture = ({
     const url = new URL(window.location.href);
     const hostname = url.hostname;
 
-    // Optional: Regex to make sure it's an IPv4 address
-    const ipv4Regex = /^(?:\d{1,3}\.){3}\d{1,3}$/;
-    if (ipv4Regex.test(hostname)) {
-      setIP(hostname);
-    } else {
-      setIP('Not an IPv4 address');
-    }
+    
     const startCamera = async () => {
       try {
         setIsLoading(true);
@@ -209,8 +203,11 @@ const FrontCapture = ({
   
       let response1;
       try {
-        response1 = await axios.post(`http://${ip}:8001/api/upload-image/`, formDataImage, {
-          headers: { "Content-Type": "multipart/form-data" },
+        response1 = await axios.post(`https://5b22-197-29-209-95.ngrok-free.app/ocr/upload-image/`, formDataImage, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          withCredentials: true,
         });
       } catch (err) {
         console.error("Upload-image API error:", err.response?.data || err.message);
@@ -231,22 +228,29 @@ const FrontCapture = ({
       formData.append("document_name", "National ID Front");
       formData.append("document_url", file);
       formData.append("status", "pending");
-      formData.append('uploaded_by', user); 
-      formData.append("document_type", "1");
+      formData.append('uploaded_by', localStorage.getItem('user')); 
+      formData.append("document_type",'1');
       formData.append("submission_date", new Date().toISOString());
       formData.append("file", file);
   
       let response2;
-      try {
-        response2 = await axios.post(`http://${ip}:8001/api/document/`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-      } catch (err) {
-        console.error("Document API error:", err.response?.data || err.message);
-        setError("Failed to save document. Please try again.");
-        return;
-      }
-  
+try {
+  response2 = await axios.post(
+    `https://5b22-197-29-209-95.ngrok-free.app/ocr/document/`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+} catch (err) {
+  console.error("Document API error:", err.response?.data || err.message);
+  setError("Failed to save document. Please try again.");
+  return;
+}
+console.log(response2);
+
       // Final success handling
       setCapturedImage(imageData);
       if (onCapture) onCapture(imageData);
@@ -286,18 +290,19 @@ const FrontCapture = ({
           formData.append('document_name', 'National ID Front');
           formData.append('document_url', file);
           formData.append('status', 'pending');
-          formData.append('uploaded_by',user); 
-          formData.append('document_type', '1');
+          formData.append('uploaded_by', localStorage.getItem('user')); 
+          formData.append("document_type",'1');
           formData.append('submission_date', new Date().toISOString());
 
           // Make API call
           const response = await axios.post(
-            `http://${ip}:8001/api/document/`,
+            `https://5b22-197-29-209-95.ngrok-free.app/ocr/document/`,
             formData,
             {
               headers: {
-                'Content-Type': 'multipart/form-data',
-              }
+                "Content-Type": "multipart/form-data",
+              },
+              withCredentials: true,
             }
           );
 

@@ -6,7 +6,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
 import { motion } from "framer-motion";
 import { FiPlus, FiChevronLeft, FiChevronRight, FiCalendar } from "react-icons/fi";
-import SidebarAdmin from '../../components/Admin/sidebar';
+
 
 const BookingComponent = () => {
   const calendarRef = useRef(null);

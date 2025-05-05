@@ -131,8 +131,9 @@ const BusinessDetail = () => {
   
     try {
       const response = await axios.post(
-        'http://127.0.0.1:8000/api/verification/company/',
-        company
+        'https://5b22-197-29-209-95.ngrok-free.app/ocr/verification/company/',
+        company,
+        
       );
   
       if ((response.data && response.data.success === true) || (response.success === true)) {

@@ -26,7 +26,7 @@ const BackCapture = ({
   const animationRef = useRef(null);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
-  const [ip, setIP] = useState('');
+  const [ip, setIP] = useState(Cookies.get('local_ip'));
 
 
   const [progress, setProgress] = useState(() => {
@@ -184,14 +184,14 @@ const BackCapture = ({
         formData.append('document_name', 'National ID Back');
         formData.append('status', 'pending');
         formData.append('document_url', file);
-        formData.append('uploaded_by', Cookies.get('keycloak_user_id'));
-        formData.append('document_type', '1');
+        formData.append('uploaded_by', localStorage.getItem('user')); 
+        formData.append("document_type",'1');
         formData.append('submission_date', new Date().toISOString());
         formData.append('file', file);
 
         let response;
         try {
-          response = await axios.post(`http://${ip}:8001/api/document/`, formData, {
+          response = await axios.post(`https://5b22-197-29-209-95.ngrok-free.app/ocr/document/`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
           });
         } catch (err) {

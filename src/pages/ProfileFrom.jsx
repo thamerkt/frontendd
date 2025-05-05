@@ -18,7 +18,7 @@ import { progress } from "framer-motion";
 
 
 const ProfileForm = () => {
-  useProgressGuard("email-verification", 1);
+  
   const [role, setRole] = useState('customer');
   const navigate = useNavigate();
   const [newProgress, setNewProgress] = useState({});

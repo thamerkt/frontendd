@@ -5,7 +5,6 @@ import authStore from "../redux/authStore";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import saveProgress from "../components/utils/saveProgress";
-import useProgressGuard from "../components/utils/ProcessGuard";
 
 const EmailVerification = () => {
   const [code, setCode] = useState(new Array(6).fill(""));
@@ -14,25 +13,18 @@ const EmailVerification = () => {
   const navigate = useNavigate();
   const toastIdRef = useRef(null);
   const [countdown, setCountdown] = useState(30);
-  //useProgressGuard(1, 1); 
-
+  
   const userId = Cookies.get("keycloak_user_id");
-  const email = "kthirithamer1@gmail.com";
+  const email = Cookies.get("email") || "kthirithamer1@gmail.com";
 
   // Save initial progress on mount
   useEffect(() => {
-    const saveInitialProgress = async () => {
-      if (!userId) {
-        showToast("Missing user ID in cookies", "error");
-        navigate('/register')
-        return;
-      }
-
-      
-    };
-
-    saveInitialProgress();
-  }, [userId]);
+    if (!userId) {
+      showToast("Missing user ID in cookies", "error");
+      navigate('/register');
+      return;
+    }
+  }, [userId, navigate]);
 
   // Countdown timer
   useEffect(() => {
@@ -85,8 +77,15 @@ const EmailVerification = () => {
   const handleVerify = async () => {
     try {
       setLoading(true);
-      if (!userId) throw new Error("Missing user ID in cookies.");
+      if (!userId) {
+        throw new Error("Missing user ID in cookies.");
+      }
+      
       const verificationCode = code.join("");
+      if (verificationCode.length !== 6) {
+        throw new Error("Please enter a 6-digit code");
+      }
+
       const response = await authStore.verify(verificationCode);
       showToast(response?.message || "Verification successful!");
       
@@ -97,7 +96,10 @@ const EmailVerification = () => {
         verified: true,
       });
       
-      setTimeout(() => navigate("/register/profil"), 1500);
+      // Ensure navigation happens after state is updated
+      setTimeout(() => {
+        navigate("/register/profil", { replace: true });
+      }, 1500);
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || "Verification failed";
       showToast(errorMessage, "error");
@@ -106,9 +108,14 @@ const EmailVerification = () => {
     }
   };
 
-  const handleResend = () => {
-    showToast("New verification code sent!", "info");
-    setCountdown(30);
+  const handleResend = async () => {
+    try {
+      await authStore.resendVerificationCode();
+      showToast("New verification code sent!", "info");
+      setCountdown(30);
+    } catch (error) {
+      showToast("Failed to resend code. Please try again.", "error");
+    }
   };
 
   return (
@@ -125,7 +132,7 @@ const EmailVerification = () => {
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-4">Verify your email address</h1>
           <p className="text-gray-600 text-lg">
-            We've sent a 6-digit confirmation code to <span className="font-medium text-gray-800">{Cookies.get('email')}</span>
+            We've sent a 6-digit confirmation code to <span className="font-medium text-gray-800">{email}</span>
           </p>
         </div>
         

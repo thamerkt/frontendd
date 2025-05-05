@@ -1,7 +1,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const API_URL = "http://localhost:8000/user"; 
+const API_URL = "https://5b22-197-29-209-95.ngrok-free.app/user"; 
 
 const authStore = {
   login: async (email,password) => {

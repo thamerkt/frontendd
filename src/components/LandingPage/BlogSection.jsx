@@ -1,5 +1,7 @@
 import React from "react";
-import { Link } from "react-router-dom"; // Use this if you're using React Router for navigation
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { CalendarDays, User, ArrowRight } from "lucide-react";
 
 const blogPosts = [
   {
@@ -7,92 +9,130 @@ const blogPosts = [
     title: "Top 10 Camping Essentials for Your Next Adventure",
     excerpt:
       "Discover the must-have items for a successful camping trip. From tents to cooking gear, we've got you covered.",
-    image: "/assets/blog1.jpg",
+    image: "https://www.apartments.com/rental-manager/sites/default/files/image/2023-02/nine-steps-to-turn-your-home-into-a-rental-property_hero.jpg",
     date: "October 10, 2023",
     author: "John Doe",
     slug: "top-10-camping-essentials",
+    readTime: "5 min read"
   },
   {
     id: 2,
     title: "How to Choose the Perfect Wedding Decorations",
     excerpt:
       "Planning a wedding? Learn how to select the best decorations to make your special day unforgettable.",
-    image: "/assets/blog2.jpg",
+    image: "https://www.apartments.com/rental-manager/sites/default/files/image/2023-02/nine-steps-to-turn-your-home-into-a-rental-property_hero.jpg",
     date: "October 5, 2023",
     author: "Jane Smith",
     slug: "perfect-wedding-decorations",
+    readTime: "7 min read"
   },
   {
     id: 3,
     title: "Fitness Gear Rentals: Save Money, Stay Fit",
     excerpt:
       "Why buy expensive fitness equipment when you can rent? Explore the benefits of renting fitness gear.",
-    image: "/assets/blog3.jpg",
+    image: "https://www.apartments.com/rental-manager/sites/default/files/image/2023-02/nine-steps-to-turn-your-home-into-a-rental-property_hero.jpg",
     date: "September 28, 2023",
     author: "Mike Johnson",
     slug: "fitness-gear-rentals",
+    readTime: "4 min read"
   },
 ];
 
-export default function BlogSection() {
+const BlogCard = ({ post, index }) => {
   return (
-    <div className="py-16 bg-gray-50">
-      <div className="container mx-auto px-4">
-        {/* Section Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-800">Latest Blog Posts</h2>
-          <p className="text-gray-600 mt-2">
-            Stay updated with the latest tips, trends, and news in the rental world.
-          </p>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1, duration: 0.5 }}
+      whileHover={{ y: -5 }}
+      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group"
+    >
+      <div className="relative overflow-hidden h-60">
+        <img
+          src={post.image}
+          alt={post.title}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+        <div className="absolute bottom-0 left-0 p-4">
+          <span className="inline-block bg-teal-600 text-white text-xs px-2 py-1 rounded-md">
+            {post.readTime}
+          </span>
+        </div>
+      </div>
+
+      <div className="p-6">
+        <div className="flex items-center text-gray-500 text-sm mb-3">
+          <div className="flex items-center mr-4">
+            <CalendarDays className="w-4 h-4 mr-1" />
+            <span>{post.date}</span>
+          </div>
+          <div className="flex items-center">
+            <User className="w-4 h-4 mr-1" />
+            <span>{post.author}</span>
+          </div>
         </div>
 
-        {/* Blog Posts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {blogPosts.map((post) => (
-            <div
-              key={post.id}
-              className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
-            >
-              {/* Blog Image */}
-              <img
-                src={post.image}
-                alt={post.title}
-                className="w-full h-48 object-cover"
-              />
+        <h3 className="text-xl font-bold text-gray-800 mb-3 line-clamp-2">
+          {post.title}
+        </h3>
+        <p className="text-gray-600 mb-4 line-clamp-3">
+          {post.excerpt}
+        </p>
 
-              {/* Blog Content */}
-              <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-800">{post.title}</h3>
-                <p className="text-gray-600 mt-2">{post.excerpt}</p>
+        <Link
+          to={`/blog/${post.slug}`}
+          className="inline-flex items-center text-teal-600 font-medium hover:text-teal-700 transition-colors duration-300"
+        >
+          Read more <ArrowRight className="w-4 h-4 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
+        </Link>
+      </div>
+    </motion.div>
+  );
+};
 
-                {/* Metadata (Date & Author) */}
-                <div className="mt-4 text-sm text-gray-500">
-                  <span>{post.date}</span> • <span>{post.author}</span>
-                </div>
+export default function BlogSection() {
+  return (
+    <div className="py-20 bg-gradient-to-b from-gray-50 to-white">
+      <div className="container mx-auto px-4 sm:px-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-16"
+        >
+          <span className="inline-block bg-teal-100 text-teal-800 text-sm font-semibold px-3 py-1 rounded-full mb-4">
+            Blog & News
+          </span>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+            Latest From Our Blog
+          </h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Stay updated with the latest tips, trends, and news in the rental world.
+          </p>
+        </motion.div>
 
-                {/* Read More Button */}
-                <div className="mt-6">
-                  <Link
-                    to={`/blog/${post.slug}`} // Replace with your blog post route
-                    className="text-teal-600 font-semibold hover:underline"
-                  >
-                    Read More →
-                  </Link>
-                </div>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {blogPosts.map((post, index) => (
+            <BlogCard key={post.id} post={post} index={index} />
           ))}
         </div>
 
-        {/* View All Button */}
-        <div className="text-center mt-12">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="text-center mt-16"
+        >
           <Link
-            to="/blog" // Replace with your blog page route
-            className="bg-teal-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-teal-700 transition-colors duration-300"
+            to="/blog"
+            className="inline-flex items-center justify-center bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-teal-200"
           >
-            View All Posts
+            View All Articles
+            <ArrowRight className="w-5 h-5 ml-2" />
           </Link>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

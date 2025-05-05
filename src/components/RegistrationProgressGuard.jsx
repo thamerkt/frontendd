@@ -44,7 +44,7 @@ const RegistrationProgressGuard = () => {
         
         // Find the highest completed step in the flow
         const targetRoute = flow.find(step => step.step === savedProgress.step);
-        const redirectPath = targetRoute?.path || "/register/email-verification";
+        const redirectPath = targetRoute?.path || "/register/email-verfication";
         console.log('Redirecting to:', redirectPath);
         navigate(redirectPath);
         return;

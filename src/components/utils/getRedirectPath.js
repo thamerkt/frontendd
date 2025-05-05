@@ -1,5 +1,5 @@
 export function getRedirectPath(progress) {
-    if (!progress || !progress.step) return "/register/email-verification";
+    if (!progress || !progress.step) return "/register";
   
     const { step} = progress;
     const role=localStorage.getItem("role")
@@ -7,7 +7,7 @@ export function getRedirectPath(progress) {
   
     switch (step) {
       case 1:
-        return "/register";
+        return "/register/email-verification";
       case 2:
         return "/register/profil";
       case 3:

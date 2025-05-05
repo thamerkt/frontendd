@@ -9,7 +9,7 @@ const CallbackPage = () => {
   useEffect(() => {
     if (code) {
       // Send the authorization code to your backend
-      fetch('http://localhost:8000/user/auth/google/', {
+      fetch('https://5b22-197-29-209-95.ngrok-free.app/user/auth/google/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),

@@ -5,7 +5,7 @@ import {
   CreditCard, Bell, Lock, CheckCircle, AlertCircle, 
   ChevronDown, Loader2, Save, Shield, X, Edit
 } from 'lucide-react';
-import SidebarAdmin from '../../components/Admin/sidebar';
+
 
 // Constants for all data
 const USER_DATA = {
@@ -91,6 +91,7 @@ const SettingsPage = () => {
       reader.readAsDataURL(file);
     }
   };
+  
 
   const sectionVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -115,7 +116,7 @@ const SettingsPage = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Admin Sidebar */}
-      <SidebarAdmin />
+      
       
       {/* Main Content */}
       <div className="flex-1 ml-20 lg:ml-64 overflow-y-auto">

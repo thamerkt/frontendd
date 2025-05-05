@@ -31,7 +31,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
   const [faceStatus, setFaceStatus] = useState('position');
   const [isUploading, setIsUploading] = useState(false);
   const [imageId, setImageId] = useState(null);
-  const [ip, setIP] = useState('');
+  const [ip, setIP] = useState(Cookies.get('local_ip'));
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -226,7 +226,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
       const formData = new FormData();
       formData.append("selfie", file);
 
-      const response = await axios.post(`http://${ip}:8001/api/selfie/`, formData, {
+      const response = await axios.post(`https://5b22-197-29-209-95.ngrok-free.app/ocr/selfie/`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -240,13 +240,13 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
       documentFormData.append("document_name", "Selfie");
       documentFormData.append('status', 'pending');
       documentFormData.append('document_url', file);
-      documentFormData.append('uploaded_by', Cookies.get('keycloak_user_id'));
-      documentFormData.append('document_type', '1');
+      documentFormData.append('uploaded_by', localStorage.getItem('user')); 
+      documentFormData.append("document_type",'1');
       documentFormData.append('submission_date', new Date().toISOString());
       documentFormData.append('file', file);
 
       const documentResponse = await axios.post(
-        `http://${ip}:8001/api/document/`,
+        `https://5b22-197-29-209-95.ngrok-free.app/ocr/document/`,
         documentFormData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );

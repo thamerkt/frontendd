@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo,useCallback  } from "react";
 import EquipmentService from "../services/EquipmentService";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -9,6 +9,10 @@ import FullCalendar from '@fullcalendar/react'; // FullCalendar component
 import dayGridPlugin from '@fullcalendar/daygrid'; // For month view in the calendar
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction'; 
+import { useParams } from 'react-router-dom';
+import TrackingService from "../services/TrackingService";
+
+
 
 import axios from "axios";
 import { 
@@ -57,7 +61,8 @@ const [showCalendar, setShowCalendar] = useState(false);
   const [expandedSpecs, setExpandedSpecs] = useState(false);
   
   const carouselRef = useRef(null);
-  const productId = 15; // Fixed ID as per requirement
+  
+  const {productId }=useParams();; // Fixed ID as per requirement
   const contractLink = "/terms-and-conditions";
 
   // Define images array
@@ -69,6 +74,39 @@ const [showCalendar, setShowCalendar] = useState(false);
 
   // Toggle the visibility of the form when the button is clicked
   const handleShowForm = () => setShowForm(!showForm);
+  const getProductImage = useCallback((productId) => {
+    console.log('getProductImage called with productId:', productId);
+    console.log('Current images array:', images);
+  
+    if (!Array.isArray(images) || images.length === 0) {
+      console.log('No images available');
+      return null;
+    }
+  
+    const productImages = images.filter(img => img?.stuff == productId);
+    console.log('Filtered product images:', productImages);
+  
+    if (productImages.length === 0) {
+      console.log('No images found for this product');
+      return null;
+    }
+  
+    const mainImage = productImages.find(img => img?.position === 1);
+    console.log('Main image:', mainImage);
+  
+    let url = mainImage?.url || productImages[0]?.url || null;
+    console.log('Initial URL:', url);
+  
+    if (url) {
+     
+        url = url.replace('host.docker.internal', '192.168.1.15');
+        console.log('Processed Docker URL:', url);
+      
+    }
+  
+    console.log('Final URL to be returned:', url);
+    return url;
+  }, [images]);
 
   // Handle event date selection from the calendar
   const handleDateSelect = (info) => {
@@ -87,6 +125,23 @@ const [showCalendar, setShowCalendar] = useState(false);
     setQuantityy(1);
     setShowForm(false);
   };
+  const RELATED_PRODUCTS = [
+    {
+      id: 1,
+      stuffname: "Product 1",
+      price_per_day: 50,
+      rating: 4,
+      image: DEFAULT_PRODUCT_IMAGE
+    },
+    {
+      id: 2,
+      stuffname: "Product 2",
+      price_per_day: 75,
+      rating: 5,
+      image: DEFAULT_PRODUCT_IMAGE
+    },
+    // Add more products as needed
+  ];
 
   // Product specifications
   const specifications = [
@@ -168,24 +223,70 @@ const [showCalendar, setShowCalendar] = useState(false);
   // Fetch all required data
   useEffect(() => {
     const fetchData = async () => {
+      console.log(productId); // Logging the productId
+
       try {
         setLoading(true);
-  
+      
         // Fetch product and images in parallel
         const [productData, productImages] = await Promise.all([
           EquipmentService.fetchRentalById(productId),
-          axios.get(`http://127.0.0.1:8000/api/images/?stuff=${productId}`)
+          axios.get(`https://5b22-197-29-209-95.ngrok-free.app/api/images/?stuff=${productId}`, {
+            withCredentials: true,
+          }),
         ]);
-
+        console.log(productImages)
+        // Process images to replace host.docker.internal with IP
+        const processedImages = productImages.data.map(image => {
+          if (image.url && image.url.includes('host.docker.internal')) {
+            return {
+              ...image,
+              url: image.url.replace('host.docker.internal', '192.168.1.15')
+            };
+          }
+          return image;
+        });
+      
+        // Process detailed_description to replace host.docker.internal with IP
+        const processedProductData = {
+          ...productData,
+          detailed_description: productData.detailed_description 
+            ? productData.detailed_description.replace(
+                /host\.docker\.internal/g, 
+                '192.168.1.15'
+              )
+            : productData.detailed_description
+        };
+      
         // Fetch related products based on category ID
         const allProducts = await axios.get(
-          `http://127.0.0.1:8000/api/stuffs/?category=${productData.category}`
+          `https://5b22-197-29-209-95.ngrok-free.app/api/stuffs/?category=${productData.category}`
         );
-  
-        setProduct(productData);
-        setImages(productImages.data);
-        
-        setRelatedProducts(allProducts.data);
+      
+        // Process related products' images and descriptions
+        const processedRelatedProducts = allProducts.data.map(product => {
+          return {
+            ...product,
+            // Process image URLs if they exist
+            ...(product.image && { 
+              image: product.image.includes('host.docker.internal') 
+                ? product.image.replace('host.docker.internal', '192.168.1.15')
+                : product.image
+            }),
+            // Process descriptions if they exist
+            ...(product.detailed_description && {
+              detailed_description: product.detailed_description.replace(
+                /host\.docker\.internal/g,
+                '192.168.1.15'
+              )
+            })
+          };
+        });
+      
+        setProduct(processedProductData); // Set the processed product data
+        setImages(processedImages);
+        setRelatedProducts(processedRelatedProducts);
+        console.log('Processed product data:', processedProductData);
       } catch (err) {
         console.error("Failed to fetch product data:", err);
         setError("Failed to load product details");
@@ -194,10 +295,24 @@ const [showCalendar, setShowCalendar] = useState(false);
         setLoading(false);
       }
     };
-  
-    fetchData();
-    console.log(product.detailed_description)
-  }, [productId]);
+
+    // Track page view after product data is fetched
+    const handleProductView = async (productId) => {
+      await TrackingService.trackPageView(productId);
+      // Other tracking or actions can go here
+    };
+
+    fetchData(); // Call to fetch product and related data
+    handleProductView(productId); // Track page view
+
+  }, [productId]); // Dependency array ensures it re-runs when productId changes
+
+  // Log product details when available
+  useEffect(() => {
+    if (product) {
+      console.log(product.detailed_description); // Log product details after data is fetched
+    }
+  }, [product]);
 
   // Loading and error states
   if (loading) {
@@ -434,6 +549,7 @@ const [showCalendar, setShowCalendar] = useState(false);
             </motion.button>
           </div>
           
+          {/* Thumbnails */}
           <div className="grid grid-cols-4 gap-3">
             {productImages.map((img, index) => (
               <motion.div
@@ -763,7 +879,7 @@ const [showCalendar, setShowCalendar] = useState(false);
                 >
                   <div className="relative w-full aspect-square bg-gray-50 rounded-lg overflow-hidden mb-3">
                     <img
-                      src={product.image || DEFAULT_PRODUCT_IMAGE}
+                      src={getProductImage(productId)}
                       alt={product.stuffname}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -796,6 +912,47 @@ const [showCalendar, setShowCalendar] = useState(false);
           </div>
         </motion.div>
       )}
+
+      {/* Recently Viewed */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="mt-16"
+      >
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Recently Viewed</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
+          {RELATED_PRODUCTS.slice(2, 7).map(product => (
+            <motion.div 
+              key={product.id}
+              whileHover={{ y: -5 }}
+              className="border border-gray-200 rounded-xl p-4 bg-white hover:shadow-lg transition-all group"
+            >
+              <div className="relative w-full aspect-square bg-gray-50 rounded-lg overflow-hidden mb-3">
+                <img
+                  src={getProductImage(productId)}
+                  alt={product.stuffname}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <button className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-sm hover:bg-teal-50 transition-colors">
+                  <FaHeart className="text-gray-400 hover:text-teal-500" />
+                </button>
+              </div>
+              <h3 className="font-medium text-gray-900 line-clamp-1">{product.stuffname}</h3>
+              <div className="flex items-center mt-1">
+                {[...Array(5)].map((_, i) => (
+                  i < Math.floor(product.rating) ? 
+                  <FaStar key={i} className="text-teal-500 text-xs" /> : 
+                  <FaRegStar key={i} className="text-teal-500 text-xs" />
+                ))}
+              </div>
+              <div className="mt-3">
+                <span className="text-teal-600 font-bold">{product.price_per_day}</span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
 
       <ToastContainer position="bottom-right" />
      

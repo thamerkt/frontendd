@@ -6,26 +6,47 @@ import 'react-toastify/dist/ReactToastify.css';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
 const clientId = '348131616981-85ms78t7eshj5l60pg07adpe9fc00tbt.apps.googleusercontent.com';
+const facebookAppId = '445559468644845'; // Replace with your Facebook App ID
 
 const AuthForm = () => {
   const location = useLocation();
   const isRegister = location.pathname === "/register";
   const navigate = useNavigate();
 
+  // Initialize Facebook SDK
+  useEffect(() => {
+    // Load Facebook SDK
+    window.fbAsyncInit = function() {
+      window.FB.init({
+        appId: facebookAppId,
+        cookie: true,
+        xfbml: true,
+        version: 'v12.0'
+      });
+    };
+
+    // Load the SDK asynchronously
+    (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "https://connect.facebook.net/en_US/sdk.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+  }, []);
+
   // Check for user data in localStorage and redirect if found
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
-      try {
-        const { role } = JSON.parse(userData);
+      setTimeout(() => {
+        const role = JSON.parse(userData)?.role || 'customer';
         if (role === 'customer') {
-          navigate('/home');
+          navigate('/');
         } else {
           navigate('/collaboration');
         }
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-      }
+      }, 1000);
     }
   }, [navigate]);
 
@@ -53,12 +74,13 @@ const AuthForm = () => {
     setError("");
   };
 
+  // Google OAuth handlers
   const handleSuccess = async (credentialResponse) => {
     console.log("Google OAuth Success:", credentialResponse);
     const { credential } = credentialResponse;
 
     try {
-      const response = await fetch('http://localhost:8000/user/auth/google/', {
+      const response = await fetch('https://5b22-197-29-209-95.ngrok-free.app/user/auth/google/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential }),
@@ -102,6 +124,78 @@ const AuthForm = () => {
     toast.error("Google login failed. Please try again.");
   };
 
+  // Facebook OAuth handlers
+  const handleFacebookLogin = () => {
+    window.FB.login(
+      (response) => {
+        if (response.authResponse) {
+          handleFacebookResponse(response.authResponse);
+        } else {
+          console.log('User cancelled login or did not fully authorize.');
+          toast.error("Facebook login was cancelled.");
+        }
+      },
+      { scope: 'public_profile,email' }
+    );
+  };
+
+  const handleFacebookResponse = async (authResponse) => {
+    console.log("Facebook OAuth Success:", authResponse);
+    
+    try {
+      // Get user info
+      window.FB.api('/me', { fields: 'name,email' }, async (userInfo) => {
+        try {
+          const fbResponse = await fetch('https://5b22-197-29-209-95.ngrok-free.app/user/auth/facebook/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              accessToken: authResponse.accessToken,
+              userID: authResponse.userID,
+              email: userInfo.email,
+              name: userInfo.name
+            }),
+          });
+
+          if (fbResponse.ok) {
+            const data = await fbResponse.json();
+            console.log('User authenticated:', data);
+
+            if (data.userdata) {
+              localStorage.setItem('user', JSON.stringify({
+                email: data.userdata.email,
+                role: data.userdata.role || 'customer',
+                first_name: data.userdata.first_name,
+                last_name: data.userdata.last_name
+              }));
+            }
+
+            toast.success("Facebook login successful! Redirecting...");
+            setTimeout(() => {
+              const role = data.userdata?.role || 'customer';
+              if (role === 'customer') {
+                navigate('/home');
+              } else {
+                navigate('/collaboration');
+              }
+            }, 3000);
+          } else {
+            const errorData = await fbResponse.json();
+            console.error('Authentication error:', errorData);
+            toast.error(errorData.message || "Facebook login failed. Please try again.");
+          }
+        } catch (error) {
+          console.error('Network error:', error);
+          toast.error("Network error. Please try again.");
+        }
+      });
+    } catch (error) {
+      console.error('Facebook API error:', error);
+      toast.error("Failed to fetch Facebook user info.");
+    }
+  };
+
+  // Form submission handler
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
@@ -138,7 +232,7 @@ const AuthForm = () => {
         toast.success("Login successful! Redirecting...");
         setTimeout(() => {
           if (userData.role === 'customer') {
-            navigate('/home');
+            navigate('/');
           } else {
             navigate('/collaboration');
           }
@@ -275,23 +369,21 @@ const AuthForm = () => {
                   </div>
                 </div>
 
-                {isRegister && (
-                  <div>
-                    <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                      Account Type
-                    </label>
-                    <select
-                      id="role"
-                      name="role"
-                      value={formData.role}
-                      onChange={handleChange}
-                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md"
-                    >
-                      <option value="customer">Customer</option>
-                      <option value="owner">Owner</option>
-                    </select>
-                  </div>
-                )}
+                <div>
+                  <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                    Account Type
+                  </label>
+                  <select
+                    id="role"
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md"
+                  >
+                    <option value="customer">Customer</option>
+                    <option value="owner">Owner</option>
+                  </select>
+                </div>
               </>
             )}
 
@@ -367,7 +459,7 @@ const AuthForm = () => {
               </GoogleOAuthProvider>
 
               <button
-                type="button"
+                onClick={handleFacebookLogin}
                 className="w-full inline-flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 <svg className="w-5 h-5 mr-2" fill="#000000" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

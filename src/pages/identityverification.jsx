@@ -13,7 +13,7 @@ const IdentityVerification = () => {
     if (!user) return;
 
     axios
-      .post("http://127.0.0.1:8001/api/generate-qr/",  {
+      .post("https://5b22-197-29-209-95.ngrok-free.app/ocr/generate-qr/",  {
         user: user,
       } )
       .then((response) => {

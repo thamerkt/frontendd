@@ -1,6 +1,62 @@
 import { CheckCircle, XCircle, Clock, Edit, Trash2, ArrowUp, ArrowDown, TrendingUp, Package, DollarSign, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useState, useEffect } from "react";
+import axios from 'axios';
+
+// API Service
+const apiService = {
+  reports: {
+    getByUser: async (username) => {
+      const response = await axios.get(`http://127.0.0.1:8002/api/rapports/?user=${username}`);
+      return response.data;
+    },
+    create: async (reportData) => {
+      const response = await axios.post('http://127.0.0.1:8002/api/rapports/', reportData, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      return response.data;
+    }
+  },
+  reportData: {
+    getByReport: async (reportId) => {
+      const response = await axios.get(`http://127.0.0.1:8002/api/rapport-data/?rapport=${reportId}`);
+      return response.data;
+    },
+    create: async (metricData) => {
+      const response = await axios.post('http://127.0.0.1:8002/api/rapport-data/', metricData);
+      return response.data;
+    }
+  }
+};
+
+const REQUIRED_REPORTS = [
+  {
+    type: "client_performance",
+    title: "Client Performance Report",
+    description: "Detailed analysis of client rental metrics",
+    is_scheduled: true,
+    schedule_frequency: "monthly",
+    metrics: [
+      { metric_name: "Total Revenue", metric_value: 0, unit: "$" },
+      { metric_name: "Total Rentals", metric_value: 0, unit: "" },
+      { metric_name: "Active Customers", metric_value: 0, unit: "" },
+      { metric_name: "Most Rented Product", metric_value: "None", unit: "" }
+    ]
+  },
+  {
+    type: "client_financial",
+    title: "Client Financial Report",
+    description: "Financial overview of rental activities",
+    is_scheduled: true,
+    schedule_frequency: "monthly",
+    metrics: [
+      { metric_name: "Monthly Revenue", metric_value: 0, unit: "$" },
+      { metric_name: "Monthly Growth", metric_value: 0, unit: "%" },
+      { metric_name: "Average Rental Value", metric_value: 0, unit: "$" }
+    ]
+  }
+];
 
 const rentalProducts = [
   { 
@@ -55,29 +111,146 @@ const rentalProducts = [
   },
 ];
 
-const statusData = [
-  { name: 'Delivered', value: 2 },
-  { name: 'Processing', value: 2 },
-  { name: 'Canceled', value: 1 },
-];
-
-const monthlyRevenueData = [
-  { name: 'Jan', revenue: 4000 },
-  { name: 'Feb', revenue: 3000 },
-  { name: 'Mar', revenue: 5000 },
-  { name: 'Apr', revenue: 2780 },
-  { name: 'May', revenue: 1890 },
-  { name: 'Jun', revenue: 2390 },
-  { name: 'Jul', revenue: 3490 },
-];
-
 const COLORS = ['#0d9488', '#f59e0b', '#ef4444'];
 
 const ClientComponent = () => {
-  const totalRevenue = 18976.75;
-  const totalRentals = 24;
-  const activeCustomers = 15;
-  const popularProduct = "Camera";
+  const [loadingReports, setLoadingReports] = useState(true);
+  const [reportError, setReportError] = useState(null);
+  const [clientReports, setClientReports] = useState([]);
+  const [clientMetrics, setClientMetrics] = useState({});
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    totalRentals: 0,
+    activeCustomers: 0,
+    popularProduct: "None",
+    monthlyGrowth: "0%",
+    avgRentalValue: 0
+  });
+
+  const [statusData, setStatusData] = useState([
+    { name: 'Delivered', value: 0 },
+    { name: 'Processing', value: 0 },
+    { name: 'Canceled', value: 0 },
+  ]);
+
+  const [monthlyRevenueData, setMonthlyRevenueData] = useState([
+    { name: 'Jan', revenue: 0 },
+    { name: 'Feb', revenue: 0 },
+    { name: 'Mar', revenue: 0 },
+    { name: 'Apr', revenue: 0 },
+    { name: 'May', revenue: 0 },
+    { name: 'Jun', revenue: 0 },
+    { name: 'Jul', revenue: 0 },
+  ]);
+
+  // Initialize client reports and metrics
+  useEffect(() => {
+    const initializeClientReports = async () => {
+      try {
+        setLoadingReports(true);
+        setReportError(null);
+        
+        // Simulate client data
+        const clientName = "client";
+        
+        // 1. Fetch existing reports
+        const existingReports = await apiService.reports.getByUser(clientName);
+        
+        // 2. Check which required reports are missing
+        const missingReports = REQUIRED_REPORTS.filter(requiredReport => 
+          !existingReports.some(existingReport => existingReport.type === requiredReport.type)
+        );
+        
+        // 3. Create missing reports
+        const createdReports = await Promise.all(
+          missingReports.map(async reportTemplate => {
+            const now = new Date().toISOString();
+            const reportData = {
+              ...reportTemplate,
+              user: clientName,
+              date_created: now,
+              start_date: new Date().toISOString().split('T')[0],
+              end_date: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+                .toISOString()
+                .split('T')[0]
+            };
+            const response = await apiService.reports.create(reportData);
+            return response.data.id;
+          })
+        );
+        
+        // 4. Combine all reports
+        const allReports = [...existingReports, ...createdReports];
+        setClientReports(allReports);
+        
+        // 5. Initialize metrics for each report and collect them
+        const metricsCollection = {};
+        
+        await Promise.all(
+          allReports.map(async report => {
+            let metrics = await apiService.reportData.getByReport(report.id);
+            
+            if (metrics.length === 0) {
+              const reportTemplate = REQUIRED_REPORTS.find(r => r.type === report.type);
+              
+              if (reportTemplate?.metrics) {
+                await Promise.all(
+                  reportTemplate.metrics.map(metricTemplate => 
+                    apiService.reportData.create({
+                      rapport: report.id,
+                      ...metricTemplate
+                    })
+                  )
+                );
+                metrics = reportTemplate.metrics;
+              }
+            }
+            
+            metricsCollection[report.type] = metrics;
+          })
+        );
+        
+        setClientMetrics(metricsCollection);
+        setLoadingReports(false);
+        
+      } catch (err) {
+        console.error("Error initializing client reports:", err);
+        setReportError("Failed to initialize client reports");
+        setLoadingReports(false);
+      }
+    };
+    
+    initializeClientReports();
+  }, []);
+
+  if (loadingReports) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Initializing client reports...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (reportError) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center p-6 max-w-md mx-auto bg-red-50 rounded-lg">
+          <div className="text-red-500 text-2xl mb-3">⚠️</div>
+          <h3 className="text-lg font-medium text-red-800">Error Loading Reports</h3>
+          <p className="mt-2 text-red-600">{reportError}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="ml-20 lg:ml-64 p-6 overflow-y-auto h-screen">
@@ -94,10 +267,10 @@ const ClientComponent = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-                <p className="text-2xl font-semibold text-gray-800 mt-1">${totalRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-semibold text-gray-800 mt-1">${stats.totalRevenue.toLocaleString()}</p>
                 <div className="flex items-center mt-2">
                   <TrendingUp className="h-4 w-4 text-teal-500" />
-                  <span className="text-sm text-teal-600 ml-1">12.5% from last month</span>
+                  <span className="text-sm text-teal-600 ml-1">{stats.monthlyGrowth} from last month</span>
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-teal-50">
@@ -116,10 +289,10 @@ const ClientComponent = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Total Rentals</p>
-                <p className="text-2xl font-semibold text-gray-800 mt-1">{totalRentals}</p>
+                <p className="text-2xl font-semibold text-gray-800 mt-1">{stats.totalRentals}</p>
                 <div className="flex items-center mt-2">
                   <ArrowUp className="h-4 w-4 text-teal-500" />
-                  <span className="text-sm text-teal-600 ml-1">8.2% from last month</span>
+                  <span className="text-sm text-teal-600 ml-1">0% from last month</span>
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-teal-50">
@@ -138,10 +311,10 @@ const ClientComponent = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Active Customers</p>
-                <p className="text-2xl font-semibold text-gray-800 mt-1">{activeCustomers}</p>
+                <p className="text-2xl font-semibold text-gray-800 mt-1">{stats.activeCustomers}</p>
                 <div className="flex items-center mt-2">
                   <ArrowDown className="h-4 w-4 text-red-500" />
-                  <span className="text-sm text-red-600 ml-1">2.1% from last month</span>
+                  <span className="text-sm text-red-600 ml-1">0% from last month</span>
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-teal-50">
@@ -160,10 +333,10 @@ const ClientComponent = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Most Rented</p>
-                <p className="text-2xl font-semibold text-gray-800 mt-1">{popularProduct}</p>
+                <p className="text-2xl font-semibold text-gray-800 mt-1">{stats.popularProduct}</p>
                 <div className="flex items-center mt-2">
                   <TrendingUp className="h-4 w-4 text-teal-500" />
-                  <span className="text-sm text-teal-600 ml-1">15 rentals this month</span>
+                  <span className="text-sm text-teal-600 ml-1">0 rentals this month</span>
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-teal-50">

@@ -8,7 +8,7 @@ import {
   User, Phone, Building, Image
 } from 'lucide-react';
 
-import SidebarPartner from './sidebar';
+
 
 // Constants for Tunisian delivery companies
 const TUNISIAN_CITIES = [

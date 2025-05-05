@@ -3,6 +3,8 @@ import { FiSearch, FiFilter, FiBell, FiMoreVertical, FiDownload, FiTrash2, FiEye
 import { motion, AnimatePresence } from "framer-motion";
 
 const HistoryPage = () => {
+  const [isSidebarExpanded] = useState(true); // Match this with your sidebar state
+  
   // Mock data - replace with real API calls later
   const mockHistoryData = [
     {
@@ -120,7 +122,13 @@ const HistoryPage = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div 
+      className="p-6 bg-gray-50 min-h-screen"
+      style={{ 
+        marginLeft: isSidebarExpanded ? '16rem' : '5rem',
+        transition: 'margin-left 0.3s ease'
+      }}
+    >
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
         <div className="mb-4 md:mb-0">
           <h2 className="text-2xl font-bold text-gray-800">History</h2>
