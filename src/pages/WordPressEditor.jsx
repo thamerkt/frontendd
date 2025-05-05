@@ -23,113 +23,143 @@ import {
   FaAlignCenter,
   FaAlignRight,
   FaCode,
-  FaTrash
 } from 'react-icons/fa';
 import { BiTable } from 'react-icons/bi';
 
-const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }, ref) => {
-  const [uploadedImages, setUploadedImages] = useState([]);
+const ResizableImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      src: {
+        default: null,
+      },
+      alt: {
+        default: null,
+      },
+      title: {
+        default: null,
+      },
+      width: {
+        default: '100%',
+        renderHTML: attributes => ({
+          style: `width: ${attributes.width}`,
+        }),
+      },
+      height: {
+        default: 'auto',
+      },
+      'data-id': {
+        default: null,
+      },
+      'data-file': {
+        default: null,
+      },
+    };
+  },
 
-  const CustomImage = Image.extend({
-    addAttributes() {
-      return {
-        ...this.parent?.(),
-        src: {
-          default: null,
-          parseHTML: element => element.getAttribute('src'),
-          renderHTML: attributes => {
-            return {
-              src: attributes.src,
-              'data-src': attributes.src
-            };
-          }
-        },
-        alt: {
-          default: null,
-          parseHTML: element => element.getAttribute('alt'),
-          renderHTML: attributes => {
-            return {
-              alt: attributes.alt || ''
-            };
-          }
-        },
-        title: {
-          default: null,
-          parseHTML: element => element.getAttribute('title'),
-          renderHTML: attributes => {
-            return {
-              title: attributes.title || ''
-            };
-          }
-        },
-        'data-id': {
-          default: null,
-          parseHTML: element => element.getAttribute('data-id'),
-          renderHTML: attributes => {
-            return {
-              'data-id': attributes['data-id'] || ''
-            };
-          }
-        },
-        'data-file': {
-          default: null,
-          parseHTML: element => element.getAttribute('data-file'),
-          renderHTML: attributes => {
-            return {
-              'data-file': attributes['data-file'] || ''
-            };
-          }
+  addNodeView() {
+    return ({ node, editor, getPos }) => {
+      const container = document.createElement('div');
+      container.className = 'relative inline-block max-w-full my-2 group';
+
+      const imgWrapper = document.createElement('div');
+      imgWrapper.className = 'relative inline-block';
+      imgWrapper.style.width = node.attrs.width || '100%';
+
+      const img = document.createElement('img');
+      img.src = node.attrs.src;
+      img.alt = node.attrs.alt || '';
+      img.title = node.attrs.title || '';
+      img.className = 'block max-w-full h-auto';
+      img.style.width = '100%';
+      img.setAttribute('data-id', node.attrs['data-id'] || '');
+      img.setAttribute('data-file', node.attrs['data-file'] || '');
+
+      // Resize handle
+      const resizeHandle = document.createElement('div');
+      resizeHandle.className = 'absolute bottom-0 right-0 w-3 h-3 bg-blue-500 cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity z-10 rounded-full';
+
+      // Delete button
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10';
+      deleteButton.innerHTML = `
+        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+        </svg>
+      `;
+      deleteButton.onclick = (e) => {
+        e.stopPropagation();
+        const pos = getPos();
+        editor.commands.deleteRange({ from: pos, to: pos + 1 });
+        if (this.options.onImageDelete) {
+          this.options.onImageDelete(node.attrs['data-id'], node.attrs.src);
         }
       };
-    },
-    addNodeView() {
-      return ({ node, editor, getPos }) => {
-        const container = document.createElement('div');
-        container.className = 'image-container relative inline-block';
 
-        const img = document.createElement('img');
-        img.src = node.attrs.src;
-        img.alt = node.attrs.alt || '';
-        img.title = node.attrs.title || '';
-        img.className = 'max-w-full h-auto';
-        img.setAttribute('data-id', node.attrs['data-id'] || '');
-        img.setAttribute('data-file', node.attrs['data-file'] || '');
+      // Resize functionality
+      let isResizing = false;
+      let startX, startWidth;
 
-        const deleteButton = document.createElement('button');
-        deleteButton.className = 'absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 text-xs opacity-0 hover:opacity-100 transition-opacity';
-        deleteButton.innerHTML = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="trash" class="svg-inline--fa fa-trash fa-w-14 w-3 h-3" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="currentColor" d="M432 32H312l-9.4-18.7A24 24 0 0 0 281.1 0H166.8a23.72 23.72 0 0 0-21.4 13.3L136 32H16A16 16 0 0 0 0 48v32a16 16 0 0 0 16 16h416a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16zM53.2 467a48 48 0 0 0 47.9 45h245.8a48 48 0 0 0 47.9-45L416 128H32z"></path></svg>';
-        deleteButton.onclick = () => {
-          const pos = getPos();
-          editor.commands.deleteRange({ from: pos, to: pos + 1 });
-          
-          if (onImageDelete) {
-            onImageDelete(node.attrs['data-id'], node.attrs.src);
-          }
-        };
-
-        container.appendChild(img);
-        container.appendChild(deleteButton);
-
-        container.onmouseenter = () => {
-          deleteButton.style.opacity = '1';
-        };
-        container.onmouseleave = () => {
-          deleteButton.style.opacity = '0';
-        };
-
-        return {
-          dom: container,
-          update: (updatedNode) => {
-            if (updatedNode.type.name !== 'image') return false;
-            img.src = updatedNode.attrs.src;
-            img.alt = updatedNode.attrs.alt || '';
-            img.title = updatedNode.attrs.title || '';
-            return true;
-          }
-        };
+      const startResize = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        isResizing = true;
+        startX = e.clientX;
+        startWidth = parseInt(imgWrapper.style.width, 10);
+        document.addEventListener('mousemove', handleResize);
+        document.addEventListener('mouseup', stopResize);
       };
-    }
-  });
+
+      const handleResize = (e) => {
+        if (!isResizing) return;
+        const dx = e.clientX - startX;
+        const newWidth = startWidth + dx;
+        
+        if (newWidth > 50) { // Minimum width
+          imgWrapper.style.width = `${newWidth}px`;
+        }
+      };
+
+      const stopResize = () => {
+        isResizing = false;
+        document.removeEventListener('mousemove', handleResize);
+        document.removeEventListener('mouseup', stopResize);
+        
+        const pos = getPos();
+        if (pos !== undefined) {
+          editor.view.dispatch(
+            editor.view.state.tr.setNodeMarkup(pos, undefined, {
+              ...node.attrs,
+              width: imgWrapper.style.width
+            })
+          );
+        }
+      };
+
+      resizeHandle.addEventListener('mousedown', startResize);
+      
+      imgWrapper.appendChild(img);
+      imgWrapper.appendChild(resizeHandle);
+      container.appendChild(imgWrapper);
+      container.appendChild(deleteButton);
+
+      return {
+        dom: container,
+        update: (updatedNode) => {
+          if (updatedNode.type.name !== 'image') return false;
+          img.src = updatedNode.attrs.src;
+          img.alt = updatedNode.attrs.alt || '';
+          img.title = updatedNode.attrs.title || '';
+          imgWrapper.style.width = updatedNode.attrs.width || '100%';
+          return true;
+        }
+      };
+    };
+  }
+});
+
+const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }, ref) => {
+  const [uploadedImages, setUploadedImages] = useState([]);
 
   const editor = useEditor({
     extensions: [
@@ -139,12 +169,10 @@ const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }
         },
       }),
       Underline,
-      CustomImage.configure({
+      ResizableImage.configure({
         inline: true,
         allowBase64: true,
-        HTMLAttributes: {
-          class: 'image-wrapper'
-        }
+        onImageDelete: onImageDelete,
       }),
       Table.configure({
         resizable: true,
@@ -171,7 +199,6 @@ const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }
 
   useEffect(() => {
     if (!editor || !content) return;
-    
     editor.commands.setContent(content);
   }, [content, editor]);
 
@@ -193,6 +220,7 @@ const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }
       'data-id': tempId,
       alt: file.name,
       title: file.name,
+      width: '100%'
     }).run();
   
     try {
@@ -215,7 +243,7 @@ const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }
           };
           tr.setNodeMarkup(pos, undefined, newAttrs);
           found = true;
-          return false; // stop iteration
+          return false;
         }
       });
   
@@ -223,7 +251,7 @@ const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }
         view.dispatch(tr);
       }
   
-      // Save image to local state (optional)
+      // Save image to local state
       setUploadedImages(prev => [
         ...prev,
         {
@@ -239,7 +267,7 @@ const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }
       console.error('Upload error:', err);
       alert('Failed to upload image.');
     } finally {
-      event.target.value = ''; // reset file input
+      event.target.value = '';
     }
   }, [editor, onImageUpload]);
   
@@ -253,51 +281,20 @@ const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }
     input.click();
   }, [editor, handleImageUpload]);
 
-  const handleImageDelete = useCallback((imageId, imageSrc) => {
-    if (onImageDelete) {
-      onImageDelete(imageId, imageSrc);
-    }
-    setUploadedImages(prev => prev.filter(img => img.id !== imageId));
-  }, [onImageDelete]);
-
   useImperativeHandle(ref, () => ({
-    getHTML: () => {
-      if (!editor) return '';
-      return editor.getHTML();
-    },
+    getHTML: () => editor?.getHTML() || '',
     getJSON: () => editor?.getJSON() || null,
     isEmpty: () => editor?.isEmpty || true,
     clearContent: () => editor?.commands.clearContent(),
-    setContent: (content) => {
-      if (!editor) return;
-      editor.commands.setContent(content);
-    },
-    getUploadedImages: () => uploadedImages.filter(img => img.file), // Only return images with files (new uploads)
-    deleteImage: (imageId) => {
-      if (!editor) return;
-      const { state } = editor;
-      const { doc } = state;
-      
-      let foundPos = null;
-      doc.descendants((node, pos) => {
-        if (node.type.name === 'image' && node.attrs['data-id'] === imageId) {
-          foundPos = pos;
-          return false;
-        }
-      });
-      
-      if (foundPos !== null) {
-        editor.commands.deleteRange({ from: foundPos, to: foundPos + 1 });
-        handleImageDelete(imageId);
-      }
-    }
+    setContent: (content) => editor?.commands.setContent(content),
+    getUploadedImages: () => uploadedImages.filter(img => img.file),
   }));
 
   if (!editor) return <div className="border p-4 rounded-md min-h-[200px]">Loading editor...</div>;
 
   return (
     <div className="border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-      {/* Enhanced Toolbar */}
+      {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 p-2 border-b border-gray-200 bg-gray-50">
         {/* Text Formatting */}
         <button
