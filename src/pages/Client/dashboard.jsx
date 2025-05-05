@@ -75,10 +75,8 @@ const ClientDashboard = () => {
                 setLoading(true);
                 setError(null);
                 
-                // In a real app, you would get the client ID from auth context or similar
                 const clientId = "1"; // Hardcoded for example
                 
-                // Fetch all data in parallel
                 const [stats, rentals, bookings] = await Promise.all([
                     apiService.clientStats.get(clientId),
                     apiService.clientRentals.getActive(clientId),
@@ -131,8 +129,6 @@ const ClientDashboard = () => {
 
     return (
         <div className="flex h-screen bg-gray-50">
-            
-            
             {/* Main Content */}
             <div className="flex-1 ml-20 lg:ml-64 overflow-y-auto h-screen">
                 {/* Top Navigation */}
@@ -227,7 +223,11 @@ const ClientDashboard = () => {
                                 className="bg-white rounded-xl shadow-xs p-5 border border-gray-100 hover:shadow-sm transition-all"
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 + index * 0.1 }}
+                                transition={{ 
+                                    delay: 0.1 + index * 0.1,
+                                    type: "spring",
+                                    stiffness: 100
+                                }}
                                 whileHover={{ y: -5, boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" }}
                             >
                                 <div className="flex justify-between items-start">
@@ -283,7 +283,10 @@ const ClientDashboard = () => {
                                         whileHover={{ scale: 1.01 }}
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.4 + index * 0.1 }}
+                                        transition={{ 
+                                            delay: 0.4 + index * 0.1,
+                                            type: "spring"
+                                        }}
                                     >
                                         <div className="flex gap-4">
                                             <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
@@ -298,7 +301,6 @@ const ClientDashboard = () => {
                                                 <h3 className="font-medium text-gray-900 truncate">{rental.itemName}</h3>
                                                 <p className="text-sm text-gray-500 mt-1">{rental.reference}</p>
                                                 
-                                                {/* Progress bar */}
                                                 <div className="mt-3">
                                                     <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
                                                         <motion.div 
@@ -378,10 +380,13 @@ const ClientDashboard = () => {
                                             key={index} 
                                             className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 border border-gray-100 transition-colors"
                                             whileHover={{ x: 5 }}
-                                            transition={{ type: "spring", stiffness: 300 }}
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: 0.6 + index * 0.1 }}
+                                            transition={{ 
+                                                delay: 0.6 + index * 0.1,
+                                                type: "spring", 
+                                                stiffness: 300 
+                                            }}
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
@@ -474,10 +479,13 @@ const ClientDashboard = () => {
                                         key={index}
                                         className={`w-full flex items-center justify-between p-4 ${action.color} rounded-lg transition-colors`}
                                         whileHover={{ x: 5 }}
-                                        transition={{ type: "spring", stiffness: 300 }}
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: action.delay }}
+                                        transition={{ 
+                                            delay: action.delay,
+                                            type: "spring",
+                                            stiffness: 300
+                                        }}
                                     >
                                         <span className="font-medium">{action.title}</span>
                                         {action.icon}

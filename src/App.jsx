@@ -65,6 +65,11 @@ import ImageGallery from "./components/test";
 import SidebarClient from "./components/client/Clientsidebar"
 import TrackingService from "./services/TrackingService";
 import { useEffect } from 'react';
+import CategoriesPage from "./pages/CategoriesPage";
+import BlogPost1 from "./components/blog1";
+import { BlogSection } from "./components/LandingPage";
+import BlogPost2 from "./components/blog2";
+import BlogPost3 from "./components/blog3";
 const App = () => {
   
   useEffect(() => {
@@ -104,15 +109,22 @@ const App = () => {
                 <Route path="/collaboration" element={<LandingPagee />} />
                 <Route path="/contact-us" element={<ContactUs />} />
                 <Route path="/shopgrid" element={<ShopGrid />} />
+                <Route path="/contact" elemnt={<ContactUs />} />
                 <Route path="/equipment/:productId" element={<ProductDetails />} />
                 <Route path="/qr" element={<QRScanner />} />
                 <Route path="/callback" element={<CallbackPage />} />
                 <Route path="/unauthorized" element={<unauthorized />} />
-                
+                <Route path="/categories" element={<CategoriesPage />} />
+        <Route path="/categories/:categoryId" element={<CategoriesPage />} />
+                    <Route path="/" element={<BlogSection />} />
+                    <Route path="/blog/blog1" element={<BlogPost1 />} />
+                    <Route path="/blog/blog2" element={<BlogPost2 />} />
+                    <Route path="/blog/blog3" element={<BlogPost3 />} />
+
                 {/* Authentication */}
                 <Route path="/login" element={<AuthForm />} />
                 <Route path="/register" element={<AuthForm />} />
-
+                
                 {/* Registration Process */}
                 
                   <Route path="/register/email-verification" element={<EmailVerification />} />

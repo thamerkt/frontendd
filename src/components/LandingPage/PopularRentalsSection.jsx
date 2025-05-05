@@ -5,25 +5,38 @@ import { useNavigate } from 'react-router-dom';
 import TrackingService from "../../services/TrackingService";
 import { useCallback } from "react";
 
-
-
-
-
 export default function PopularRentalsSection({
   products = [],
   getProductImage,
-  currentIndex = 0,
-  handleNext,
-  handlePrev,
   isLoading = false,
-  direction = 1,
   onProductView,
   onAddToWishlist
 }) {
   const cardsPerPage = 4;
   const totalSets = Math.ceil(products.length / cardsPerPage);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState(1);
   const [quickViewProduct, setQuickViewProduct] = useState(null);
-  const navigate=useNavigate()
+  const navigate = useNavigate();
+
+  const handleNext = () => {
+    setDirection(1);
+    setCurrentIndex((prevIndex) => 
+      prevIndex + 1 >= totalSets ? 0 : prevIndex + 1
+    );
+  };
+
+  const handlePrev = () => {
+    setDirection(-1);
+    setCurrentIndex((prevIndex) => 
+      prevIndex - 1 < 0 ? totalSets - 1 : prevIndex - 1
+    );
+  };
+
+  const goToSlide = (index) => {
+    setDirection(index > currentIndex ? 1 : -1);
+    setCurrentIndex(index);
+  };
 
   const variants = {
     enter: (direction) => ({
@@ -46,9 +59,11 @@ export default function PopularRentalsSection({
       transition: { duration: 0.3 }
     })
   };
+
   const handleProductView = useCallback(async (productId) => {
-      await TrackingService.trackPageView(productId);
-    }, []);
+    await TrackingService.trackPageView(productId);
+    navigate(`/equipment/${productId}`);
+  }, [navigate]);
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -125,20 +140,16 @@ export default function PopularRentalsSection({
           </p>
         </div>
         
-        {/* Navigation Controls */}
+        {/* Navigation Controls - Apple Style */}
         {products.length > cardsPerPage && (
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex gap-2">
+            <div className="hidden sm:flex gap-1">
               {Array.from({ length: totalSets }).map((_, index) => (
                 <button
                   key={index}
-                  onClick={() => {
-                    const newDirection = index > currentIndex ? 1 : -1;
-                    setDirection(newDirection);
-                    setCurrentIndex(index);
-                  }}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    index === currentIndex ? "bg-gradient-to-r from-teal-500 to-emerald-500 w-6" : "bg-gray-200 hover:bg-teal-300"
+                  onClick={() => goToSlide(index)}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    index === currentIndex ? "bg-gray-900 scale-125" : "bg-gray-300 hover:bg-gray-400"
                   }`}
                   aria-label={`Go to slide ${index + 1}`}
                 />
@@ -147,14 +158,14 @@ export default function PopularRentalsSection({
             <div className="flex gap-2">
               <button
                 onClick={handlePrev}
-                className="p-2 rounded-full bg-white border border-gray-200 hover:bg-teal-50 hover:border-teal-300 transition-colors shadow-sm hover:shadow-md"
+                className="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md"
                 aria-label="Previous"
               >
                 <ChevronLeft className="w-5 h-5 text-gray-700" />
               </button>
               <button
                 onClick={handleNext}
-                className="p-2 rounded-full bg-white border border-gray-200 hover:bg-teal-50 hover:border-teal-300 transition-colors shadow-sm hover:shadow-md"
+                className="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md"
                 aria-label="Next"
               >
                 <ChevronRight className="w-5 h-5 text-gray-700" />
@@ -184,11 +195,15 @@ export default function PopularRentalsSection({
                 animate="visible"
                 whileHover="hover"
                 custom={index}
-                className="w-full bg-white rounded-2xl shadow-md overflow-hidden flex flex-col border border-gray-100 hover:shadow-xl transition-all duration-300 relative group"
+                className="w-full bg-white rounded-2xl shadow-md overflow-hidden flex flex-col border border-gray-100 hover:shadow-xl transition-all duration-300 relative group cursor-pointer"
+                onClick={() => handleProductView(product.id)}
               >
                 {/* Wishlist button */}
                 <button 
-                  onClick={() => onAddToWishlist(product.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddToWishlist(product.id);
+                  }}
                   className="absolute top-4 right-4 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-red-50 transition-colors"
                   aria-label="Add to wishlist"
                 >
@@ -198,12 +213,10 @@ export default function PopularRentalsSection({
                 {/* Image with category badge */}
                 <div className="relative h-56 overflow-hidden">
                   <img
-                    src={getProductImage(product.id) }
+                    src={getProductImage(product.id)}
                     alt={product.stuffname}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
-                    width={20}
-                    height={20}
                   />
                   {product.category?.name && (
                     <span className="absolute top-4 left-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full">
@@ -213,7 +226,10 @@ export default function PopularRentalsSection({
                   {/* Quick view overlay */}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                     <button 
-                      onClick={() => setQuickViewProduct(product)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setQuickViewProduct(product);
+                      }}
                       className="text-white font-medium px-6 py-2 border border-white rounded-full hover:bg-white hover:text-teal-600 transition-colors"
                     >
                       Quick View
@@ -283,7 +299,10 @@ export default function PopularRentalsSection({
                       <button 
                         className="flex items-center justify-center gap-1 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-medium py-2 px-3 rounded-lg transition-all text-sm shadow-md hover:shadow-lg"
                         aria-label={`Rent ${product.stuffname}`}
-                        onClick={() =>{ handleProductView(product.id);navigate(`/equipment/${product.id}`)}}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProductView(product.id);
+                        }}
                       >
                         <Zap className="w-4 h-4" />
                         Rent Now
@@ -304,6 +323,22 @@ export default function PopularRentalsSection({
         </AnimatePresence>
       </div>
 
+      {/* Mobile Navigation Dots */}
+      {products.length > cardsPerPage && (
+        <div className="sm:hidden flex justify-center gap-2 mb-8">
+          {Array.from({ length: totalSets }).map((_, index) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                index === currentIndex ? "bg-gray-900 scale-125" : "bg-gray-300 hover:bg-gray-400"
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Trust badges */}
       <div className="flex flex-wrap justify-center gap-6 my-12 px-4">
         <div className="flex items-center gap-2 text-gray-600">
@@ -322,7 +357,10 @@ export default function PopularRentalsSection({
 
       {/* View All Button */}
       <div className="text-center mt-10">
-        <button className="inline-flex items-center justify-center px-8 py-3.5 border border-transparent text-base font-medium rounded-full text-white bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+        <button 
+          className="inline-flex items-center justify-center px-8 py-3.5 border border-transparent text-base font-medium rounded-full text-white bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+          onClick={() => navigate('/equipment')}
+        >
           Explore All Rentals
           <ChevronRight className="ml-2 w-5 h-5" />
         </button>
@@ -345,7 +383,6 @@ export default function PopularRentalsSection({
               className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Quick view content would go here */}
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="text-2xl font-bold">{quickViewProduct.stuffname}</h3>
@@ -356,15 +393,61 @@ export default function PopularRentalsSection({
                     &times;
                   </button>
                 </div>
-                <p className="text-gray-600 mb-6">{quickViewProduct.description}</p>
+                
+                {/* Large product image */}
+                <div className="mb-6">
+                  <img
+                    src={getProductImage(quickViewProduct.id)}
+                    alt={quickViewProduct.stuffname}
+                    className="w-full h-auto max-h-[500px] object-contain rounded-lg"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold text-lg mb-2">Description</h4>
+                    <p className="text-gray-600">{quickViewProduct.description || quickViewProduct.short_description}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-lg mb-2">Details</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center">
+                        <span className="text-gray-500 w-32">Price:</span>
+                        <span className="font-medium text-teal-600">${quickViewProduct.price_per_day}/day</span>
+                      </div>
+                      {quickViewProduct.store && (
+                        <div className="flex items-center">
+                          <span className="text-gray-500 w-32">Store:</span>
+                          <span className="font-medium">{quickViewProduct.store}</span>
+                        </div>
+                      )}
+                      {quickViewProduct.rental_location && (
+                        <div className="flex items-center">
+                          <span className="text-gray-500 w-32">Location:</span>
+                          <span className="font-medium">{quickViewProduct.rental_location}</span>
+                        </div>
+                      )}
+                      {quickViewProduct.stuff_management?.rating && (
+                        <div className="flex items-center">
+                          <span className="text-gray-500 w-32">Rating:</span>
+                          <div className="flex items-center">
+                            <Star className="w-4 h-4 fill-current text-yellow-400 mr-1" />
+                            <span className="font-medium">{quickViewProduct.stuff_management.rating.toFixed(1)}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
                 <button 
-                  className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-medium"
+                  className="w-full mt-6 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-medium"
                   onClick={() => {
-                    onProductView(quickViewProduct.id);
+                    handleProductView(quickViewProduct.id);
                     setQuickViewProduct(null);
                   }}
                 >
-                  View Full Details
+                  Rent Now
                 </button>
               </div>
             </motion.div>
