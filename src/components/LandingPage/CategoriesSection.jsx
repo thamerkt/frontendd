@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   ChevronLeft, ChevronRight, Heart, Zap, 
-  Clock, Shield, Star, MapPin, ShoppingCart, ArrowRight,
-  ChevronRightCircle, Store, TrendingUp, Percent, BadgeCheck
+  Shield, Star, MapPin, Store, Check, ShoppingCart
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EquipmentService from "../../services/EquipmentService";
@@ -10,7 +9,7 @@ import TrackingService from '../../services/TrackingService';
 import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 
-// Mock category images - replace with your actual image imports or API calls
+// Mock category images
 const categoryImages = {
   "1": "https://images.unsplash.com/photo-1550009158-9ebf69173e03?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80",
   "2": "https://images.unsplash.com/photo-1546054454-aa26e2b734c7?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80",
@@ -27,9 +26,11 @@ export default function CategoriesSection() {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [direction, setDirection] = useState(1);
-  const [isHovered, setIsHovered] = useState(false);
   const [ip, setIP] = useState('');
+  const [quickViewProduct, setQuickViewProduct] = useState(null);
   const navigate = useNavigate();
+
+  const cardsPerPage = 4;
 
   // Animation variants
   const container = {
@@ -49,13 +50,11 @@ export default function CategoriesSection() {
         withCredentials: true, // Include credentials like cookies
       });
       setIP(response.data.ip);
-      console.log("IP fetched:", response);
     } catch (error) {
       console.error("Failed to fetch IP:", error);
       setIP('localhost');
     }
   }, []);
-  
 
   useEffect(() => {
     fetchip();
@@ -72,12 +71,6 @@ export default function CategoriesSection() {
         damping: 15
       }
     }
-  };
-
-  const cardHover = {
-    scale: 1.03,
-    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
-    zIndex: 10
   };
 
   const variants = {
@@ -102,26 +95,23 @@ export default function CategoriesSection() {
     })
   };
 
-  // Category animation variants
-  const categoryVariants = {
-    inactive: {
-      scale: 0.9,
-      opacity: 0.8,
-      transition: { duration: 0.3 }
-    },
-    active: {
-      scale: 1.1,
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
       opacity: 1,
-      boxShadow: "0 0 0 3px rgba(13, 148, 136, 0.5)",
-      transition: { 
-        type: "spring",
-        stiffness: 500,
-        damping: 30
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: "easeOut"
       }
     },
     hover: {
-      scale: 1.05,
-      transition: { duration: 0.2 }
+      y: -10,
+      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+      transition: {
+        duration: 0.3,
+        ease: "easeInOut"
+      }
     }
   };
 
@@ -135,9 +125,7 @@ export default function CategoriesSection() {
       ]);
       setCategories(categoriesData);
       setImages(imagesData);
-      console.log("cat",categoriesData)
       
-      // Set the first category as selected by default
       if (categoriesData.length > 0 && !selectedCategory) {
         setSelectedCategory(categoriesData[0].id);
       }
@@ -172,16 +160,12 @@ export default function CategoriesSection() {
     }
   }, [selectedCategory]);
 
-  // Get product image URL - simplified version
+  // Get product image URL
   const getProductImage = useCallback((productId) => {
-    if (!Array.isArray(images) || images.length === 0) {
-      return null;
-    }
+    if (!Array.isArray(images) || images.length === 0) return null;
 
     const productImages = images.filter(img => img?.stuff == productId);
-    if (productImages.length === 0) {
-      return null;
-    }
+    if (productImages.length === 0) return null;
 
     const mainImage = productImages.find(img => img?.position === 1);
     let url = mainImage?.url || productImages[0]?.url || null;
@@ -191,48 +175,31 @@ export default function CategoriesSection() {
     }
 
     return url;
-  }, [images, ip]); // Added ip to dependencies
+  }, [images, ip]);
 
   // Track product views
   const handleProductView = useCallback(async (productId) => {
     await TrackingService.trackPageView(productId);
-  }, []);
-
-  const cardsToShow = 4;
+    navigate(`/equipment/${productId}`);
+  }, [navigate]);
 
   const handleNext = () => {
     setDirection(1);
-    const categoryItems = items[selectedCategory] || [];
-    setCurrentIndex((prev) => 
-      categoryItems.length ? (prev + 1) % categoryItems.length : 0
+    setCurrentIndex((prevIndex) => 
+      prevIndex + 1 >= Math.ceil((items[selectedCategory]?.length || 0) / cardsPerPage) ? 0 : prevIndex + 1
     );
   };
 
   const handlePrev = () => {
     setDirection(-1);
-    const categoryItems = items[selectedCategory] || [];
-    setCurrentIndex((prev) => 
-      categoryItems.length ? (prev === 0 ? categoryItems.length - 1 : prev - 1) : 0
+    setCurrentIndex((prevIndex) => 
+      prevIndex - 1 < 0 ? Math.ceil((items[selectedCategory]?.length || 0) / cardsPerPage) - 1 : prevIndex - 1
     );
   };
 
-  // Auto-rotate when not hovered
-  useEffect(() => {
-    let interval;
-    const categoryItems = items[selectedCategory] || [];
-    if (!isHovered && categoryItems.length > cardsToShow) {
-      interval = setInterval(handleNext, 5000);
-    }
-    return () => clearInterval(interval);
-  }, [currentIndex, isHovered, items, selectedCategory]);
-
-  const getCurrentCards = () => {
-    const categoryItems = items[selectedCategory] || [];
-    const endIndex = currentIndex + cardsToShow;
-    if (endIndex > categoryItems.length) {
-      return [...categoryItems.slice(currentIndex), ...categoryItems.slice(0, endIndex - categoryItems.length)];
-    }
-    return categoryItems.slice(currentIndex, endIndex);
+  const goToSlide = (index) => {
+    setDirection(index > currentIndex ? 1 : -1);
+    setCurrentIndex(index);
   };
 
   if (loading) {
@@ -265,17 +232,22 @@ export default function CategoriesSection() {
     >
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <motion.div className="text-center mb-12" variants={item}>
-          <span className="inline-block bg-gradient-to-r from-teal-500 to-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-full mb-4 uppercase tracking-wider">
-            Featured Categories
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Shop by <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-blue-600">Category</span>
-          </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Discover our premium selection of tech rentals. High-quality equipment for every need.
-          </p>
-        </motion.div>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+          <div className="text-left">
+            <span className="inline-block bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-xs font-semibold px-3 py-1 rounded-full mb-4">
+              FEATURED CATEGORIES
+            </span>
+            <div className="mb-6">
+              <h2 className="text-4xl font-bold text-gray-900 relative inline-block">
+                Shop by Category
+                <span className="absolute bottom-[-8px] left-0 w-20 h-1.5 bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full"></span>
+              </h2>
+            </div>
+            <p className="text-gray-500 mt-2 max-w-lg text-lg">
+              Discover our premium selection of tech rentals. High-quality equipment for every need.
+            </p>
+          </div>
+        </div>
 
         {/* Category Tabs - Circular Images */}
         <motion.div 
@@ -287,211 +259,345 @@ export default function CategoriesSection() {
               <motion.div
                 key={cat.id}
                 variants={item}
-                initial="inactive"
-                animate={cat.id === selectedCategory ? "active" : "inactive"}
-                whileHover="hover"
                 onClick={() => {
                   setSelectedCategory(cat.id);
                   setCurrentIndex(0);
                 }}
                 className="flex flex-col items-center cursor-pointer"
               >
-                <motion.div
-                  className={`w-24 h-24 rounded-full overflow-hidden border-4 ${
-                    cat.id === selectedCategory 
-                      ? "border-teal-500 shadow-lg" 
-                      : "border-white hover:border-teal-200"
-                  }`}
-                  variants={categoryVariants}
-                >
+                <div className={`w-24 h-24 rounded-full overflow-hidden border-4 ${
+                  cat.id === selectedCategory 
+                    ? "border-teal-500 shadow-lg" 
+                    : "border-white hover:border-teal-200"
+                }`}>
                   <img
                     src={categoryImages[cat.id] || "https://via.placeholder.com/200?text=Category"}
                     alt={cat.name}
                     className="w-full h-full object-cover"
                   />
-                </motion.div>
-                <motion.span 
-                  className={`mt-3 text-sm font-medium whitespace-nowrap ${
-                    cat.id === selectedCategory 
-                      ? "text-teal-600 font-bold" 
-                      : "text-gray-700"
-                  }`}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
+                </div>
+                <span className={`mt-3 text-sm font-medium whitespace-nowrap ${
+                  cat.id === selectedCategory 
+                    ? "text-teal-600 font-bold" 
+                    : "text-gray-700"
+                }`}>
                   {cat.name}
-                </motion.span>
+                </span>
               </motion.div>
             ))}
           </div>
         </motion.div>
 
         {/* Products Section */}
-        {selectedCategory && (
-          <div 
-            className="relative"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-          >
-            <button
-              onClick={handlePrev}
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white p-3 rounded-full shadow-lg hover:bg-teal-50 border border-gray-200 hover:shadow-xl transition-all"
-            >
-              <ChevronLeft className="w-6 h-6 text-gray-700" />
-            </button>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-8">
-              <AnimatePresence mode="wait" custom={direction}>
-                {getCurrentCards().map((item) => (
-                  <motion.div
-                    key={`${selectedCategory}-${item.id}`}
-                    custom={direction}
-                    variants={variants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    whileHover={cardHover}
-                    className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 hover:border-teal-100 transition-all relative"
+        {selectedCategory && items[selectedCategory]?.length > 0 && (
+          <div className="relative">
+            {/* Navigation Controls - Apple Style */}
+            {items[selectedCategory]?.length > cardsPerPage && (
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <div className="hidden sm:flex gap-1">
+                  {Array.from({ length: Math.ceil(items[selectedCategory].length / cardsPerPage) }).map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => goToSlide(index)}
+                      className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                        index === currentIndex ? "bg-gray-900 scale-125" : "bg-gray-300 hover:bg-gray-400"
+                      }`}
+                      aria-label={`Go to slide ${index + 1}`}
+                    />
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handlePrev}
+                    className="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md"
+                    aria-label="Previous"
                   >
-                    {/* Discount Badge */}
-                    {Math.random() > 0.7 && (
-                      <div className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center z-10">
-                        <Percent className="w-3 h-3 mr-1" />
-                        {Math.floor(Math.random() * 30) + 10}% OFF
-                      </div>
-                    )}
+                    <ChevronLeft className="w-5 h-5 text-gray-700" />
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    className="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md"
+                    aria-label="Next"
+                  >
+                    <ChevronRight className="w-5 h-5 text-gray-700" />
+                  </button>
+                </div>
+              </div>
+            )}
 
-                    {/* Image with quick view */}
-                    <div className="relative h-48 overflow-hidden group">
-                      <img
-                        src={getProductImage(item.id) || "https://via.placeholder.com/400x300?text=No+Image"}
-                        alt={item.stuffname}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                        <button className="w-full bg-white text-gray-800 py-2 rounded text-sm font-medium hover:bg-gray-100 transition-colors">
-                          Quick View
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-5">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-bold text-gray-900 text-lg">{item.stuffname}</h3>
-                        <button className="text-gray-400 hover:text-red-500 transition-colors">
-                          <Heart className="w-5 h-5" />
-                        </button>
-                      </div>
-
-                      {/* Features */}
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        <span className="flex items-center text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                          <Zap className="w-3 h-3 mr-1 text-teal-500" />
-                          Instant
-                        </span>
-                        <span className="flex items-center text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                          <Shield className="w-3 h-3 mr-1 text-teal-500" />
-                          Insured
-                        </span>
-                        <span className="flex items-center text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                          <BadgeCheck className="w-3 h-3 mr-1 text-teal-500" />
-                          Verified
-                        </span>
-                      </div>
-
-                      {/* Store & Location */}
-                      <div className="space-y-2 mb-4">
-                        {item.store && (
-                          <div className="flex items-center text-sm text-gray-500">
-                            <Store className="w-4 h-4 mr-2 text-teal-600" />
-                            <span className="truncate">{item.store}</span>
-                          </div>
-                        )}
-                        {item.rental_location && (
-                          <div className="flex items-center text-sm text-gray-500">
-                            <MapPin className="w-4 h-4 mr-2 text-teal-600" />
-                            <span className="truncate">{item.rental_location}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Price & Rating */}
-                      <div className="flex justify-between items-center mb-4">
-                        <div>
-                          <p className="text-sm text-gray-500">From</p>
-                          <div className="flex items-center">
-                            <p className="text-xl font-bold text-teal-600">${item.price_per_day || "50"}/day</p>
-                            {Math.random() > 0.5 && (
-                              <span className="ml-2 text-xs line-through text-gray-400">
-                                ${Math.round(item.price_per_day * 1.3 || 65)}/day
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center bg-teal-50 text-teal-700 px-2 py-1 rounded text-xs">
-                          <Star className="w-3 h-3 fill-current mr-1" />
-                          {item.stuff_management?.rating?.toFixed(1) || "4.5"}
-                          <span className="text-gray-500 ml-1">({Math.floor(Math.random() * 100) + 10})</span>
-                        </div>
-                      </div>
-
-                      {/* CTA Button */}
+            <div className="relative min-h-[520px]">
+              <AnimatePresence custom={direction} initial={false} mode="wait">
+                <motion.div
+                  key={currentIndex}
+                  custom={direction}
+                  variants={variants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 px-4"
+                >
+                  {items[selectedCategory]?.slice(
+                    currentIndex * cardsPerPage, 
+                    currentIndex * cardsPerPage + cardsPerPage
+                  ).map((product, index) => (
+                    <motion.div
+                      key={product.id}
+                      variants={cardVariants}
+                      initial="hidden"
+                      animate="visible"
+                      whileHover="hover"
+                      custom={index}
+                      className="w-full bg-white rounded-2xl shadow-md overflow-hidden flex flex-col border border-gray-100 hover:shadow-xl transition-all duration-300 relative group cursor-pointer"
+                      onClick={() => handleProductView(product.id)}
+                    >
+                      {/* Wishlist button */}
                       <button 
-                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg"
-                        onClick={() =>{ handleProductView(item.id);navigate(`/equipment/${item.id}`)}}
-
-                        
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // onAddToWishlist(product.id);
+                        }}
+                        className="absolute top-4 right-4 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-red-50 transition-colors"
+                        aria-label="Add to wishlist"
                       >
-                        <ShoppingCart className="w-4 h-4" />
-                        Rent Now
-                        <ChevronRightCircle className="w-4 h-4" />
+                        <Heart className="w-5 h-5 text-gray-400 group-hover:text-red-400" />
                       </button>
-                    </div>
-                  </motion.div>
-                ))}
+
+                      {/* Image with category badge */}
+                      <div className="relative h-56 overflow-hidden">
+                        <img
+                          src={getProductImage(product.id) || "https://via.placeholder.com/400x300?text=No+Image"}
+                          alt={product.stuffname}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                        {product.category?.name && (
+                          <span className="absolute top-4 left-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                            {product.category.name}
+                          </span>
+                        )}
+                        {/* Quick view overlay */}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setQuickViewProduct(product);
+                            }}
+                            className="text-white font-medium px-6 py-2 border border-white rounded-full hover:bg-white hover:text-teal-600 transition-colors"
+                          >
+                            Quick View
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Content */}
+                      <div className="p-5 flex-1 flex flex-col">
+                        <div className="flex justify-between items-start mb-3">
+                          <h3 className="text-lg font-bold text-gray-900 line-clamp-1 hover:text-teal-600 transition-colors">
+                            {product.stuffname}
+                          </h3>
+                          {product.stuff_management?.rating && (
+                            <div className="flex items-center bg-teal-100 text-teal-800 px-2 py-1 rounded text-sm font-semibold">
+                              <Star className="w-4 h-4 fill-current mr-1" />
+                              {product.stuff_management.rating.toFixed(1)}
+                            </div>
+                          )}
+                        </div>
+
+                        <p className="text-gray-600 mb-4 text-sm line-clamp-2">{product.short_description}</p>
+
+                        {/* Features chips */}
+                        {product.features?.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {product.features.slice(0, 3).map((feature, i) => (
+                              <span key={i} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full flex items-center">
+                                <Check className="w-3 h-3 mr-1 text-teal-500" />
+                                {feature}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="mt-auto space-y-2 mb-4">
+                          {product.store && (
+                            <div className="flex items-center text-sm text-gray-500">
+                              <Store className="w-4 h-4 mr-2 text-teal-600" />
+                              <span className="line-clamp-1 hover:text-teal-600 transition-colors">{product.store}</span>
+                            </div>
+                          )}
+                          {product.rental_location && (
+                            <div className="flex items-center text-sm text-gray-500">
+                              <MapPin className="w-4 h-4 mr-2 text-teal-600" />
+                              <span className="line-clamp-1 hover:text-teal-600 transition-colors">{product.rental_location}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Price & CTA */}
+                        <div className="px-5 pb-5 pt-2 border-t border-gray-100">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="text-gray-500 text-xs block">Starting from</span>
+                              <div className="flex items-end gap-1">
+                                <p className="text-xl font-bold text-teal-600">${product.price_per_day}</p>
+                                <span className="text-gray-400 text-xs mb-1">/day</span>
+                              </div>
+                              {product.discount && (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <span className="text-xs line-through text-gray-400">${product.original_price}</span>
+                                  <span className="text-xs bg-red-100 text-red-600 px-1 rounded">Save {product.discount}%</span>
+                                </div>
+                              )}
+                            </div>
+                            <button 
+                              className="flex items-center justify-center gap-1 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-medium py-2 px-3 rounded-lg transition-all text-sm shadow-md hover:shadow-lg"
+                              aria-label={`Rent ${product.stuffname}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleProductView(product.id);
+                              }}
+                            >
+                              <ShoppingCart className="w-4 h-4" />
+                              Rent Now
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
               </AnimatePresence>
             </div>
 
-            <button
-              onClick={handleNext}
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white p-3 rounded-full shadow-lg hover:bg-teal-50 border border-gray-200 hover:shadow-xl transition-all"
-            >
-              <ChevronRight className="w-6 h-6 text-gray-700" />
-            </button>
+            {/* Mobile Navigation Dots */}
+            {items[selectedCategory]?.length > cardsPerPage && (
+              <div className="sm:hidden flex justify-center gap-2 mt-6">
+                {Array.from({ length: Math.ceil(items[selectedCategory].length / cardsPerPage) }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => goToSlide(index)}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      index === currentIndex ? "bg-gray-900 scale-125" : "bg-gray-300 hover:bg-gray-400"
+                    }`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Pagination Dots */}
-        {selectedCategory && items[selectedCategory]?.length > 0 && (
-          <div className="flex justify-center gap-2 mt-8">
-            {(items[selectedCategory] || []).map((_, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  setDirection(index > currentIndex ? 1 : -1);
-                  setCurrentIndex(index);
-                }}
-                className={`w-2.5 h-2.5 rounded-full transition-all ${
-                  index === currentIndex ? "bg-gradient-to-r from-teal-500 to-blue-500 w-4" : "bg-gray-300 hover:bg-teal-400"
-                }`}
-                aria-label={`Go to item ${index + 1}`}
-              />
-            ))}
+        {/* Trust badges */}
+        <div className="flex flex-wrap justify-center gap-6 my-12 px-4">
+          <div className="flex items-center gap-2 text-gray-600">
+            <Shield className="w-5 h-5 text-teal-500" />
+            <span className="text-sm">Secure Payments</span>
           </div>
-        )}
+          <div className="flex items-center gap-2 text-gray-600">
+            <Check className="w-5 h-5 text-teal-500" />
+            <span className="text-sm">Verified Rentals</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-600">
+            <Star className="w-5 h-5 text-teal-500 fill-current" />
+            <span className="text-sm">5-Star Reviews</span>
+          </div>
+        </div>
 
         {/* View All Button */}
-        <motion.div 
-          className="text-center mt-12"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <button className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-medium rounded-md text-white bg-gradient-to-r from-gray-900 to-gray-700 hover:from-gray-800 hover:to-gray-600 transition-all duration-200 shadow-lg hover:shadow-xl">
+        <div className="text-center mt-10">
+          <button className="inline-flex items-center justify-center px-8 py-3.5 border border-transparent text-base font-medium rounded-full text-white bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5">
             Explore All Categories
-            <ArrowRight className="ml-2 w-5 h-5" />
+            <ChevronRight className="ml-2 w-5 h-5" />
           </button>
-        </motion.div>
+        </div>
+
+        {/* Quick View Modal */}
+        <AnimatePresence>
+          {quickViewProduct && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+              onClick={() => setQuickViewProduct(null)}
+            >
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-2xl font-bold">{quickViewProduct.stuffname}</h3>
+                    <button 
+                      onClick={() => setQuickViewProduct(null)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                  
+                  {/* Large product image */}
+                  <div className="mb-6">
+                    <img
+                      src={getProductImage(quickViewProduct.id) || "https://via.placeholder.com/800x600?text=No+Image"}
+                      alt={quickViewProduct.stuffname}
+                      className="w-full h-auto max-h-[500px] object-contain rounded-lg"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="font-semibold text-lg mb-2">Description</h4>
+                      <p className="text-gray-600">{quickViewProduct.description || quickViewProduct.short_description}</p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-lg mb-2">Details</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center">
+                          <span className="text-gray-500 w-32">Price:</span>
+                          <span className="font-medium text-teal-600">${quickViewProduct.price_per_day}/day</span>
+                        </div>
+                        {quickViewProduct.store && (
+                          <div className="flex items-center">
+                            <span className="text-gray-500 w-32">Store:</span>
+                            <span className="font-medium">{quickViewProduct.store}</span>
+                          </div>
+                        )}
+                        {quickViewProduct.rental_location && (
+                          <div className="flex items-center">
+                            <span className="text-gray-500 w-32">Location:</span>
+                            <span className="font-medium">{quickViewProduct.rental_location}</span>
+                          </div>
+                        )}
+                        {quickViewProduct.stuff_management?.rating && (
+                          <div className="flex items-center">
+                            <span className="text-gray-500 w-32">Rating:</span>
+                            <div className="flex items-center">
+                              <Star className="w-4 h-4 fill-current text-yellow-400 mr-1" />
+                              <span className="font-medium">{quickViewProduct.stuff_management.rating.toFixed(1)}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    className="w-full mt-6 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-medium"
+                    onClick={() => {
+                      handleProductView(quickViewProduct.id);
+                      setQuickViewProduct(null);
+                    }}
+                  >
+                    Rent Now
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );

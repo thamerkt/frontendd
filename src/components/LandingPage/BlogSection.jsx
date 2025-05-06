@@ -6,36 +6,36 @@ import { CalendarDays, User, ArrowRight } from "lucide-react";
 const blogPosts = [
   {
     id: 1,
-    title: "Top 10 Camping Essentials for Your Next Adventure",
+    title: "What is Ekrini.tn? Your Ultimate Rental Marketplace in Tunisia",
     excerpt:
-      "Discover the must-have items for a successful camping trip. From tents to cooking gear, we've got you covered.",
-    image: "https://www.apartments.com/rental-manager/sites/default/files/image/2023-02/nine-steps-to-turn-your-home-into-a-rental-property_hero.jpg",
-    date: "October 10, 2023",
-    author: "John Doe",
-    slug: "top-10-camping-essentials",
-    readTime: "5 min read"
+      "Discover Ekrini.tn, Tunisia's premier platform for renting everything from party equipment to construction tools.",
+    image: "/assets/ekrini.png",
+    date: "May 15, 2024",
+    author: "Ekrini Team",
+    slug: "blog1",
+    readTime: "6 min read"
   },
   {
     id: 2,
-    title: "How to Choose the Perfect Wedding Decorations",
+    title: "Why Rent Instead of Buy? The Smart Consumer's Guide",
     excerpt:
-      "Planning a wedding? Learn how to select the best decorations to make your special day unforgettable.",
-    image: "https://www.apartments.com/rental-manager/sites/default/files/image/2023-02/nine-steps-to-turn-your-home-into-a-rental-property_hero.jpg",
-    date: "October 5, 2023",
-    author: "Jane Smith",
-    slug: "perfect-wedding-decorations",
-    readTime: "7 min read"
+      "Discover the financial and practical benefits of renting over buying for equipment you use occasionally.",
+    image: "/assets/rent-vs-buy.png",
+    date: "June 2, 2024",
+    author: "Sarah Johnson",
+    slug: "blog2",
+    readTime: "8 min read"
   },
   {
     id: 3,
-    title: "Fitness Gear Rentals: Save Money, Stay Fit",
+    title: "Rent Any Equipment You Can Imagine on Ekrini.tn",
     excerpt:
-      "Why buy expensive fitness equipment when you can rent? Explore the benefits of renting fitness gear.",
-    image: "https://www.apartments.com/rental-manager/sites/default/files/image/2023-02/nine-steps-to-turn-your-home-into-a-rental-property_hero.jpg",
-    date: "September 28, 2023",
-    author: "Mike Johnson",
-    slug: "fitness-gear-rentals",
-    readTime: "4 min read"
+      "From party supplies to industrial tools - discover the endless rental possibilities on Tunisia's premier platform.",
+    image: "/assets/rentt.jpg",
+    date: "June 10, 2024",
+    author: "Ekrini Team",
+    slug: "blog3",
+    readTime: "5 min read"
   },
 ];
 
