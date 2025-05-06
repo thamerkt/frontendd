@@ -7,8 +7,8 @@ import {
 
 const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
-    const [selectedCity, setSelectedCity] = useState('Detecting...');
-    const [locationStatus, setLocationStatus] = useState('detecting');
+    const [selectedCity, setSelectedCity] = useState('Detecting location...');
+    const [locationStatus, setLocationStatus] = useState('waiting');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
@@ -48,25 +48,87 @@ const Navbar = () => {
         setMobileMenuOpen(false);
     }, [location]);
 
+    useEffect(() => {
+        // Detect location when component mounts
+        detectLocation();
+    }, []);
+
     const detectLocation = () => {
         setLocationStatus('detecting');
+        setSelectedCity('Detecting location...');
         
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setSelectedCity('Tunis');
-                    setLocationStatus('granted');
+                async (position) => {
+                    try {
+                        const { latitude, longitude } = position.coords;
+                        // Use OpenStreetMap Nominatim API for reverse geocoding
+                        const response = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+                        );
+                        const data = await response.json();
+                        
+                        let locationName = '';
+                        if (data.address) {
+                            // Try to get the most specific location name available
+                            locationName = 
+                                data.address.road || 
+                                data.address.neighbourhood || 
+                                data.address.suburb || 
+                                data.address.city || 
+                                data.address.town || 
+                                data.address.county || 
+                                data.address.state || 
+                                data.address.country;
+                        }
+                        
+                        if (locationName) {
+                            setSelectedCity(locationName);
+                        } else {
+                            setSelectedCity(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                        }
+                        setLocationStatus('granted');
+                    } catch (error) {
+                        console.error("Geocoding error:", error);
+                        setSelectedCity('Location unavailable');
+                        setLocationStatus('error');
+                    }
                 },
                 (error) => {
                     console.error("Location error:", error);
-                    setSelectedCity('Tunis');
-                    setLocationStatus('denied');
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            setSelectedCity('Location denied');
+                            setLocationStatus('denied');
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            setSelectedCity('Location unavailable');
+                            setLocationStatus('error');
+                            break;
+                        case error.TIMEOUT:
+                            setSelectedCity('Location timeout');
+                            setLocationStatus('error');
+                            break;
+                        default:
+                            setSelectedCity('Location error');
+                            setLocationStatus('error');
+                    }
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
                 }
             );
         } else {
-            setSelectedCity('Tunis');
+            setSelectedCity('Geolocation not supported');
             setLocationStatus('unsupported');
         }
+    };
+
+    const requestLocation = () => {
+        setLocationStatus('requesting');
+        detectLocation();
     };
 
     const shouldHideNavbar = hiddenPaths.some(path => location.pathname.startsWith(path));
@@ -94,6 +156,14 @@ const Navbar = () => {
                         <span className="mr-1">{selectedCity}</span>
                         {locationStatus === 'detecting' && (
                             <span className="text-xs text-teal-300 animate-pulse">Detecting...</span>
+                        )}
+                        {(locationStatus === 'denied' || locationStatus === 'error') && (
+                            <button 
+                                onClick={requestLocation}
+                                className="text-xs text-teal-300 underline ml-1"
+                            >
+                                Enable location
+                            </button>
                         )}
                     </div>
                 </div>
