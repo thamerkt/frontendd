@@ -32,24 +32,21 @@ const SidebarAdmin = () => {
       className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-100 flex flex-col overflow-y-auto z-50 transition-all duration-300 
         ${isExpanded ? "w-64" : "w-20"}`}
     >
-      {/* Logo Section */}
+      {/* Logo Section - Updated to match client sidebar */}
       <motion.div
         whileHover={{ scale: 1.02 }}
-        className="p-6 pb-4 border-b border-gray-100 flex items-center justify-between"
+        className="p-6 pb-4 border-b border-gray-100"
       >
-        <div className="flex items-center space-x-3 overflow-hidden">
+        <div className="items-center space-x-3">
           <motion.div
             initial={{ rotate: -10 }}
             animate={{ rotate: 0 }}
             transition={{ type: "spring", stiffness: 300 }}
-            className="bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-lg p-2"
+            className=""
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L3 7L12 12L21 7L12 2Z" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M3 17L12 22L21 17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M3 12L12 17L21 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <img width={120} src="../assets/logo-ekrini.png" alt="logo-ekrini.png"/>
           </motion.div>
+          <br />
           <AnimatePresence>
             {isExpanded && (
               <motion.div
@@ -58,12 +55,8 @@ const SidebarAdmin = () => {
                 exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.2 }}
               >
-                <motion.h1 className="text-xl font-semibold text-gray-800 whitespace-nowrap">
-                  Everything Rentals
-                </motion.h1>
-                <motion.p className="text-xs text-gray-400 mt-1 uppercase tracking-wider">
-                  Admin Console
-                </motion.p>
+                <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider">Welcome to</p>
+                <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider">Admin Portal</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -71,7 +64,7 @@ const SidebarAdmin = () => {
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsExpanded(!isExpanded)}
-          className="p-1 rounded-md hover:bg-gray-100 text-gray-500"
+          className="absolute top-6 right-4 p-1 rounded-md hover:bg-gray-100 text-gray-500"
         >
           <ChevronRight className={`transition-transform ${!isExpanded ? "rotate-180" : ""}`} size={18} />
         </motion.button>

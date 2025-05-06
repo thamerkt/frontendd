@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Mail, Phone, Image, MapPin, Clock, 
@@ -6,7 +6,7 @@ import {
   ChevronDown, Loader2, Save, Shield, X, Edit
 } from 'lucide-react';
 import Profileservice from '../../services/profileService';
-
+import SidebarClient from '../../components/SidebarClient';
 
 // Constants for all data
 const USER_DATA = {
@@ -50,8 +50,8 @@ const ClientSettingsPage = () => {
   const [saveError, setSaveError] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [profileImage, setProfileImage] = useState(USER_DATA.profileImage);
-  const [issFetchingProfile,setIsFetchingProfile]=useState(false)
-  const [profileData,setProfileData]=useState({})
+  const [isFetchingProfile, setIsFetchingProfile] = useState(false);
+  const [profileData, setProfileData] = useState({});
 
   const activeSectionData = NAV_ITEMS.find(item => item.id === activeSection);
 
@@ -78,23 +78,29 @@ const ClientSettingsPage = () => {
       reader.readAsDataURL(file);
     }
   };
-  const fetchProfileData = useCallback(async () => {
-    try {
-      setIsFetchingProfile(true);
-      const response = await Profileservice.fetchProfile();
-      setProfileData(response.data);
-      setIsFetchingProfile(false);
-    } catch (error) {
-      console.log("Error fetching profile:", error);
-      setIsFetchingProfile(false);
-    }
-  }, []);
 
   useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        setIsFetchingProfile(true);
+        const response = await Profileservice.fetchProfile();
+        setProfileData(response);
+        setIsFetchingProfile(false);
+      } catch (error) {
+        console.log("Error fetching profile:", error);
+        setIsFetchingProfile(false);
+      }
+    };
+  
     fetchProfileData();
-    console.log(profileData)
-  }, [fetchProfileData]);
-
+  }, []);
+  
+  useEffect(() => {
+    if (profileData) {
+      console.log("Fetched profile data:", profileData);
+    }
+  }, [profileData]);
+  
   const sectionVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { 
@@ -117,9 +123,9 @@ const ClientSettingsPage = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-  <SidebarClient />
-  
-  <div className="flex-1 overflow-hidden ml-20 lg:ml-64 transition-all duration-300">
+      <SidebarClient />
+      
+      <div className="flex-1 overflow-hidden ml-20 lg:ml-64 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Fixed Header with Navbar */}
           <div className="sticky top-0 z-10 bg-gray-50 pt-6 pb-4">

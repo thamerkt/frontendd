@@ -7,11 +7,9 @@ import FullCalendar from '@fullcalendar/react';
 import { motion } from "framer-motion";
 import { FiPlus, FiChevronLeft, FiChevronRight, FiCalendar } from "react-icons/fi";
 
-
 const BookingComponent = () => {
   const calendarRef = useRef(null);
   const [currentView, setCurrentView] = useState('dayGridMonth');
-  const [isSidebarExpanded] = useState(true); // Match with your sidebar state
 
   const events = [
     { 
@@ -83,17 +81,13 @@ const BookingComponent = () => {
   };
 
   return (
-    <div className="p-6 flex space-x-6">
-    {/* Sidebar fixed width */}
-    <div className="w-64">
-      
-    </div>
+    <div className="ml-64 p-6"> {/* Added ml-64 to account for sidebar width */}
       <motion.div 
         className="bg-white rounded-xl shadow-lg border border-gray-100"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        >
+      >
         <div className="p-4 border-b border-gray-100">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center space-x-3">
@@ -129,7 +123,7 @@ const BookingComponent = () => {
             initialDate={new Date()}
             headerToolbar={false}
             height="auto"
-            aspectRatio={1.2} // More compact ratio
+            aspectRatio={1.2}
             editable={true}
             selectable={true}
             selectMirror={true}
@@ -150,7 +144,7 @@ const BookingComponent = () => {
                 titleFormat: { year: 'numeric', month: 'long' },
                 dayHeaderFormat: { weekday: 'short' },
                 dayMaxEventRows: 2,
-                eventMinHeight: 20, // Smaller event height
+                eventMinHeight: 20,
                 eventShortHeight: 20
               },
               timeGridWeek: {

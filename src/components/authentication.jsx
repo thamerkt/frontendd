@@ -80,7 +80,7 @@ const AuthForm = () => {
     const { credential } = credentialResponse;
 
     try {
-      const response = await fetch('https://5b22-197-29-209-95.ngrok-free.app/user/auth/google/', {
+      const response = await fetch('https://4499-196-224-227-105.ngrok-free.app/user/auth/google/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential }),
@@ -141,12 +141,12 @@ const AuthForm = () => {
 
   const handleFacebookResponse = async (authResponse) => {
     console.log("Facebook OAuth Success:", authResponse);
-    
+  
     try {
       // Get user info
       window.FB.api('/me', { fields: 'name,email' }, async (userInfo) => {
         try {
-          const fbResponse = await fetch('https://5b22-197-29-209-95.ngrok-free.app/user/auth/facebook/', {
+          const fbResponse = await fetch('https://4499-196-224-227-105.ngrok-free.app/user/auth/facebook/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -156,34 +156,50 @@ const AuthForm = () => {
               name: userInfo.name
             }),
           });
-
+  
           if (fbResponse.ok) {
             const data = await fbResponse.json();
             console.log('User authenticated:', data);
-
+  
             if (data.userdata) {
               localStorage.setItem('user', JSON.stringify({
                 email: data.userdata.email,
                 role: data.userdata.role || 'customer',
                 first_name: data.userdata.first_name,
-                last_name: data.userdata.last_name
+                last_name: data.userdata.last_name,
+                token: data.userdata.access_token
               }));
             }
-
+  
             toast.success("Facebook login successful! Redirecting...");
-            setTimeout(() => {
-              const role = data.userdata?.role || 'customer';
-              if (role === 'customer') {
-                navigate('/home');
+  
+            if (data.userdata?.user_exists === true) {
+              if (data.user) {
+                setTimeout(() => {
+                  const role = data.userdata?.role || 'customer';
+                  if (role === 'customer') {
+                    navigate('/');
+                  } else {
+                    navigate('/collaboration');
+                  }
+                }, 3000);
               } else {
-                navigate('/collaboration');
+                const errorData = await fbResponse.json();
+                console.error('Authentication error:', errorData);
+                toast.error(errorData.message || "Facebook login failed. Please try again.");
               }
-            }, 3000);
+            } else {
+              setTimeout(() => {
+                navigate('/register/email-verification');
+              }, 3000);
+            }
+  
           } else {
             const errorData = await fbResponse.json();
             console.error('Authentication error:', errorData);
             toast.error(errorData.message || "Facebook login failed. Please try again.");
           }
+  
         } catch (error) {
           console.error('Network error:', error);
           toast.error("Network error. Please try again.");
@@ -194,6 +210,7 @@ const AuthForm = () => {
       toast.error("Failed to fetch Facebook user info.");
     }
   };
+  
 
   // Form submission handler
   const handleSubmit = async (event) => {

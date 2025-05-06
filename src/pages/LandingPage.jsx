@@ -67,7 +67,7 @@ const LandingPage = () => {
 
   const fetchip = useCallback(async () => {
     try {
-      const response = await axios.get("https://5b22-197-29-209-95.ngrok-free.app/ocr/getipp/");
+      const response = await axios.get("https://4499-196-224-227-105.ngrok-free.app/ocr/getipp/");
       setIP(response.data.ip); // Changed to response.data.ip
       console.log("IP fetched:", response.data.ip);
     } catch (error) {

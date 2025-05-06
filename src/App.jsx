@@ -141,7 +141,7 @@ const App = () => {
                   <Route path="/register/identity-verification/verification/selfie" element={<SelfieCapture />} />
                   <Route path="/register/identity-verification/verification/verification-complete" element={<VerificationComplete />} />
                 
-                <Route path="/admin/dashboard" element={<Dashboard />} />
+                <Route path="/admin/dashbord" element={<Dashboard />} />
                   <Route path="/admin/booking" element={<BookingComponent />} />
                   <Route path="/admin/products" element={<ProductsPage />} />
                   <Route path="/admin/clients" element={<ClientComponent />} />

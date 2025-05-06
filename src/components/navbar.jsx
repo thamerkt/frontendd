@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Facebook, Twitter, Instagram, Mail, ShoppingCart, 
-  ChevronDown, MapPin, Menu, X, User
+  ChevronDown, MapPin, Menu, X, User, Briefcase,
+  ClipboardList, List, Bell
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -10,6 +11,12 @@ const Navbar = () => {
     const [selectedCity, setSelectedCity] = useState('Detecting location...');
     const [locationStatus, setLocationStatus] = useState('waiting');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const [notificationCount, setNotificationCount] = useState(0);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [user, setUser] = useState(null);
+    const [isCustomer, setIsCustomer] = useState(true);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -35,6 +42,20 @@ const Navbar = () => {
     ];
 
     useEffect(() => {
+        // Check if user is logged in
+        const token = localStorage.getItem('token');
+        const userData = localStorage.getItem('user');
+        
+        if (token || userData) {
+            setIsLoggedIn(true);
+            setUser(JSON.parse(userData));
+            // Check if user is admin or customer
+            setIsCustomer(!userData.includes('"role":"admin"'));
+        } else {
+            setIsLoggedIn(false);
+            setUser(null);
+        }
+
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 10);
         };
@@ -133,6 +154,89 @@ const Navbar = () => {
 
     const shouldHideNavbar = hiddenPaths.some(path => location.pathname.startsWith(path));
 
+    const handleLogout = () => {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setIsLoggedIn(false);
+        setUser(null);
+        navigate('/');
+        setIsDropdownOpen(false);
+    };
+
+    const toggleDropdown = () => {
+        setIsDropdownOpen(!isDropdownOpen);
+        setNotificationsOpen(false);
+    };
+
+    const toggleNotifications = () => {
+        setNotificationsOpen(!notificationsOpen);
+        setIsDropdownOpen(false);
+        if (notificationsOpen) {
+            setNotificationCount(0);
+        }
+    };
+
+    const renderDropdownItems = () => {
+        if (isCustomer) {
+            return (
+                <>
+                    <a href="/client/settings" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <User className="w-4 h-4 mr-2" />
+                        Profile
+                    </a>
+                    <a href="/client/dashboard" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <Briefcase className="w-4 h-4 mr-2" />
+                        Dashboard
+                    </a>
+                    <a href="/client/booking" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <ClipboardList className="w-4 h-4 mr-2" />
+                        My bookings
+                    </a>
+                    <a href="/client/request" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <List className="w-4 h-4 mr-2" />
+                        My Requests
+                    </a>
+                    <button 
+                        onClick={handleLogout}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                    >
+                        Logout
+                    </button>
+                </>
+            );
+        } else {
+            return (
+                <>
+                    <a href="/admin/settings" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <User className="w-4 h-4 mr-2" />
+                        Profile
+                    </a>
+                    <a href="/admin/dashbord" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <Briefcase className="w-4 h-4 mr-2" />
+                        Dashboard
+                    </a>
+                    <a href="/admin/products" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        My Equipments
+                    </a>
+                    <a href="/admin/booking" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <ClipboardList className="w-4 h-4 mr-2" />
+                        Bookings
+                    </a>
+                    <a href="/admin/clients" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <List className="w-4 h-4 mr-2" />
+                        Requests
+                    </a>
+                    <button 
+                        onClick={handleLogout}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                    >
+                        Logout
+                    </button>
+                </>
+            );
+        }
+    };
+
     if (shouldHideNavbar) {
         return null;
     }
@@ -184,6 +288,18 @@ const Navbar = () => {
                     <div className="h-5 w-px bg-gray-600"></div>
                     
                     <div className="flex items-center space-x-4">
+                        <button 
+                            className="text-gray-300 hover:text-teal-400 transition-colors duration-200 relative"
+                            onClick={toggleNotifications}
+                        >
+                            <Bell className="w-4 h-4" />
+                            {notificationCount > 0 && (
+                                <span className="absolute -top-2 -right-2 bg-teal-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                    {notificationCount}
+                                </span>
+                            )}
+                        </button>
+                        
                         <button className="text-gray-300 hover:text-teal-400 transition-colors duration-200 relative">
                             <ShoppingCart className="w-4 h-4" />
                             <span className="absolute -top-2 -right-2 bg-teal-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
@@ -227,25 +343,46 @@ const Navbar = () => {
 
                         {/* Auth Buttons */}
                         <div className="flex items-center space-x-3">
-                            <button
-                                onClick={() => navigate('/login')}
-                                className="hidden md:flex items-center space-x-2 text-gray-700 hover:text-teal-600 transition-colors duration-200 font-medium px-4 py-2 rounded-lg border border-gray-200 hover:border-teal-600 group"
-                            >
-                                <User className="w-4 h-4 group-hover:text-teal-600" />
-                                <span>Sign In</span>
-                            </button>
-                            
-                            <button
-                                onClick={() => navigate('/register')}
-                                className="hidden md:flex items-center px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md text-white"
-                                style={{
-                                    background: 'linear-gradient(270deg, #0d9488, #0f766e, #115e59, #134e4a)',
-                                    backgroundSize: '800% 800%',
-                                    animation: 'gradientAnimation 8s ease infinite'
-                                }}
-                            >
-                                List Equipment
-                            </button>
+                            {isLoggedIn ? (
+                                <div className="relative">
+                                    <button
+                                        onClick={toggleDropdown}
+                                        className="flex items-center space-x-2 text-gray-700 hover:text-teal-600 transition-colors duration-200 font-medium px-4 py-2 rounded-lg border border-gray-200 hover:border-teal-600 group"
+                                    >
+                                        <User className="w-4 h-4 group-hover:text-teal-600" />
+                                        <span>{user?.name || 'Account'}</span>
+                                        <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
+                                    </button>
+                                    
+                                    {isDropdownOpen && (
+                                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                                            {renderDropdownItems()}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={() => navigate('/login')}
+                                        className="hidden md:flex items-center space-x-2 text-gray-700 hover:text-teal-600 transition-colors duration-200 font-medium px-4 py-2 rounded-lg border border-gray-200 hover:border-teal-600 group"
+                                    >
+                                        <User className="w-4 h-4 group-hover:text-teal-600" />
+                                        <span>Sign In</span>
+                                    </button>
+                                    
+                                    <button
+                                        onClick={() => navigate('/register')}
+                                        className="hidden md:flex items-center px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md text-white"
+                                        style={{
+                                            background: 'linear-gradient(270deg, #0d9488, #0f766e, #115e59, #134e4a)',
+                                            backgroundSize: '800% 800%',
+                                            animation: 'gradientAnimation 8s ease infinite'
+                                        }}
+                                    >
+                                        List Equipment
+                                    </button>
+                                </>
+                            )}
                             
                             {/* Mobile menu button */}
                             <button 
@@ -280,25 +417,45 @@ const Navbar = () => {
                             </div>
                             
                             <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col space-y-3">
-                                <button
-                                    onClick={() => navigate('/login')}
-                                    className="w-full flex items-center justify-center space-x-2 text-gray-700 hover:text-teal-600 transition-colors duration-200 font-medium px-4 py-2 rounded-lg border border-gray-200 hover:border-teal-600"
-                                >
-                                    <User className="w-4 h-4" />
-                                    <span>Sign In</span>
-                                </button>
-                                
-                                <button
-                                    onClick={() => navigate('/register')}
-                                    className="w-full flex items-center justify-center px-5 py-3 rounded-lg font-medium transition-all duration-200 text-white"
-                                    style={{
-                                        background: 'linear-gradient(270deg, #0d9488, #0f766e, #115e59, #134e4a)',
-                                        backgroundSize: '800% 800%',
-                                        animation: 'gradientAnimation 8s ease infinite'
-                                    }}
-                                >
-                                    List Equipment
-                                </button>
+                                {isLoggedIn ? (
+                                    <>
+                                        <button
+                                            onClick={toggleDropdown}
+                                            className="w-full flex items-center justify-center space-x-2 text-gray-700 hover:text-teal-600 transition-colors duration-200 font-medium px-4 py-2 rounded-lg border border-gray-200 hover:border-teal-600"
+                                        >
+                                            <User className="w-4 h-4" />
+                                            <span>{user?.name || 'Account'}</span>
+                                        </button>
+                                        
+                                        {isDropdownOpen && (
+                                            <div className="w-full bg-white rounded-md shadow-sm py-1 border border-gray-200">
+                                                {renderDropdownItems()}
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        <button
+                                            onClick={() => navigate('/login')}
+                                            className="w-full flex items-center justify-center space-x-2 text-gray-700 hover:text-teal-600 transition-colors duration-200 font-medium px-4 py-2 rounded-lg border border-gray-200 hover:border-teal-600"
+                                        >
+                                            <User className="w-4 h-4" />
+                                            <span>Sign In</span>
+                                        </button>
+                                        
+                                        <button
+                                            onClick={() => navigate('/register')}
+                                            className="w-full flex items-center justify-center px-5 py-3 rounded-lg font-medium transition-all duration-200 text-white"
+                                            style={{
+                                                background: 'linear-gradient(270deg, #0d9488, #0f766e, #115e59, #134e4a)',
+                                                backgroundSize: '800% 800%',
+                                                animation: 'gradientAnimation 8s ease infinite'
+                                            }}
+                                        >
+                                            List Equipment
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -1,139 +1,335 @@
-import { EllipsisVertical, Search } from "lucide-react";
-import { useEffect, useState } from "react";
-import HistoryService from "../../services/HistoryServcie"; // Fixed typo in import
+import { useState, useEffect, useRef } from "react";
+import { FiSearch, FiFilter, FiDownload, FiTrash2, FiEye, FiMoreVertical } from "react-icons/fi";
+import { motion, AnimatePresence } from "framer-motion";
 import { SelectInput } from "../../Customcss/custom";
+import HistoryService from "../../services/HistoryServcie";
 
 export default function History() {
-    const [historyData, setHistoryData] = useState([]); // Corrected useState syntax
-    const [filteredData, setFilteredData] = useState([]); // Store filtered data
-    const [SearchTerm, setSearchTerm] = useState('');
-    const [filter, setFilter] = useState(''); // Filter state to track selected filter
-    const FilterOptions = [
-        { value: 'statut', label: 'Statut' },
+    const [historyData, setHistoryData] = useState([]);
+    const [filteredData, setFilteredData] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filter, setFilter] = useState('');
+    const [moreVisible, setMoreVisible] = useState(null);
+    const [selectedItems, setSelectedItems] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const moreRef = useRef(null);
+
+    const filterOptions = [
+        { value: 'statut', label: 'Status' },
         { value: 'equipment', label: 'Equipment' },
         { value: 'client', label: 'Client' },
         { value: 'cout_total', label: 'Price' }
     ];
 
-    // Handle input change for search
-    const handleSearchChange = async (e) => {
-        setSearchTerm(e.target.value); // Update search term
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (moreRef.current && !moreRef.current.contains(event.target)) {
+                setMoreVisible(null);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
     };
 
-    // Handle filter change
     const handleFilterChange = (e) => {
-        const { value } = e.target;
-        setFilter(value); // Update filter value
+        setFilter(e.target.value);
     };
 
-    // Fetch data when filter or search term changes
     useEffect(() => {
         const fetchData = async () => {
             try {
+                setIsLoading(true);
                 const data = await HistoryService.fetchHistory();
-                setHistoryData(data); // Set the fetched data into state
+                setHistoryData(data || []);
+                setFilteredData(data || []);
+                setError(null);
             } catch (e) {
                 console.error("Error fetching history data:", e.message);
+                setError("Failed to load history data");
+                setHistoryData([]);
+                setFilteredData([]);
+            } finally {
+                setIsLoading(false);
             }
         };
 
         fetchData();
-    }, []); // Run only once when the component is mounted
+    }, []);
 
-    // Filter data based on the selected filter and search term
     useEffect(() => {
         const applyFilters = () => {
-            let filtered = historyData;
+            if (!historyData || !Array.isArray(historyData)) return;
 
-            // Apply filter if set
+            let filtered = [...historyData];
+
             if (filter) {
                 filtered = filtered.filter(item => {
-                    return item[filter] && item[filter].toString().toLowerCase().includes(SearchTerm.toLowerCase());
+                    return item && item[filter] && 
+                           item[filter].toString().toLowerCase().includes(searchTerm.toLowerCase());
                 });
             }
 
-            // Apply search term filter across all fields if no specific filter is set
-            if (SearchTerm && !filter) {
+            if (searchTerm && !filter) {
                 filtered = filtered.filter(item => {
-                    return Object.values(item).some(value =>
-                        value && value.toString().toLowerCase().includes(SearchTerm.toLowerCase())
+                    return item && Object.values(item).some(value =>
+                        value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
                     );
                 });
             }
 
-            setFilteredData(filtered); 
+            setFilteredData(filtered);
         };
 
         applyFilters();
-    }, [historyData, filter, SearchTerm]); 
+    }, [historyData, filter, searchTerm]);
 
     const getStatusColor = (status) => {
-        switch (status) {
+        if (!status) return 'bg-gray-100 text-gray-800';
+        
+        switch (status.toLowerCase()) {
             case 'active':
-                return 'text-green-500'; 
+                return 'bg-green-100 text-green-800';
             case 'inactive':
-                return 'text-red-500'; 
+                return 'bg-red-100 text-red-800';
             case 'pending':
-                return 'text-yellow-500'; 
+                return 'bg-yellow-100 text-yellow-800';
             default:
-                return 'text-gray-500'; 
+                return 'bg-gray-100 text-gray-800';
         }
     };
 
-    // Helper function to check if an array is not empty
-    const isNotEmpty = (arr) => Array.isArray(arr) && arr.length > 0;
+    const toggleSelection = (id) => {
+        setSelectedItems(prev =>
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
+
+    const deleteSelected = () => {
+        alert(`Would delete items: ${selectedItems.join(', ')}`);
+        setSelectedItems([]);
+    };
+
+    const exportToExcel = () => {
+        alert("Would export data to Excel");
+    };
+
+    if (isLoading) {
+        return (
+            <div className="ml-64 p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading history data...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="ml-64 p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+                <div className="text-center text-red-500">
+                    <p className="text-lg font-medium">{error}</p>
+                    <button 
+                        onClick={() => window.location.reload()}
+                        className="mt-4 px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="p-6">
-            <div className="flex flex-1 justify-between my-7">
-                <div>
-                    <h2 className="text-2xl font-bold">History</h2>
-                    <p className="text-green-500">Showing all your histories</p>
+        <div className="ml-64 p-6 bg-gray-50 min-h-screen">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+                <div className="mb-4 md:mb-0">
+                    <h2 className="text-2xl font-bold text-gray-800">History</h2>
+                    <p className="text-teal-500">Showing your all histories</p>
                 </div>
-                <div className="flex items-center gap-4 mb-4">
-                    <div className="relative w-full max-w-md">
+                
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                    <div className="relative flex items-center border rounded-lg px-3 py-2 bg-white shadow-sm">
+                        <FiSearch className="text-gray-400 mr-2" />
                         <input
                             type="text"
-                            value={SearchTerm} // Bind the search term to the input
-                            placeholder="Search history"
-                            className="w-full p-3 border text-base rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 mt-3"
-                            onChange={handleSearchChange} // Handle search input change
+                            placeholder="Search history..."
+                            className="outline-none w-full"
+                            value={searchTerm}
+                            onChange={handleSearchChange}
                         />
-                        <Search className="absolute right-3 top-10 transform -translate-y-1/2 text-gray-400" size={18} />
                     </div>
+                    
                     <SelectInput
                         name="filter"
-                        value={filter} // Use filter as the value for the dropdown
-                        onChange={handleFilterChange} // Pass the handleChange function to handle selection
-                        options={FilterOptions} // Pass the options for filtering
-                        placeholder="Filter Your history" // Placeholder text
+                        value={filter}
+                        onChange={handleFilterChange}
+                        options={filterOptions}
+                        placeholder="Filter"
+                        className="w-40"
                     />
+                    
+                    {selectedItems.length > 0 && (
+                        <motion.button
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            onClick={deleteSelected}
+                            className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+                        >
+                            <FiTrash2 size={14} />
+                            <span>Delete Selected ({selectedItems.length})</span>
+                        </motion.button>
+                    )}
                 </div>
             </div>
 
-            <div className="p-4 border border-gray-300 rounded-md bg-white">
-                {isNotEmpty(filteredData) ? ( // Check if filteredData exists and has items
-                    filteredData.map((section, idx) => (
-                        <div key={idx} className="mb-4">
-                            <h3 className="font-semibold text-gray-600 mb-2">{section.date_debut}</h3>
-                            <div className="flex items-center justify-between py-2 border-b">
-                                <input type="checkbox" className="w-4 h-4" />
-                                <span className="text-gray-700">{section.bailleur_nom}</span>
-                                <span className="font-semibold">{section.equipment}</span>
-                                <span className="font-semibold">{section.cout_total}</span>
-                                <span className={`font-semibold ${getStatusColor(section.statut)}`}>
-                                    {section.statut}
-                                </span>
-                                <EllipsisVertical className="cursor-pointer" />
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <p className="text-gray-500">No history available.</p>
+            <div className="bg-white p-5 rounded-xl shadow-sm">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Select
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Period
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Client
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Equipment
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Bailleur
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Status
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Total Cost
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {filteredData && filteredData.length > 0 ? (
+                                filteredData.map((item) => (
+                                    item && (
+                                    <tr key={item.id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedItems.includes(item.id)}
+                                                onChange={() => toggleSelection(item.id)}
+                                                className="h-4 w-4 text-teal-500 focus:ring-teal-500 border-gray-300 rounded"
+                                            />
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-900">
+                                                {item.date_debut || 'N/A'}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm font-medium text-gray-900">{item.client || 'N/A'}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-900">{item.equipment || 'N/A'}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-900">{item.bailleur_nom || 'N/A'}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(item.statut)}`}>
+                                                {item.statut || 'N/A'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {item.cout_total || 'N/A'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <div className="relative inline-block text-left" ref={moreRef}>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setMoreVisible(moreVisible === item.id ? null : item.id);
+                                                    }}
+                                                    className="text-gray-400 hover:text-gray-600"
+                                                >
+                                                    <FiMoreVertical />
+                                                </button>
+                                                
+                                                <AnimatePresence>
+                                                    {moreVisible === item.id && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, scale: 0.95 }}
+                                                            animate={{ opacity: 1, scale: 1 }}
+                                                            exit={{ opacity: 0, scale: 0.95 }}
+                                                            className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            <div className="py-1">
+                                                                <button
+                                                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                                                                    onClick={() => {
+                                                                        alert(`View details for ${item.id}`);
+                                                                        setMoreVisible(null);
+                                                                    }}
+                                                                >
+                                                                    <FiEye className="mr-2" /> View Details
+                                                                </button>
+                                                                <button
+                                                                    className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+                                                                    onClick={() => {
+                                                                        alert(`Delete item ${item.id}`);
+                                                                        setMoreVisible(null);
+                                                                    }}
+                                                                >
+                                                                    <FiTrash2 className="mr-2" /> Delete
+                                                                </button>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    )
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="8" className="px-6 py-4 text-center text-sm text-gray-500">
+                                        No history data available
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {filteredData && filteredData.length > 0 && (
+                    <div className="mt-4 flex justify-end">
+                        <button
+                            onClick={exportToExcel}
+                            className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-500 hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                        >
+                            <FiDownload className="mr-2" />
+                            Export to Excel
+                        </button>
+                    </div>
                 )}
             </div>
-
-            <button className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Export</button>
         </div>
     );
 }

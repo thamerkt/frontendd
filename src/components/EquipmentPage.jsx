@@ -231,7 +231,7 @@ const [showCalendar, setShowCalendar] = useState(false);
         // Fetch product and images in parallel
         const [productData, productImages] = await Promise.all([
           EquipmentService.fetchRentalById(productId),
-          axios.get(`https://5b22-197-29-209-95.ngrok-free.app/api/images/?stuff=${productId}`, {
+          axios.get(`https://4499-196-224-227-105.ngrok-free.app/api/images/?stuff=${productId}`, {
             withCredentials: true,
           }),
         ]);
@@ -260,7 +260,10 @@ const [showCalendar, setShowCalendar] = useState(false);
       
         // Fetch related products based on category ID
         const allProducts = await axios.get(
-          `https://5b22-197-29-209-95.ngrok-free.app/api/stuffs/?category=${productData.category}`
+          `https://4499-196-224-227-105.ngrok-free.app/api/stuffs/?category=${productData.category}`,
+          {
+            withCredentials: true,
+          }
         );
       
         // Process related products' images and descriptions
