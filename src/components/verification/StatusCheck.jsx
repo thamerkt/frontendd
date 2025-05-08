@@ -84,7 +84,7 @@ const VerificationComplete = () => {
         formData.append('selfie', selfieFile);
         formData.append('keycloak_user', Cookies.get('user'));
 
-        const apiUrl = `https://674c-165-50-136-134.ngrok-free.app/ocr/publish-event/`;
+        const apiUrl = `https://f468-41-230-62-140.ngrok-free.app/ocr/publish-event/`;
 
         // Upload with longer timeout (10 minutes = 600,000ms)
         const uploadResponse = await axios.post(apiUrl, formData, {
@@ -105,7 +105,7 @@ const VerificationComplete = () => {
           setCountdown(prev => {
             if (prev <= 1) {
               clearInterval(timer);
-              navigate('/dashboard');
+              navigate('/login');
               return 0;
             }
             return prev - 1;
@@ -343,7 +343,7 @@ const VerificationComplete = () => {
               </>
             ) : (
               <>
-                Go to Dashboard Now
+                Go to login 
                 <FiArrowRight className="ml-2" />
               </>
             )}

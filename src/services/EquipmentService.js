@@ -1,6 +1,6 @@
 import Cookies from "js-cookie";
 
-const API_URL = "https://674c-165-50-136-134.ngrok-free.app/api"; // removed trailing slash
+const API_URL = "https://f468-41-230-62-140.ngrok-free.app/api"; // removed trailing slash
 
 const getHeaders = (isJson = false) => {
   const headers = {

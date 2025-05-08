@@ -2,3 +2,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+
+.fc-event-approved {
+  background-color: #10b981 !important;
+  border-color: #10b981 !important;
+  cursor: not-allowed;
+}
+
+.fc-event-pending {
+  background-color: #f59e0b !important;
+  border-color: #f59e0b !important;
+  cursor: pointer;
+}
+
+.fc-event-approved .fc-event-main {
+  pointer-events: none;
+}

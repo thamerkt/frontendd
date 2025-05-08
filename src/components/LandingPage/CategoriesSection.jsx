@@ -11,11 +11,19 @@ import axios from "axios";
 
 // Mock category images
 const categoryImages = {
-  "1": "https://images.unsplash.com/photo-1550009158-9ebf69173e03?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80",
-  "2": "https://images.unsplash.com/photo-1546054454-aa26e2b734c7?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80",
-  "3": "https://images.unsplash.com/photo-1486401899868-0e435ed85128?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80",
-  "4": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80",
-  "5": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80",
+  "1": "https://images.unsplash.com/photo-1581093450023-8a2d4948f1a7?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80", // Tools
+  "2": "https://images.unsplash.com/photo-1581093450023-8a2d4948f1a7?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80", // Tools (duplicate)
+  "3": "https://images.unsplash.com/photo-1518770660439-4636190af475?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80", // Electronics
+  "4": "https://images.unsplash.com/photo-1605100804763-247f67b3557e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80", // Construction Equipment
+  "5": "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80", // Event & Party Supplies
+  "6": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80", // Photography & Media
+  "7": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80", // Vehicles & Transport
+  "8": "https://images.unsplash.com/photo-1581093450023-8a2d4948f1a7?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80", // Tools & DIY
+  "9": "https://images.unsplash.com/photo-1556911220-bff31c812dba?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80", // Home & Kitchen
+  "10": "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80", // IT & Electronics
+  "11": "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80", // Camping & Outdoor
+  "12": "https://images.unsplash.com/photo-1521791136064-7986c2920216?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80", // Business & Office
+  "13": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&h=200&q=80" // Medical Equipment
 };
 
 export default function CategoriesSection() {
@@ -28,9 +36,11 @@ export default function CategoriesSection() {
   const [direction, setDirection] = useState(1);
   const [ip, setIP] = useState('');
   const [quickViewProduct, setQuickViewProduct] = useState(null);
+  const [categoryPage, setCategoryPage] = useState(0);
   const navigate = useNavigate();
 
   const cardsPerPage = 4;
+  const categoriesPerPage = 6;
 
   // Animation variants
   const container = {
@@ -46,7 +56,7 @@ export default function CategoriesSection() {
   
   const fetchip = useCallback(async () => {
     try {
-      const response = await axios.get("https://674c-165-50-136-134.ngrok-free.app/ocr/getipp/", {
+      const response = await axios.get("https://f468-41-230-62-140.ngrok-free.app/ocr/getipp/", {
         withCredentials: true, // Include credentials like cookies
       });
       setIP(response.data.ip);
@@ -202,6 +212,18 @@ export default function CategoriesSection() {
     setCurrentIndex(index);
   };
 
+  const handleCategoryNext = () => {
+    setCategoryPage(prev => 
+      (prev + 1) * categoriesPerPage >= categories.length ? 0 : prev + 1
+    );
+  };
+
+  const handleCategoryPrev = () => {
+    setCategoryPage(prev => 
+      prev === 0 ? Math.floor((categories.length - 1) / categoriesPerPage) : prev - 1
+    );
+  };
+
   if (loading) {
     return (
       <section className="py-16 px-4 sm:px-8 bg-gray-50">
@@ -249,44 +271,67 @@ export default function CategoriesSection() {
           </div>
         </div>
 
-        {/* Category Tabs - Circular Images */}
-        <motion.div 
-          className="flex overflow-x-auto pb-8 mb-10 scrollbar-hide"
-          variants={container}
-        >
-          <div className="flex space-x-8 px-2 mx-auto">
-            {categories.map((cat) => (
-              <motion.div
-                key={cat.id}
-                variants={item}
-                onClick={() => {
-                  setSelectedCategory(cat.id);
-                  setCurrentIndex(0);
-                }}
-                className="flex flex-col items-center cursor-pointer"
-              >
-                <div className={`w-24 h-24 rounded-full overflow-hidden border-4 ${
-                  cat.id === selectedCategory 
-                    ? "border-teal-500 shadow-lg" 
-                    : "border-white hover:border-teal-200"
-                }`}>
-                  <img
-                    src={categoryImages[cat.id] || "https://via.placeholder.com/200?text=Category"}
-                    alt={cat.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <span className={`mt-3 text-sm font-medium whitespace-nowrap ${
-                  cat.id === selectedCategory 
-                    ? "text-teal-600 font-bold" 
-                    : "text-gray-700"
-                }`}>
-                  {cat.name}
-                </span>
-              </motion.div>
-            ))}
+        {/* Category Tabs - Circular Images with Chevron Navigation */}
+        <div className="relative mb-10">
+          <div className="flex items-center justify-center">
+            <button
+              onClick={handleCategoryPrev}
+              className="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md mr-2"
+              aria-label="Previous categories"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-700" />
+            </button>
+
+            <motion.div 
+              className="flex flex-wrap justify-center gap-6 px-2 mx-auto"
+              variants={container}
+            >
+              {categories
+                .slice(
+                  categoryPage * categoriesPerPage,
+                  (categoryPage + 1) * categoriesPerPage
+                )
+                .map((cat) => (
+                  <motion.div
+                    key={cat.id}
+                    variants={item}
+                    onClick={() => {
+                      setSelectedCategory(cat.id);
+                      setCurrentIndex(0);
+                    }}
+                    className="flex flex-col items-center cursor-pointer"
+                  >
+                    <div className={`w-24 h-24 rounded-full overflow-hidden border-4 ${
+                      cat.id === selectedCategory 
+                        ? "border-teal-500 shadow-lg" 
+                        : "border-white hover:border-teal-200"
+                    }`}>
+                      <img
+                        src={categoryImages[cat.id] || "https://via.placeholder.com/200?text=Category"}
+                        alt={cat.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <span className={`mt-3 text-sm font-medium whitespace-nowrap ${
+                      cat.id === selectedCategory 
+                        ? "text-teal-600 font-bold" 
+                        : "text-gray-700"
+                    }`}>
+                      {cat.name}
+                    </span>
+                  </motion.div>
+                ))}
+            </motion.div>
+
+            <button
+              onClick={handleCategoryNext}
+              className="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md ml-2"
+              aria-label="Next categories"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-700" />
+            </button>
           </div>
-        </motion.div>
+        </div>
 
         {/* Products Section */}
         {selectedCategory && items[selectedCategory]?.length > 0 && (

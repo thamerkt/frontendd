@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Facebook, Twitter, Instagram, Mail, ShoppingCart, 
   ChevronDown, MapPin, Menu, X, User, Briefcase,
-  ClipboardList, List, Bell
+  ClipboardList, List, Bell, Heart
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -17,6 +17,8 @@ const Navbar = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [user, setUser] = useState(null);
     const [isCustomer, setIsCustomer] = useState(true);
+    const [profile, setProfile] = useState(null);
+    const [profilePicture, setProfilePicture] = useState(null);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -48,12 +50,18 @@ const Navbar = () => {
         
         if (token || userData) {
             setIsLoggedIn(true);
-            setUser(JSON.parse(userData));
+            const parsedUser = JSON.parse(userData);
+            setUser(parsedUser);
             // Check if user is admin or customer
-            setIsCustomer(!userData.includes('"role":"admin"'));
+            setIsCustomer(!parsedUser.role || parsedUser.role === 'customer');
+            
+            // Fetch profile details
+            fetchProfileDetails(parsedUser.id);
         } else {
             setIsLoggedIn(false);
             setUser(null);
+            setProfile(null);
+            setProfilePicture(null);
         }
 
         const handleScroll = () => {
@@ -63,6 +71,65 @@ const Navbar = () => {
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    const fetchProfileDetails = async (userId) => {
+        try {
+            // Fetch profile
+            const profileResponse = await fetch(`https://f468-41-230-62-140.ngrok-free.app/profile/profil/?user=${userId}`, {
+                headers: {
+                    // Add headers here if needed, like Authorization
+                    // 'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include' // or 'same-origin' depending on your backend
+            });
+            
+            if (!profileResponse.ok) throw new Error('Profile fetch failed');
+            
+            const profileData = await profileResponse.json();
+            if (profileData.length > 0) {
+                const userProfile = profileData[0];
+                setProfile(userProfile);
+                
+                // Fetch profile picture based on user role
+                if (isCustomer) {
+                    const physicalResponse = await fetch(`https://f468-41-230-62-140.ngrok-free.app/profile/physicalprofil/?profil=${userProfile.id}`, {
+                        headers: {
+                            // Add headers here if needed, like Authorization
+                            // 'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include' // or 'same-origin' depending on your backend
+                    });
+                    
+                    if (physicalResponse.ok) {
+                        const physicalData = await physicalResponse.json();
+                        if (physicalData.length > 0 && physicalData[0].profile_picture) {
+                            setProfilePicture(physicalData[0].profile_picture);
+                        }
+                    }
+                } else {
+                    const moralResponse = await fetch(`https://f468-41-230-62-140.ngrok-free.app/profile/profilmoral/?profil=${userProfile.id}`, {
+                        headers: {
+                            // Add headers here if needed, like Authorization
+                            // 'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include' // or 'same-origin' depending on your backend
+                    });
+                    
+                    if (moralResponse.ok) {
+                        const moralData = await moralResponse.json();
+                        if (moralData.length > 0 && moralData[0].logo) {
+                            setProfilePicture(moralData[0].logo);
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching profile details:', error);
+        }
+    };
 
     useEffect(() => {
         // Close mobile menu when navigating
@@ -97,6 +164,8 @@ const Navbar = () => {
         localStorage.removeItem('token');
         setIsLoggedIn(false);
         setUser(null);
+        setProfile(null);
+        setProfilePicture(null);
         navigate('/');
         setIsDropdownOpen(false);
     };
@@ -133,6 +202,10 @@ const Navbar = () => {
                     <a href="/client/request" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <List className="w-4 h-4 mr-2" />
                         My Requests
+                    </a>
+                    <a href="/client/favorite" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <Heart className="w-4 h-4 mr-2" />
+                        My Wishlist
                     </a>
                     <button 
                         onClick={handleLogout}
@@ -274,21 +347,41 @@ const Navbar = () => {
                         {/* Auth Buttons */}
                         <div className="flex items-center space-x-3">
                             {isLoggedIn ? (
-                                <div className="relative">
-                                    <button
-                                        onClick={toggleDropdown}
-                                        className="flex items-center space-x-2 text-gray-700 hover:text-teal-600 transition-colors duration-200 font-medium px-4 py-2 rounded-lg border border-gray-200 hover:border-teal-600 group"
+                                <div className="flex items-center space-x-4">
+                                    {/* Wishlist button */}
+                                    <a 
+                                        href="/client/favorite" 
+                                        className="relative p-2 text-gray-700 hover:text-teal-600 transition-colors duration-200"
+                                        aria-label="Wishlist"
                                     >
-                                        <User className="w-4 h-4 group-hover:text-teal-600" />
-                                        <span>{user?.name || 'Account'}</span>
-                                        <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
-                                    </button>
+                                        <Heart className="w-5 h-5" />
+                                    </a>
                                     
-                                    {isDropdownOpen && (
-                                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                                            {renderDropdownItems()}
-                                        </div>
-                                    )}
+                                    {/* User dropdown */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={toggleDropdown}
+                                            className="flex items-center space-x-2 text-gray-700 hover:text-teal-600 transition-colors duration-200 font-medium px-4 py-2 rounded-lg border border-gray-200 hover:border-teal-600 group"
+                                        >
+                                            {profilePicture ? (
+                                                <img 
+                                                    src={profilePicture} 
+                                                    alt="Profile" 
+                                                    className="w-6 h-6 rounded-full object-cover"
+                                                />
+                                            ) : (
+                                                <User className="w-4 h-4 group-hover:text-teal-600" />
+                                            )}
+                                            <span>{profile?.first_name || user?.name || 'Account'}</span>
+                                            <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
+                                        </button>
+                                        
+                                        {isDropdownOpen && (
+                                            <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                                                {renderDropdownItems()}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             ) : (
                                 <>
@@ -349,12 +442,28 @@ const Navbar = () => {
                             <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col space-y-3">
                                 {isLoggedIn ? (
                                     <>
+                                        <a 
+                                            href="/client/favorite" 
+                                            className="flex items-center justify-center space-x-2 text-gray-700 hover:text-teal-600 transition-colors duration-200 font-medium px-4 py-2 rounded-lg border border-gray-200 hover:border-teal-600"
+                                        >
+                                            <Heart className="w-4 h-4" />
+                                            <span>Wishlist</span>
+                                        </a>
+                                        
                                         <button
                                             onClick={toggleDropdown}
                                             className="w-full flex items-center justify-center space-x-2 text-gray-700 hover:text-teal-600 transition-colors duration-200 font-medium px-4 py-2 rounded-lg border border-gray-200 hover:border-teal-600"
                                         >
-                                            <User className="w-4 h-4" />
-                                            <span>{user?.name || 'Account'}</span>
+                                            {profilePicture ? (
+                                                <img 
+                                                    src={profilePicture} 
+                                                    alt="Profile" 
+                                                    className="w-5 h-5 rounded-full object-cover"
+                                                />
+                                            ) : (
+                                                <User className="w-4 h-4" />
+                                            )}
+                                            <span>{profile?.first_name || user?.name || 'Account'}</span>
                                         </button>
                                         
                                         {isDropdownOpen && (

@@ -6,16 +6,15 @@ import 'react-toastify/dist/ReactToastify.css';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
 const clientId = '348131616981-85ms78t7eshj5l60pg07adpe9fc00tbt.apps.googleusercontent.com';
-const facebookAppId = '445559468644845'; // Replace with your Facebook App ID
+const facebookAppId = '445559468644845';
 
-const AuthForm = () => {
+const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
   const location = useLocation();
   const isRegister = location.pathname === "/register";
   const navigate = useNavigate();
 
   // Initialize Facebook SDK
   useEffect(() => {
-    // Load Facebook SDK
     window.fbAsyncInit = function() {
       window.FB.init({
         appId: facebookAppId,
@@ -25,7 +24,6 @@ const AuthForm = () => {
       });
     };
 
-    // Load the SDK asynchronously
     (function(d, s, id) {
       var js, fjs = d.getElementsByTagName(s)[0];
       if (d.getElementById(id)) return;
@@ -35,7 +33,6 @@ const AuthForm = () => {
     }(document, 'script', 'facebook-jssdk'));
   }, []);
 
-  // Check for user data in localStorage and redirect if found
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
@@ -74,13 +71,12 @@ const AuthForm = () => {
     setError("");
   };
 
-  // Google OAuth handlers
   const handleSuccess = async (credentialResponse) => {
     console.log("Google OAuth Success:", credentialResponse);
     const { credential } = credentialResponse;
 
     try {
-      const response = await fetch('https://674c-165-50-136-134.ngrok-free.app/user/auth/google/', {
+      const response = await fetch('https://f468-41-230-62-140.ngrok-free.app/user/auth/google/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential }),
@@ -124,7 +120,6 @@ const AuthForm = () => {
     toast.error("Google login failed. Please try again.");
   };
 
-  // Facebook OAuth handlers
   const handleFacebookLogin = () => {
     window.FB.login(
       (response) => {
@@ -143,10 +138,9 @@ const AuthForm = () => {
     console.log("Facebook OAuth Success:", authResponse);
   
     try {
-      // Get user info
       window.FB.api('/me', { fields: 'name,email' }, async (userInfo) => {
         try {
-          const fbResponse = await fetch('https://674c-165-50-136-134.ngrok-free.app/user/auth/facebook/', {
+          const fbResponse = await fetch('https://f468-41-230-62-140.ngrok-free.app/user/auth/facebook/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -160,7 +154,7 @@ const AuthForm = () => {
           if (fbResponse.ok) {
             const data = await fbResponse.json();
             console.log('User authenticated:', data);
-  
+
             if (data.userdata) {
               localStorage.setItem('user', JSON.stringify({
                 email: data.userdata.email,
@@ -170,9 +164,9 @@ const AuthForm = () => {
                 token: data.userdata.access_token
               }));
             }
-  
+
             toast.success("Facebook login successful! Redirecting...");
-  
+
             if (data.userdata?.user_exists === true) {
               if (data.user) {
                 setTimeout(() => {
@@ -193,13 +187,11 @@ const AuthForm = () => {
                 navigate('/register/email-verification');
               }, 3000);
             }
-  
           } else {
             const errorData = await fbResponse.json();
             console.error('Authentication error:', errorData);
             toast.error(errorData.message || "Facebook login failed. Please try again.");
           }
-  
         } catch (error) {
           console.error('Network error:', error);
           toast.error("Network error. Please try again.");
@@ -210,9 +202,7 @@ const AuthForm = () => {
       toast.error("Failed to fetch Facebook user info.");
     }
   };
-  
 
-  // Form submission handler
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
@@ -253,6 +243,7 @@ const AuthForm = () => {
           } else {
             navigate('/collaboration');
           }
+          if (isPopup) onClose();
         }, 3000);
       }
     } catch (error) {
@@ -266,18 +257,38 @@ const AuthForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          {isRegister ? "Create Your Account" : "Welcome Back"}
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          {isRegister ? "Get started with Everything Rentals" : "Sign in to access your account"}
-        </p>
+    <div className={`${isPopup ? '' : 'min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8'}`}>
+      <div className={`${isPopup ? '' : 'sm:mx-auto sm:w-full sm:max-w-md'}`}>
+        {isPopup && (
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-900">
+              {isRegister ? "Create Your Account" : "Welcome Back"}
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-500"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {!isPopup && (
+          <>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+              {isRegister ? "Create Your Account" : "Welcome Back"}
+            </h2>
+            <p className="mt-2 text-center text-sm text-gray-600">
+              {isRegister ? "Get started with Everything Rentals" : "Sign in to access your account"}
+            </p>
+          </>
+        )}
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div className={`${isPopup ? '' : 'mt-8 sm:mx-auto sm:w-full sm:max-w-md'}`}>
+        <div className={`bg-white ${isPopup ? 'p-4' : 'py-8 px-4 shadow sm:rounded-lg sm:px-10'}`}>
           {error && (
             <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4">
               <div className="flex">
@@ -488,17 +499,19 @@ const AuthForm = () => {
           </div>
         </div>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            {isRegister ? "Already have an account?" : "Don't have an account?"}{' '}
-            <button
-              onClick={() => navigate(isRegister ? "/login" : "/register")}
-              className="font-medium text-teal-600 hover:text-teal-500"
-            >
-              {isRegister ? "Sign in" : "Sign up"}
-            </button>
-          </p>
-        </div>
+        {!isPopup && (
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              {isRegister ? "Already have an account?" : "Don't have an account?"}{' '}
+              <button
+                onClick={() => navigate(isRegister ? "/login" : "/register")}
+                className="font-medium text-teal-600 hover:text-teal-500"
+              >
+                {isRegister ? "Sign in" : "Sign up"}
+              </button>
+            </p>
+          </div>
+        )}
       </div>
 
       <ToastContainer position="top-right" autoClose={3000} />

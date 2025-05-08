@@ -1,7 +1,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const API_URL = "https://674c-165-50-136-134.ngrok-free.app/profile";
+const API_URL = "https://f468-41-230-62-140.ngrok-free.app/profile";
 const Profileservice = {
   addProfil: async (formData, role) => {
     try {
@@ -21,27 +21,14 @@ const Profileservice = {
       });
 
       // 2. Assign role
-      const roleResponse = await fetch(
-        "https://674c-165-50-136-134.ngrok-free.app/user/assign/role/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ user_id, role }),
-        }
-      );
+      
 
-      if (!roleResponse.ok) {
-        const errorData = await roleResponse.json();
-        throw new Error(errorData.message || "Role assignment failed");
-      }
-
-      const roleResult = await roleResponse.json();
+      
+     
 
       return {
         profile: response.data,
-        roleAssignment: roleResult,
+        
       };
     } catch (error) {
       console.error("Error adding profile:", error.response?.data || error.message);
@@ -80,9 +67,10 @@ const Profileservice = {
       const response = await axios.post(`${API_URL}/physicalprofil/`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          "Authorization": `Bearer ${token}`,
+         
         },
-      });
+      }); 
+      console.log(response)
 
       return response.data;
     } catch (error) {

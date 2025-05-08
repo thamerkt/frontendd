@@ -11,7 +11,8 @@ import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction'; 
 import { useParams } from 'react-router-dom';
 import TrackingService from "../services/TrackingService";
-
+import Cookies from 'js-cookie';
+import AuthForm from './authentication'
 
 
 import axios from "axios";
@@ -71,6 +72,7 @@ const [showCalendar, setShowCalendar] = useState(false);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [quantityy, setQuantityy] = useState(1);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
 
   // Toggle the visibility of the form when the button is clicked
   const handleShowForm = () => setShowForm(!showForm);
@@ -99,7 +101,7 @@ const [showCalendar, setShowCalendar] = useState(false);
   
     if (url) {
      
-        url = url.replace('host.docker.internal', '192.168.1.15');
+        url = url.replace('host.docker.internal:8006', '192.168.1.15');
         console.log('Processed Docker URL:', url);
       
     }
@@ -231,7 +233,7 @@ const [showCalendar, setShowCalendar] = useState(false);
         // Fetch product and images in parallel
         const [productData, productImages] = await Promise.all([
           EquipmentService.fetchRentalById(productId),
-          axios.get(`https://674c-165-50-136-134.ngrok-free.app/api/images/?stuff=${productId}`, {
+          axios.get(`https://f468-41-230-62-140.ngrok-free.app/api/images/?stuff=${productId}`, {
             withCredentials: true,
           }),
         ]);
@@ -252,15 +254,15 @@ const [showCalendar, setShowCalendar] = useState(false);
           ...productData,
           detailed_description: productData.detailed_description 
             ? productData.detailed_description.replace(
-                /host\.docker\.internal/g, 
-                '192.168.1.15'
+                /http:\/\/host\.docker\.internal:8006/g,
+                'https://f468-41-230-62-140.ngrok-free.app'
               )
             : productData.detailed_description
         };
-      
+        
         // Fetch related products based on category ID
         const allProducts = await axios.get(
-          `https://674c-165-50-136-134.ngrok-free.app/api/stuffs/?category=${productData.category}`,
+          `https://f468-41-230-62-140.ngrok-free.app/api/stuffs/?category=${productData.category}`,
           {
             withCredentials: true,
           }
@@ -755,6 +757,7 @@ const [showCalendar, setShowCalendar] = useState(false);
     // You might want to save this to your backend here
   }}
   existingEvents={events}
+  setShowLoginPopup={setShowLoginPopup}
 />
 
       {/* Zoom Modal */}
@@ -956,6 +959,26 @@ const [showCalendar, setShowCalendar] = useState(false);
           ))}
         </div>
       </motion.div>
+      {/* Login Popup */}
+      <AnimatePresence>
+  {showLoginPopup && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-2xl shadow-xl w-[450px] h-[600px] max-w-full p-6 flex flex-col justify-center">
+        <AuthForm 
+          isPopup={true} 
+          onClose={() => setShowLoginPopup(false)}
+          onSuccess={() => {
+            setShowLoginPopup(false);
+            setShowCalendar(true); // Reopen calendar after successful login
+          }}
+        />
+      </div>
+    </div>
+  )}
+</AnimatePresence>
+
+
+
 
       <ToastContainer position="bottom-right" />
      
@@ -971,12 +994,17 @@ const [showCalendar, setShowCalendar] = useState(false);
 
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
 
+
+
+
+
 const CalendarSidebar = ({ 
   product, 
   showForm, 
   setShowForm, 
   onEventCreated,
-  existingEvents = []
+  existingEvents = [],
+  setShowLoginPopup
 }) => {
   const [selectedDates, setSelectedDates] = useState([]);
   const [quantity, setQuantity] = useState(1);
@@ -984,6 +1012,111 @@ const CalendarSidebar = ({
   const [view, setView] = useState('dayGridMonth');
   const calendarRef = useRef(null);
   const [events, setEvents] = useState(existingEvents);
+  const [isLoading, setIsLoading] = useState(false);
+  const sidebarRef = useRef(null);
+  const [sidebarWidth, setSidebarWidth] = useState(400);
+  const [isResizing, setIsResizing] = useState(false);
+  const [timeSlots, setTimeSlots] = useState({});
+
+  // Handle sidebar resizing
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing) return;
+      const newWidth = window.innerWidth - e.clientX;
+      if (newWidth > 300 && newWidth < 800) {
+        setSidebarWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
+
+  // Fetch existing rental requests for this product
+  useEffect(() => {
+    const fetchRentalRequests = async () => {
+      if (!product?.id) return;
+      
+      setIsLoading(true);
+      try {
+        const response = await axios.get(
+          `https://f468-41-230-62-140.ngrok-free.app/rental/rental_requests/?equipment=${product.id}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            withCredentials: true,
+          }
+        );
+
+        // Transform API data to FullCalendar event format
+        const rentalEvents = response.data.map(request => ({
+          id: request.id,
+          title: `Rental: ${product.stuffname}`,
+          start: request.start_date,
+          end: request.end_date,
+          extendedProps: {
+            productId: product.id,
+            quantity: request.quantity || 1,
+            status: request.status,
+            rentalRequestId: request.id
+          },
+          color: request.status === 'pending' ? '#f59e0b' : '#10b981', // Yellow for pending, green for approved
+          textColor: '#ffffff',
+          borderColor: '#ffffff',
+          display: 'block'
+        }));
+
+        setEvents(rentalEvents);
+        processTimeSlots(response.data);
+      } catch (error) {
+        console.error('Error fetching rental requests:', error);
+        toast.error('Failed to load existing rental schedules');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRentalRequests();
+  }, [product?.id]);
+
+  // Process time slots to show availability
+  const processTimeSlots = (requests) => {
+    const slots = {};
+    
+    requests.forEach(request => {
+      const startDate = new Date(request.start_date);
+      const endDate = new Date(request.end_date);
+      
+      const dateKey = startDate.toISOString().split('T')[0];
+      
+      if (!slots[dateKey]) {
+        slots[dateKey] = {
+          active: 0,
+          pending: 0
+        };
+      }
+      
+      if (request.status === 'confirmed') {
+        slots[dateKey].active += 1;
+      } else if (request.status === 'pending') {
+        slots[dateKey].pending += 1;
+      }
+    });
+    
+    setTimeSlots(slots);
+  };
 
   // Calculate duration between two dates
   const calculateDuration = () => {
@@ -1008,79 +1141,134 @@ const CalendarSidebar = ({
     const endDate = endStr ? format(addDays(parseISO(endStr), -1), 'yyyy-MM-dd') : startStr;
     
     setSelectedDates([startStr, endDate]);
-    console.log(selectedDates)
     
-    // Auto-switch to day view when selecting time slots
     if (view === 'timeGridDay') {
       calendarRef.current.getApi().changeView('timeGridDay', startStr);
     }
   };
 
-  // Handle event creation
-  // Handle event creation
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
+  // Handle event creationC
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const user = localStorage.getItem("user");
+  if (!user) {
+    setShowForm(false); // Close calendar
+    setShowLoginPopup(true); // Show auth popup
+    return;
+  }
+
   if (selectedDates.length !== 2) {
     toast.error('Please select start and end dates');
     return;
   }
 
-  try {
-    // Prepare the rental request data
-    const rentalRequestData = {
-      equipment: product.id,
-      rental: 2, // Assuming this is a fixed rental ID as per your example
-      client: 10, // Assuming this is a fixed client ID as per your example
-      start_date: selectedDates[0],
-      end_date: selectedDates[1],
-      status: "pending",
-      quantity: quantity,
-      special_requests: specialRequests
-    };
+    try {
+      const rentalRequestData = {
+        equipment: product.id,
+        rental: 2,
+        client: Cookies.get('keycloak_user_id'),
+        start_date: selectedDates[0],
+        end_date: selectedDates[1],
+        status: "pending",
+        quantity: quantity,
+        special_requests: specialRequests
+      };
 
-    // Make the API call
-    const response = await axios.post(
-      "http://127.0.0.1:8001/rental/rental_requests/",
-      rentalRequestData,
-      {
-        headers: {
-          "Content-Type": "application/json",
+      const response = await axios.post(
+        "https://f468-41-230-62-140.ngrok-free.app/rental/rental_requests/",
+        rentalRequestData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const newEvent = {
+        id: response.data.id,
+        title: `Rental: ${product.stuffname}`,
+        start: selectedDates[0],
+        end: selectedDates[1],
+        extendedProps: {
+          productId: product.id,
+          quantity,
+          specialRequests,
+          totalPrice: calculateTotalPrice(),
+          rentalRequestId: response.data.id,
+          status: "pending"
         },
-      }
-    );
+        color: '#f59e0b',
+        textColor: '#ffffff',
+        borderColor: '#ffffff'
+      };
 
-    // If successful, create the calendar event
-    const newEvent = {
-      title: `Rental: ${product.stuffname}`,
-      start: selectedDates[0],
-      end: selectedDates[1],
-      extendedProps: {
-        productId: product.id,
-        quantity,
-        specialRequests,
-        totalPrice: calculateTotalPrice(),
-        rentalRequestId: response.data.id // Store the ID from the response
-      },
-      color: '#0d9488', // Teal color
-      textColor: '#ffffff'
-    };
-
-    setEvents([...events, newEvent]);
-    onEventCreated(newEvent);
-    
-    toast.success('Rental request created successfully!');
-    setShowForm(false);
-  } catch (error) {
-    console.error('Error creating rental request:', error);
-    toast.error('Failed to create rental request. Please try again.');
-  }
-};
+      setEvents([...events, newEvent]);
+      onEventCreated(newEvent);
+      
+      toast.success('Rental request created successfully!');
+      setShowForm(false);
+    } catch (error) {
+      console.error('Error creating rental request:', error);
+      toast.error('Failed to create rental request. Please try again.');
+    }
+  };
 
   // Change calendar view
   const changeView = (newView) => {
     setView(newView);
     calendarRef.current.getApi().changeView(newView);
+  };
+
+  // Custom slot rendering for time slots
+  const slotLaneContent = (arg) => {
+    const dateStr = arg.date.toISOString().split('T')[0];
+    const slotInfo = timeSlots[dateStr];
+    
+    if (!slotInfo) return null;
+    
+    return (
+      <div className="fc-timegrid-slot-lane-content">
+        {slotInfo.active > 0 && (
+          <div className="fc-timegrid-slot-bar fc-timegrid-slot-bar-active">
+            <div className="fc-timegrid-slot-bar-inner" style={{ backgroundColor: '#10b981', height: '100%' }}>
+              <span className="fc-timegrid-slot-bar-count">{slotInfo.active}</span>
+            </div>
+          </div>
+        )}
+        {slotInfo.pending > 0 && (
+          <div className="fc-timegrid-slot-bar fc-timegrid-slot-bar-pending">
+            <div className="fc-timegrid-slot-bar-inner" style={{ backgroundColor: '#f59e0b', height: '100%' }}>
+              <span className="fc-timegrid-slot-bar-count">{slotInfo.pending}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Event content render
+  const renderEventContent = (eventInfo) => {
+    return (
+      <div className="p-1 w-full">
+        <div className="font-medium truncate">{eventInfo.event.title}</div>
+        <div className="text-xs opacity-80">
+          {format(parseISO(eventInfo.event.startStr), 'MMM d')} - 
+          {format(parseISO(eventInfo.event.endStr), 'MMM d')}
+        </div>
+        {eventInfo.event.extendedProps.status && (
+          <div className="text-xs mt-1">
+            <span className={`inline-block px-1 rounded ${
+              eventInfo.event.extendedProps.status === 'pending' 
+                ? 'bg-yellow-100 text-yellow-800' 
+                : 'bg-green-100 text-green-800'
+            }`}>
+              {eventInfo.event.extendedProps.status}
+            </span>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -1098,14 +1286,22 @@ const handleSubmit = async (e) => {
             onClick={() => setShowForm(false)}
           />
 
-          {/* Sidebar */}
+          {/* Resizable Sidebar */}
           <motion.div
-            className="absolute right-0 top-0 h-full w-full sm:w-1/2 lg:w-1/3 xl:w-1/4 bg-white shadow-xl flex flex-col"
+            ref={sidebarRef}
+            className="absolute right-0 top-0 h-full bg-white shadow-xl flex flex-col"
+            style={{ width: `${sidebarWidth}px` }}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
+            {/* Resize handle */}
+            <div 
+              className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize bg-gray-200 hover:bg-teal-500 active:bg-teal-600"
+              onMouseDown={() => setIsResizing(true)}
+            />
+            
             {/* Header */}
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-teal-600 to-teal-700 text-white">
               <div className="flex justify-between items-center">
@@ -1159,27 +1355,50 @@ const handleSubmit = async (e) => {
             <div className="flex-1 overflow-y-auto flex flex-col">
               {/* Calendar Section */}
               <div className="p-4 border-b border-gray-200">
-                <FullCalendar
-                  ref={calendarRef}
-                  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-                  initialView={view}
-                  selectable={true}
-                  select={handleDateSelect}
-                  events={events}
-                  headerToolbar={false}
-                  height={300}
-                  selectMirror={true}
-                  dayMaxEvents={true}
-                  weekends={true}
-                  nowIndicator={true}
-                  editable={true}
-                  eventResizableFromStart={true}
-                  selectOverlap={false}
-                  selectConstraint={{
-                    start: new Date().toISOString().split('T')[0],
-                    end: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
-                  }}
-                />
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
+                  </div>
+                ) : (
+                  <FullCalendar
+                    ref={calendarRef}
+                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+                    initialView={view}
+                    selectable={true}
+                    select={handleDateSelect}
+                    events={events}
+                    headerToolbar={false}
+                    height={300}
+                    selectMirror={true}
+                    dayMaxEvents={true}
+                    weekends={true}
+                    nowIndicator={true}
+                    editable={true}
+                    eventResizableFromStart={true}
+                    eventContent={renderEventContent}
+                    slotLaneContent={slotLaneContent}
+                    selectConstraint={{
+                      start: new Date().toISOString().split('T')[0],
+                      end: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
+                    }}
+                    selectOverlap={(selectInfo) => {
+                      return !events.some(event => {
+                        if (event.extendedProps.status !== 'confirmed') return false;
+                        
+                        const eventStart = new Date(event.start);
+                        const eventEnd = new Date(event.end);
+                        const selectStart = new Date(selectInfo.start);
+                        const selectEnd = new Date(selectInfo.end);
+                        
+                        return (
+                          (selectStart >= eventStart && selectStart < eventEnd) ||
+                          (selectEnd > eventStart && selectEnd <= eventEnd) ||
+                          (selectStart <= eventStart && selectEnd >= eventEnd)
+                        );
+                      });
+                    }}
+                  />
+                )}
               </div>
 
               {/* Form Section */}
@@ -1208,7 +1427,7 @@ const handleSubmit = async (e) => {
                     <div className="relative">
                       <input
                         type="datetime-local"
-                        value={selectedDates[1] ? format(parseISO(selectedDates[0]), "yyyy-MM-dd'T'HH:mm") : ''}
+                        value={selectedDates[1] ? format(parseISO(selectedDates[1]), "yyyy-MM-dd'T'HH:mm") : ''}
                         onChange={(e) => {
                           const newDates = [...selectedDates];
                           newDates[1] = e.target.value;
@@ -1323,3 +1542,4 @@ const handleSubmit = async (e) => {
     </AnimatePresence>
   );
 };
+
