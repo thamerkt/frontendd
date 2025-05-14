@@ -12,8 +12,8 @@ import EquipmentService from "../services/EquipmentService";
 import { motion, AnimatePresence } from "framer-motion";
 import TrackingService from '../services/TrackingService';
 import Footer from "../components/LandingPage/footer";
-import CurrentDealsSection from "../components/LandingPage/deal"
-import axios from 'axios'
+import CurrentDealsSection from "../components/LandingPage/deal";
+import axios from 'axios';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -67,13 +67,12 @@ const LandingPage = () => {
 
   const fetchip = useCallback(async () => {
     try {
-      const response = await axios.get("https://4499-196-224-227-105.ngrok-free.app/ocr/getipp/");
-      setIP(response.data.ip); // Changed to response.data.ip
+      const response = await axios.get("https://d537-196-239-28-180.ngrok-free.app/ocr/getipp/");
+      setIP(response.data.ip);
       console.log("IP fetched:", response.data.ip);
     } catch (error) {
       console.error("Failed to fetch IP:", error);
-      // Fallback to a default IP or handle the error appropriately
-      setIP('localhost'); // or your default IP
+      setIP('localhost');
     }
   }, []);
 
@@ -83,14 +82,10 @@ const LandingPage = () => {
 
   // Get product image URL
   const getProductImage = useCallback((productId) => {
-    if (!Array.isArray(images) || images.length === 0) {
-      return null;
-    }
+    if (!Array.isArray(images) || images.length === 0) return null;
 
     const productImages = images.filter(img => img?.stuff == productId);
-    if (productImages.length === 0) {
-      return null;
-    }
+    if (productImages.length === 0) return null;
 
     const mainImage = productImages.find(img => img?.position === 1);
     let url = mainImage?.url || productImages[0]?.url || null;
@@ -100,9 +95,8 @@ const LandingPage = () => {
     }
 
     return url;
-  }, [images, ip]); // Added ip to dependencies
+  }, [images, ip]);
 
-  // Rest of your component remains the same...
   const handleProductView = useCallback(async (productId) => {
     await TrackingService.trackPageView(productId);
   }, []);
@@ -152,12 +146,12 @@ const LandingPage = () => {
   }, [products.length, handleNext]);
 
   const sectionVariants = {
-    hidden: { opacity: 0, y: 40 },
+    hidden: { opacity: 0, y: 20 },
     visible: { 
       opacity: 1, 
       y: 0, 
       transition: { 
-        duration: 0.8,
+        duration: 0.6,
         ease: [0.16, 1, 0.3, 1]
       } 
     }
@@ -171,7 +165,7 @@ const LandingPage = () => {
         initial="hidden"
         animate="visible"
         variants={sectionVariants}
-        className="mt-16 md:mt-24"
+        className="mt-12 md:mt-16"
       >
         <PopularRentalsSection
           products={products}
@@ -189,7 +183,7 @@ const LandingPage = () => {
         initial="hidden"
         animate="visible"
         variants={sectionVariants}
-        className="mt-16 md:mt-24"
+        className="mt-12 md:mt-16"
       >
         <WhyChooseUsSection />
       </motion.div>
@@ -198,24 +192,25 @@ const LandingPage = () => {
         initial="hidden"
         animate="visible"
         variants={sectionVariants}
-        className="mt-16 md:mt-24"
+        className="mt-12 md:mt-16"
       >
         <CategoriesSection />
-      </motion.div>
-      <motion.div 
-        initial="hidden"
-        animate="visible"
-        variants={sectionVariants}
-        className="mt-16 md:mt-24"
-      >
-      <CurrentDealsSection/>
       </motion.div>
 
       <motion.div 
         initial="hidden"
         animate="visible"
         variants={sectionVariants}
-        className="mt-16 md:mt-24"
+        className="mt-12 md:mt-16"
+      >
+        <CurrentDealsSection />
+      </motion.div>
+
+      <motion.div 
+        initial="hidden"
+        animate="visible"
+        variants={sectionVariants}
+        className="mt-12 md:mt-16"
       >
         <FAQSection />
       </motion.div>
@@ -224,7 +219,7 @@ const LandingPage = () => {
         initial="hidden"
         animate="visible"
         variants={sectionVariants}
-        className="mt-16 md:mt-24 mb-16"
+        className="mt-12 md:mt-16 mb-12"
       >
         <BlogSection />
       </motion.div>
@@ -246,7 +241,7 @@ const LandingPage = () => {
         )}
       </AnimatePresence>
 
-      <section className="bg-teal-600 text-white py-16">
+      <section className="bg-teal-600 text-white py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div 
             initial="hidden"
@@ -255,7 +250,7 @@ const LandingPage = () => {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl font-bold mb-4">Stay Updated</h2>
-            <p className="text-xl mb-8 max-w-3xl mx-auto">
+            <p className="text-xl mb-6 max-w-3xl mx-auto">
               Subscribe to our newsletter for exclusive deals and new equipment arrivals
             </p>
             
@@ -276,14 +271,14 @@ const LandingPage = () => {
                 Subscribe
               </motion.button>
             </motion.div>
-            <p className="text-white/80 text-xs mt-3">
+            <p className="text-white/80 text-xs mt-2">
               We respect your privacy. Unsubscribe at any time.
             </p>
           </motion.div>
         </div>
       </section>
       
-      <Footer/>
+      <Footer />
     </div>
   );
 };

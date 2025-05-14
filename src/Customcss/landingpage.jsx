@@ -3,38 +3,25 @@ import { ChevronLeft, ChevronRight, Search, ArrowRight, Star, ChevronDown, Check
 import { Store } from "lucide-react"
 
 const Banner = ({ 
-  title, 
-  description, 
-  buttons, 
-  searchPlaceholder, 
-  onSearch,
+  buttons,
   autoRotate = true,
   rotationInterval = 5000
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isHovering, setIsHovering] = useState(false);
-
-  // Memoized navigation functions
-  const goToPrevious = useCallback(() => {
-    setDirection(-1);
-    setCurrentIndex(prev => (prev === 0 ? 0 : prev - 1)); // Only allow previous if not first slide
-  }, []);
-
-  const goToNext = useCallback(() => {
-    setDirection(1);
-    setCurrentIndex(prev => (prev === 0 ? 0 : 0)); // Single slide for Banner
-  }, []);
 
   // Auto-rotation (optional)
   useEffect(() => {
     if (!autoRotate) return;
-    const interval = setInterval(goToNext, rotationInterval);
+    const interval = setInterval(() => {
+      setDirection(1);
+      setCurrentIndex(prev => (prev === 0 ? 0 : 0));
+    }, rotationInterval);
     return () => clearInterval(interval);
-  }, [autoRotate, rotationInterval, goToNext]);
+  }, [autoRotate, rotationInterval]);
 
-  // Animation variants (same as HeroSection)
+  // Animation variants
   const slideVariants = {
     enter: (direction) => ({
       opacity: 0,
@@ -74,30 +61,12 @@ const Banner = ({
     }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    onSearch(searchQuery);
-  };
-
   return (
     <div 
       className="relative w-full h-[90vh] max-h-[800px] overflow-hidden"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
-      {/* Progress bar (optional) */}
-      {autoRotate && (
-        <div className="absolute top-0 left-0 right-0 h-1 z-20 bg-gray-200/30">
-          <motion.div
-            className="h-full bg-teal-500"
-            initial={{ width: 0 }}
-            animate={{ width: "100%" }}
-            transition={{ duration: rotationInterval/1000, ease: "linear" }}
-            key={currentIndex}
-          />
-        </div>
-      )}
-
       <AnimatePresence custom={direction} initial={false}>
         <motion.div
           key={currentIndex}
@@ -110,7 +79,7 @@ const Banner = ({
         >
           {/* Background image with parallax effect */}
           <motion.img
-            src="/assets/bg1.jpg"
+            src="/assets/banner3.png"
             alt="Banner"
             className="w-full h-full object-cover"
             initial={{ scale: 1 }}
@@ -127,11 +96,11 @@ const Banner = ({
               variants={textVariants}
             >
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-4 md:mb-6 leading-tight">
-                {title}
+                Your Tools Are Wasting Money. Rent Them Out! <span className="text-teal-400">in Ekrini.tn</span>
               </h1>
               
               <p className="text-lg md:text-xl lg:text-2xl mb-6 max-w-3xl mx-auto">
-                {description}
+                Connect with Customers in the <span className="text-teal-400">24 regions (Tunisia only)</span> and <span className="text-teal-400">list your own items</span> for rent
               </p>
 
               {/* Buttons */}
@@ -156,63 +125,13 @@ const Banner = ({
                   </motion.button>
                 ))}
               </div>
-
-              {/* Search bar */}
-              <motion.form 
-                onSubmit={handleSearch}
-                className="mt-4 w-full max-w-2xl mx-auto"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.8 }}
-              >
-                <div className="relative flex items-center bg-white rounded-full overflow-hidden shadow-xl">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={searchPlaceholder}
-                    className="flex-1 px-6 py-4 outline-none text-gray-800 text-lg placeholder-gray-400"
-                  />
-                  <motion.button 
-                    type="submit"
-                    className="absolute right-2 flex items-center justify-center bg-teal-600 hover:bg-teal-700 text-white p-3 rounded-full"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    aria-label="Search"
-                  >
-                    <Search className="w-6 h-6" />
-                  </motion.button>
-                </div>
-              </motion.form>
             </motion.div>
           </div>
         </motion.div>
       </AnimatePresence>
-
-      {/* Navigation Arrows */}
-      <motion.button
-        className="absolute left-6 top-1/2 transform -translate-y-1/2 z-10 bg-white/10 hover:bg-white/20 backdrop-blur-md p-3 rounded-full shadow-lg border border-white/20"
-        aria-label="Previous"
-        onClick={goToPrevious}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-      >
-        <ChevronLeft className="w-6 h-6 text-white hover:text-teal-300" />
-      </motion.button>
-      <motion.button
-        className="absolute right-6 top-1/2 transform -translate-y-1/2 z-10 bg-white/10 hover:bg-white/20 backdrop-blur-md p-3 rounded-full shadow-lg border border-white/20"
-        aria-label="Next"
-        onClick={goToNext}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-      >
-        <ChevronRight className="w-6 h-6 text-white hover:text-teal-300" />
-      </motion.button>
     </div>
   );
 };
-
-
 
 
 import {  AnimatePresence } from "framer-motion";
@@ -256,22 +175,32 @@ const ProcessSection = ({ sections }) => {
         duration: 0.6,
         ease: [0.16, 1, 0.3, 1]
       }
-    },
-    hover: {
-      y: [0, -5, 0],
-      transition: {
-        duration: 1.5,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }
     }
+  };
+
+  // Continuous bouncing animation for arrows
+  const continuousArrowAnimation = {
+    y: [0, -15, 0],
+    transition: {
+      duration: 1.5,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  };
+
+  // Card positioning adjustments
+  const getCardTransform = (index) => {
+    if (index === 0) return 'translateX(-40px)'; // First card pushed more to left
+    if (index === 1) return 'translateX(40px)';  // Second card pushed more to right
+    if (index === sections.length - 1) return 'translateX(-40px)'; // Last card pushed more to left
+    return 'none';
   };
 
   return (
     <section className="relative py-24 sm:py-32 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
       {/* Decorative background element */}
       <div className="absolute -top-32 left-1/2 -translate-x-1/2 transform-gpu blur-3xl">
-        <div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-r from-teal-300 to-blue-400 opacity-20" 
+        <div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-r from-teal-300 to-teal-500 opacity-20" 
           style={{ clipPath: "polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)" }} 
         />
       </div>
@@ -286,13 +215,13 @@ const ProcessSection = ({ sections }) => {
           className="mx-auto max-w-3xl text-center"
         >
           <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-            Streamlined Rental <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-blue-600">Process</span>
+            Streamlined Rental <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-teal-600">Process</span>
           </h2>
           <p className="mt-6 text-xl leading-8 text-gray-600">
             Get your equipment rented in just a few simple steps
           </p>
           <div className="mt-8 flex justify-center">
-            <div className="w-16 h-1.5 rounded-full bg-gradient-to-r from-teal-500 to-blue-600" />
+            <div className="w-16 h-1.5 rounded-full bg-gradient-to-r from-teal-500 to-teal-600" />
           </div>
         </motion.div>
 
@@ -310,19 +239,26 @@ const ProcessSection = ({ sections }) => {
               {index > 0 && (
                 <motion.div
                   variants={arrowVariants}
-                  className="flex justify-center my-6"
+                  className="flex justify-center my-8"
                 >
-                  <ArrowDown className="text-teal-600 w-8 h-8" />
+                  <motion.div
+                    animate={continuousArrowAnimation}
+                  >
+                    <ArrowDown className="text-teal-600 w-10 h-10" />
+                  </motion.div>
                 </motion.div>
               )}
 
-              {/* Step card */}
+              {/* Step card with more pronounced positioning */}
               <motion.div
                 variants={itemVariants}
                 whileHover="hover"
                 className={`flex flex-col md:flex-row gap-8 p-8 rounded-2xl bg-white shadow-sm ring-1 ring-gray-900/5 ${
                   index % 2 === 0 ? '' : 'md:flex-row-reverse'
                 }`}
+                style={{
+                  transform: getCardTransform(index)
+                }}
               >
                 {/* Image */}
                 <div className="relative w-full md:w-1/2 aspect-video overflow-hidden rounded-xl">
@@ -391,18 +327,18 @@ const ProcessSection = ({ sections }) => {
         </motion.div>
 
         {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          viewport={{ once: true }}
-          className="mt-16 text-center"
-        >
-          <button className="group relative inline-flex items-center justify-center px-8 py-4 overflow-hidden text-lg font-bold text-white rounded-xl bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 shadow-lg hover:shadow-teal-500/30 transition-all duration-300">
-            Get Started Today
-            <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-          </button>
-        </motion.div>
+        <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        viewport={{ once: true }}
+        className="text-center mt-12"
+      >
+        <button className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 transition-colors duration-200 shadow-lg hover:shadow-teal-200/50">
+          Get started today
+          <ChevronRight className="ml-2 w-5 h-5" />
+        </button>
+      </motion.div>
       </div>
     </section>
   );
@@ -596,96 +532,121 @@ const PopularRentals = ({ title, subtitle, rentals, currentIndex, handlePrev, ha
 };
 
 
+import { 
+  Rocket, ShieldCheck, Zap,
+  Cpu, BarChart2, Globe,
+  
+} from "lucide-react";
+
 const Features = ({ title, subtitle, description, features, onExploreMore }) => {
+  // Modern icon mapping
+  const iconComponents = {
+    rocket: <Rocket className="w-5 h-5 text-teal-400" />,
+    shield: <ShieldCheck className="w-5 h-5 text-teal-400" />,
+    performance: <Zap className="w-5 h-5 text-teal-400" />,
+    technology: <Cpu className="w-5 h-5 text-teal-400" />,
+    analytics: <BarChart2 className="w-5 h-5 text-teal-400" />,
+    global: <Globe className="w-5 h-5 text-teal-400" />
+  };
+
   // Animation variants
   const container = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        delayChildren: 0.3,
-        staggerChildren: 0.15
+        delayChildren: 0.2,
+        staggerChildren: 0.1
       }
     }
   };
 
   const item = {
-    hidden: { y: 30, opacity: 0 },
+    hidden: { y: 20, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
       transition: {
         type: "spring",
-        stiffness: 100,
-        damping: 15
+        stiffness: 120,
+        damping: 12
       }
     }
   };
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800">
+    <section className="relative overflow-hidden py-16 md:py-20">
+      {/* Background image with dark overlay */}
+      <div className="absolute inset-0 -z-10">
+        <img 
+          src="/assets/why.png" 
+          alt="Modern tech background"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900/90 to-gray-800/90"></div>
+      </div>
+      
       {/* Decorative elements */}
-      <div className="absolute top-0 left-0 w-full h-full opacity-5">
-        <div className="absolute top-20 left-10 w-40 h-40 bg-teal-500 rounded-full filter blur-3xl"></div>
-        <div className="absolute bottom-10 right-20 w-60 h-60 bg-teal-400 rounded-full filter blur-3xl"></div>
+      <div className="absolute top-0 left-0 w-full h-full opacity-10">
+        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-teal-500 rounded-full filter blur-3xl"></div>
+        <div className="absolute bottom-1/3 right-1/4 w-40 h-40 bg-teal-400 rounded-full filter blur-3xl"></div>
       </div>
 
       <motion.div 
-        className="container mx-auto px-6 py-24 relative"
+        className="container mx-auto px-5 sm:px-6 relative"
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
+        viewport={{ once: true, margin: "-50px" }}
         variants={container}
       >
         {/* Section header */}
-        <motion.div className="text-center mb-16" variants={item}>
+        <motion.div className="text-center mb-12" variants={item}>
           <motion.span 
-            className="inline-block bg-teal-900/30 text-teal-400 text-sm font-medium px-4 py-1 rounded-full mb-4 border border-teal-400/20"
+            className="inline-block bg-teal-900/30 text-teal-400 text-xs font-medium px-3 py-1 rounded-full mb-4 border border-teal-400/20"
             variants={item}
           >
             {subtitle}
           </motion.span>
           <motion.h2 
-            className="text-4xl md:text-5xl font-bold text-white mb-4"
+            className="text-3xl font-bold text-white mb-3 leading-tight"
             variants={item}
           >
             {title}
           </motion.h2>
           <motion.p 
-            className="text-gray-400 max-w-2xl mx-auto text-lg"
+            className="text-gray-300 max-w-2xl mx-auto text-base leading-relaxed"
             variants={item}
           >
             {description}
           </motion.p>
         </motion.div>
 
-        {/* Features grid */}
+        {/* Features grid - more compact */}
         <motion.div 
-          className="grid md:grid-cols-3 gap-8 mb-20"
+          className="grid md:grid-cols-3 gap-5 mb-16"
           variants={container}
         >
           {features.map((feature, index) => (
             <motion.div 
               key={index}
-              className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-8 border border-gray-700/50 hover:border-teal-400/30 transition-all duration-300"
+              className="bg-gray-800/40 backdrop-blur-sm rounded-lg p-5 border border-gray-700/40 hover:border-teal-400/30 transition-all duration-250"
               variants={item}
-              whileHover={{ y: -5 }}
+              whileHover={{ 
+                y: -3,
+                boxShadow: "0 8px 20px -5px rgba(0, 0, 0, 0.15)"
+              }}
             >
-              <div className="w-14 h-14 bg-teal-900/30 rounded-lg flex items-center justify-center mb-6 border border-teal-400/20">
-                <img 
-                  src={feature.icon} 
-                  alt={feature.title} 
-                  className="w-8 h-8 text-teal-400" 
-                />
+              <div className="w-10 h-10 bg-teal-900/20 rounded-md flex items-center justify-center mb-3 border border-teal-400/20">
+                {iconComponents[feature.icon] || <Rocket className="w-5 h-5 text-teal-400" />}
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-              <p className="text-gray-400 mb-4">{feature.description}</p>
+              <h3 className="text-lg font-semibold text-white mb-2 leading-snug">{feature.title}</h3>
+              <p className="text-gray-300 mb-3 text-sm leading-relaxed">{feature.description}</p>
               {feature.highlights && (
-                <ul className="space-y-2">
+                <ul className="space-y-1.5">
                   {feature.highlights.map((highlight, i) => (
-                    <li key={i} className="flex items-center text-gray-300">
-                      <CheckCircle className="w-4 h-4 text-teal-400 mr-2 flex-shrink-0" />
-                      <span className="text-sm">{highlight}</span>
+                    <li key={i} className="flex items-start text-gray-300">
+                      <CheckCircle className="w-3.5 h-3.5 text-teal-400 mt-0.5 mr-1.5 flex-shrink-0" />
+                      <span className="text-xs leading-relaxed">{highlight}</span>
                     </li>
                   ))}
                 </ul>
@@ -694,22 +655,22 @@ const Features = ({ title, subtitle, description, features, onExploreMore }) => 
           ))}
         </motion.div>
 
-        {/* CTA */}
+        {/* Compact CTA */}
         <motion.div 
-          className="text-center mt-8"
+          className="text-center"
           variants={item}
         >
           <motion.button
-            className="group relative inline-flex items-center justify-center px-8 py-4 overflow-hidden font-medium text-teal-600 rounded-lg bg-gradient-to-br from-teal-400 to-teal-600 hover:text-white focus:ring-4 focus:ring-teal-800"
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+            className="group relative inline-flex items-center justify-center px-5 py-2.5 overflow-hidden font-medium text-teal-600 rounded-md bg-gradient-to-br from-teal-400 to-teal-600 hover:text-white focus:ring-2 focus:ring-teal-800"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={onExploreMore}
           >
-            <span className="relative z-10 flex items-center text-lg font-semibold">
+            <span className="relative z-10 flex items-center text-sm font-medium">
               Explore More
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="ml-1.5 w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
             </span>
-            <span className="absolute inset-0 bg-white/10 backdrop-blur-sm group-hover:bg-transparent transition-all duration-300"></span>
+            <span className="absolute inset-0 bg-white/5 backdrop-blur-xs group-hover:bg-transparent transition-all duration-200"></span>
           </motion.button>
         </motion.div>
       </motion.div>

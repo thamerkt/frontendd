@@ -65,34 +65,34 @@ export default function HeroSection() {
     'Projectors'
   ];
 
-  // Simplified slides content with better spacing
+  // Optimized slides content with Jumia-inspired messaging
   const slides = [
     {
-      image: "/assets/savemoney.jpg",
-      title: "Rent Top Equipment. Save Money.",
-      highlight: "Save Money",
-      badge: "Trending Now",
-      ctaPrimary: "Browse Rentals",
-      ctaSecondary: "Become a Host",
-      spacing: "mb-8" // Added spacing class
+      image: "/assets/ekrinitaw.png",
+      title: "Rent Premium Equipment & Save Up To 70%",
+      highlight: "Save Up To 70%",
+      badge: "Hot Deals",
+      ctaPrimary: "Shop Now",
+      ctaSecondary: "Earn as Host",
+      spacing: "mb-4"
     },
     {
-      image: "/assets/rent.jpg",
-      title: "Rent in 3 Clicks",
-      highlight: "3 Clicks",
-      badge: "Fast & Easy",
-      ctaPrimary: "Find Equipment",
-      ctaSecondary: "How It Works",
-      spacing: "mb-10" // Added spacing class
+      image: "/assets/diliv3.png",
+      title: "Fast & Easy Rentals - Delivered to Your Doorstep",
+      highlight: "Delivered to Your Doorstep",
+      badge: "Limited Offer",
+      ctaPrimary: "Browse Items",
+      ctaSecondary: "Learn More",
+      spacing: "mb-4"
     },
     {
-      image: "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-      title: "New Premium Gear",
-      highlight: "Premium",
-      badge: "Exclusive",
-      ctaPrimary: "Explore Now",
-      ctaSecondary: "Get 15% Off",
-      spacing: "mb-12" // Added spacing class
+      image: "/assets/exstuff2.png",
+      title: "Exclusive Deals on Top-Rated Equipment",
+      highlight: "Exclusive Deals",
+      badge: "New Arrivals",
+      ctaPrimary: "Discover More",
+      ctaSecondary: "Special Discount",
+      spacing: "mb-4"
     }
   ];
 
@@ -326,9 +326,11 @@ export default function HeroSection() {
             className="w-full h-full object-cover"
             loading="eager"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/20" />
         </motion.div>
       </AnimatePresence>
+
+      {/* Dark overlay for better text visibility */}
+      <div className="absolute inset-0 bg-black/30 z-0"></div>
 
       {/* Search & Content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center px-4 z-10 text-white">

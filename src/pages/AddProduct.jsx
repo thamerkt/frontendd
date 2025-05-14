@@ -4,14 +4,8 @@ import axios from 'axios';
 import MyEditor from './WordPressEditor';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Cookies from "js-cookie"
 
-const categories = ["Electronics", "Clothing", "Furniture", "Tools"];
-const subCategories = {
-  "Electronics": ["Laptops", "Phones", "Speakers", "Cameras"],
-  "Clothing": ["Shirts", "Pants", "Jackets", "Shoes"],
-  "Furniture": ["Chairs", "Tables", "Sofas", "Beds"],
-  "Tools": ["Power Tools", "Hand Tools", "Garden Tools"]
-};
 const states = ["new", "used", "refurbished"];
 const conditions = ["excellent", "good", "fair", "poor"];
 const availabilityOptions = ["Available", "Unavailable", "Coming Soon"];
@@ -31,6 +25,54 @@ const AddProductForm = () => {
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
   const formRef = useRef(null);
+  const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingSubCategories, setLoadingSubCategories] = useState(false);
+
+  useEffect(() => {
+    // Fetch categories
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get('https://d537-196-239-28-180.ngrok-free.app/api/categories/', {
+          headers: {
+            'Content-Type': 'application/json',
+            
+          },
+          withCredentials: true, // This sends cookies with the request
+        });
+        setCategories(response.data);
+        setLoadingCategories(false);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setLoadingCategories(false);
+      }
+    };
+  
+    fetchCategories();
+  }, []);
+  
+
+  
+
+  const fetchSubCategories = async (categoryId) => {
+    try {
+      setLoadingSubCategories(true);
+      const response = await axios.get(`https://d537-196-239-28-180.ngrok-free.app/api/subcatgeory/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          
+        },withCredentials: true, // This sends cookies with the request
+      });
+      // Filter subcategories by the selected category
+      const filteredSubCategories = response.data.filter(sub => sub.category == categoryId);
+      setSubCategories(filteredSubCategories);
+      setLoadingSubCategories(false);
+    } catch (error) {
+      console.error('Error fetching subcategories:', error);
+      setLoadingSubCategories(false);
+    }
+  };
 
   const handleImageUploadd = async (file) => {
     try {
@@ -53,7 +95,7 @@ const AddProductForm = () => {
   };
 
   const handleImageDelete = async (imageId, imageUrl) => {
-    await fetch(`https://4499-196-224-227-105.ngrok-free.app/api/images/${imageId}`, {
+    await fetch(`https://d537-196-239-28-180.ngrok-free.app/api/images/${imageId}`, {
       method: 'DELETE'
     });
   };
@@ -78,12 +120,12 @@ const AddProductForm = () => {
     detailed_description: '',
     location: 'Tunis City Center',
     category: {
-      name: '',
-      subcategory: ''
+      id: '',
+      subcategory_id: ''
     },
     brand: '',
     equipment_images: [],
-    user: 2,
+    user: Cookies.get('keycloak_user_id'),
     stuff_management: {
       name: 'test',
       last_maintenance: '',
@@ -149,7 +191,18 @@ const AddProductForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name.includes('.')) {
+    if (name === 'category.id') {
+      // When category changes, fetch its subcategories
+      setProductData(prev => ({
+        ...prev,
+        category: {
+          ...prev.category,
+          id: value,
+          subcategory_id: '' // Reset subcategory when category changes
+        }
+      }));
+      fetchSubCategories(value);
+    } else if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setProductData(prev => ({
         ...prev,
@@ -176,7 +229,7 @@ const AddProductForm = () => {
       setError('Please enter a valid price');
       return false;
     }
-    if (!productData.category.name || !productData.category.subcategory) {
+    if (!productData.category.id || !productData.category.subcategory_id) {
       setError('Please select both category and subcategory');
       return false;
     }
@@ -191,17 +244,6 @@ const AddProductForm = () => {
     setError(null);
 
     try {
-      let categoryId;
-      try {
-        const categoryRes = await axios.post('https://4499-196-224-227-105.ngrok-free.app/api/categories/', {
-          name: productData.category.name,
-          subcategory: productData.category.subcategory,
-        });
-        categoryId = categoryRes.data.id;
-      } catch (err) {
-        throw new Error("Failed to create category: " + extractErrorMsg(err));
-      }
-
       let stuffManagementId;
       try {
         const managementFormData = new FormData();
@@ -219,12 +261,13 @@ const AddProductForm = () => {
         }
 
         const managementRes = await axios.post(
-          'https://4499-196-224-227-105.ngrok-free.app/api/stuffmanagment/',
+          'https://d537-196-239-28-180.ngrok-free.app/api/stuffmanagment/',
           managementFormData,
           {
             headers: {
               'Content-Type': 'multipart/form-data',
-              'Accept': 'application/json'
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${Cookies.get('access_token')}`
             }
           }
         );
@@ -253,14 +296,16 @@ const AddProductForm = () => {
         }
         
         stuffFormData.append('location', productData.stuff_management.location);
-        stuffFormData.append('category', categoryId);
+        stuffFormData.append('category', productData.category.id);
+        stuffFormData.append('subcategory', productData.category.subcategory_id);
         stuffFormData.append('brand', productData.brand);
         stuffFormData.append('stuff_management', stuffManagementId);
         stuffFormData.append('user', productData.user);
 
-        const stuffRes = await axios.post('https://4499-196-224-227-105.ngrok-free.app/api/stuffs/', stuffFormData, {
+        const stuffRes = await axios.post('https://d537-196-239-28-180.ngrok-free.app/api/stuffs/', stuffFormData, {
           headers: {
             'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${Cookies.get('access_token')}`
           },
         });
 
@@ -278,8 +323,11 @@ const AddProductForm = () => {
         imgFormData.append('position', Number.isInteger(img.position) ? img.position : i);
 
         try {
-          await axios.post('https://4499-196-224-227-105.ngrok-free.app/api/images/', imgFormData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
+          await axios.post('https://d537-196-239-28-180.ngrok-free.app/api/images/', imgFormData, {
+            headers: { 
+              'Content-Type': 'multipart/form-data',
+              'Authorization': `Bearer ${Cookies.get('access_token')}`
+            },
           });
         } catch (imgErr) {
           console.error(`Failed to upload image ${i + 1}:`, imgErr);
@@ -297,8 +345,11 @@ const AddProductForm = () => {
             imgFormData.append('position', 0);
 
             try {
-              await axios.post('https://4499-196-224-227-105.ngrok-free.app/api/images/', imgFormData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+              await axios.post('https://d537-196-239-28-180.ngrok-free.app/api/images/', imgFormData, {
+                headers: { 
+                  'Content-Type': 'multipart/form-data',
+                  'Authorization': `Bearer ${Cookies.get('access_token')}`
+                },
               });
             } catch (imgErr) {
               console.error(`Failed to upload editor image:`, imgErr);
@@ -396,516 +447,527 @@ const AddProductForm = () => {
             <div className="lg:col-span-2 space-y-6">
               {/* Basic Information Section */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:border-teal-200">
-  <div 
-    className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
-    onClick={() => toggleSection('basic')}
-  >
-    <div className="flex items-center">
-      <div className="p-2 rounded-lg bg-teal-50 text-teal-600 mr-3 shadow-sm">
-        <FiFileText size={18} />
-      </div>
-      <h2 className="text-lg font-semibold text-gray-800">Basic Information</h2>
-    </div>
-    {expandedSections.basic ? (
-      <FiChevronDown className="text-gray-500 transition-transform duration-200" />
-    ) : (
-      <FiChevronRight className="text-gray-500 transition-transform duration-200" />
-    )}
-  </div>
+                <div 
+                  className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
+                  onClick={() => toggleSection('basic')}
+                >
+                  <div className="flex items-center">
+                    <div className="p-2 rounded-lg bg-teal-50 text-teal-600 mr-3 shadow-sm">
+                      <FiFileText size={18} />
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-800">Basic Information</h2>
+                  </div>
+                  {expandedSections.basic ? (
+                    <FiChevronDown className="text-gray-500 transition-transform duration-200" />
+                  ) : (
+                    <FiChevronRight className="text-gray-500 transition-transform duration-200" />
+                  )}
+                </div>
 
-  {expandedSections.basic && (
-    <div className="px-4 pb-4 space-y-4 animate-fadeIn">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Product Name *</label>
-          <input
-            type="text"
-            name="stuffname"
-            value={productData.stuffname}
-            onChange={handleInputChange}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
-            required
-            placeholder="Enter product name"
-          />
-        </div>
+                {expandedSections.basic && (
+                  <div className="px-4 pb-4 space-y-4 animate-fadeIn">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">Product Name *</label>
+                        <input
+                          type="text"
+                          name="stuffname"
+                          value={productData.stuffname}
+                          onChange={handleInputChange}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
+                          required
+                          placeholder="Enter product name"
+                        />
+                      </div>
 
-        <div className="space-y-1 relative">
-          <label className="block text-sm font-medium text-gray-700">State *</label>
-          <select
-            name="state"
-            value={productData.state}
-            onChange={handleInputChange}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm appearance-none pr-7"
-            required
-          >
-            {states.map(state => (
-              <option key={state} value={state}>{state.charAt(0).toUpperCase() + state.slice(1)}</option>
-            ))}
-          </select>
-          <div className="absolute right-2 top-[34px] w-4 h-4 rounded-full bg-black flex items-center justify-center pointer-events-none">
-            <FiChevronDown className="text-white" size={10} />
-          </div>
-        </div>
-      </div>
+                      <div className="space-y-1 relative">
+                        <label className="block text-sm font-medium text-gray-700">State *</label>
+                        <select
+                          name="state"
+                          value={productData.state}
+                          onChange={handleInputChange}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm appearance-none pr-7"
+                          required
+                        >
+                          {states.map(state => (
+                            <option key={state} value={state}>{state.charAt(0).toUpperCase() + state.slice(1)}</option>
+                          ))}
+                        </select>
+                        <div className="absolute right-2 top-[34px] w-4 h-4 rounded-full bg-black flex items-center justify-center pointer-events-none">
+                          <FiChevronDown className="text-white" size={10} />
+                        </div>
+                      </div>
+                    </div>
 
-      <div className="space-y-1">
-        <label className="block text-sm font-medium text-gray-700">Short Description *</label>
-        <textarea
-          name="short_description"
-          value={productData.short_description}
-          onChange={handleInputChange}
-          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
-          required
-          rows={2}
-          placeholder="Brief description of your product"
-        />
-      </div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">Short Description *</label>
+                      <textarea
+                        name="short_description"
+                        value={productData.short_description}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
+                        required
+                        rows={2}
+                        placeholder="Brief description of your product"
+                      />
+                    </div>
 
-      <div className="space-y-1">
-        <label className="block text-sm font-medium text-gray-700">Detailed Description *</label>
-        <MyEditor
-          ref={editorRef}
-          onImageUpload={handleImageUploadd}
-          onImageDelete={handleImageDelete}
-        />
-      </div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">Detailed Description *</label>
+                      <MyEditor
+                        ref={editorRef}
+                        onImageUpload={handleImageUploadd}
+                        onImageDelete={handleImageDelete}
+                      />
+                    </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Rental Location *</label>
-          <input
-            type="text"
-            name="rental_location"
-            value={productData.rental_location}
-            onChange={handleInputChange}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
-            required
-            placeholder="Where is the product located?"
-          />
-        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">Rental Location *</label>
+                        <input
+                          type="text"
+                          name="rental_location"
+                          value={productData.rental_location}
+                          onChange={handleInputChange}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
+                          required
+                          placeholder="Where is the product located?"
+                        />
+                      </div>
 
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Location Details</label>
-          <input
-            type="text"
-            name="stuff_management.location"
-            value={productData.stuff_management.location}
-            onChange={handleInputChange}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
-            placeholder="Specific location details"
-          />
-        </div>
-      </div>
-    </div>
-  )}
-</div>
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">Location Details</label>
+                        <input
+                          type="text"
+                          name="stuff_management.location"
+                          value={productData.stuff_management.location}
+                          onChange={handleInputChange}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
+                          placeholder="Specific location details"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
               {/* Pricing Section */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:border-teal-200">
-  <div 
-    className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
-    onClick={() => toggleSection('pricing')}
-  >
-    <div className="flex items-center">
-      <div className="p-2 rounded-lg bg-teal-50 text-teal-600 mr-3 shadow-sm">
-        <FiDollarSign size={18} />
-      </div>
-      <h2 className="text-lg font-semibold text-gray-800">Pricing</h2>
-    </div>
-    {expandedSections.pricing ? (
-      <FiChevronDown className="text-gray-500 transition-transform duration-200" />
-    ) : (
-      <FiChevronRight className="text-gray-500 transition-transform duration-200" />
-    )}
-  </div>
+                <div 
+                  className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
+                  onClick={() => toggleSection('pricing')}
+                >
+                  <div className="flex items-center">
+                    <div className="p-2 rounded-lg bg-teal-50 text-teal-600 mr-3 shadow-sm">
+                      <FiDollarSign size={18} />
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-800">Pricing</h2>
+                  </div>
+                  {expandedSections.pricing ? (
+                    <FiChevronDown className="text-gray-500 transition-transform duration-200" />
+                  ) : (
+                    <FiChevronRight className="text-gray-500 transition-transform duration-200" />
+                  )}
+                </div>
 
-  {expandedSections.pricing && (
-    <div className="px-4 pb-4 space-y-4 animate-fadeIn">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Price Per Day (DT) *</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <span className="text-gray-500 text-sm">DT</span>
-            </div>
-            <input
-              type="number"
-              name="price_per_day"
-              value={productData.price_per_day}
-              onChange={handleInputChange}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
-              required
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-            />
-          </div>
-        </div>
+                {expandedSections.pricing && (
+                  <div className="px-4 pb-4 space-y-4 animate-fadeIn">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">Price Per Day (DT) *</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span className="text-gray-500 text-sm">DT</span>
+                          </div>
+                          <input
+                            type="number"
+                            name="price_per_day"
+                            value={productData.price_per_day}
+                            onChange={handleInputChange}
+                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
+                            required
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                          />
+                        </div>
+                      </div>
 
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Deposit (DT)</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <span className="text-gray-500 text-sm">DT</span>
-            </div>
-            <input
-              type="number"
-              name="stuff_management.deposit"
-              value={productData.stuff_management.deposit}
-              onChange={handleInputChange}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
-              min="0"
-              step="0.01"
-              placeholder="Optional deposit amount"
-            />
-          </div>
-        </div>
-      </div>
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">Deposit (DT)</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span className="text-gray-500 text-sm">DT</span>
+                          </div>
+                          <input
+                            type="number"
+                            name="stuff_management.deposit"
+                            value={productData.stuff_management.deposit}
+                            onChange={handleInputChange}
+                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
+                            min="0"
+                            step="0.01"
+                            placeholder="Optional deposit amount"
+                          />
+                        </div>
+                      </div>
+                    </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1 relative">
-          <label className="block text-sm font-medium text-gray-700">Availability *</label>
-          <select
-            name="availability"
-            value={productData.availability}
-            onChange={handleInputChange}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm appearance-none pr-7"
-            required
-          >
-            {availabilityOptions.map(option => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </select>
-          <div className="absolute right-2 top-[34px] w-4 h-4 rounded-full bg-black flex items-center justify-center pointer-events-none">
-            <FiChevronDown className="text-white" size={10} />
-          </div>
-        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1 relative">
+                        <label className="block text-sm font-medium text-gray-700">Availability *</label>
+                        <select
+                          name="availability"
+                          value={productData.availability}
+                          onChange={handleInputChange}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm appearance-none pr-7"
+                          required
+                        >
+                          {availabilityOptions.map(option => (
+                            <option key={option} value={option}>{option}</option>
+                          ))}
+                        </select>
+                        <div className="absolute right-2 top-[34px] w-4 h-4 rounded-full bg-black flex items-center justify-center pointer-events-none">
+                          <FiChevronDown className="text-white" size={10} />
+                        </div>
+                      </div>
 
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Rental Zone</label>
-          <input
-            type="text"
-            name="stuff_management.rental_zone"
-            value={productData.stuff_management.rental_zone}
-            onChange={handleInputChange}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
-            placeholder="Zone for rental service"
-          />
-        </div>
-      </div>
-    </div>
-  )}
-</div>
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">Rental Zone</label>
+                        <input
+                          type="text"
+                          name="stuff_management.rental_zone"
+                          value={productData.stuff_management.rental_zone}
+                          onChange={handleInputChange}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
+                          placeholder="Zone for rental service"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Management Information Section */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:border-teal-200">
-  <div 
-    className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
-    onClick={() => toggleSection('management')}
-  >
-    <div className="flex items-center">
-      <div className="p-2 rounded-lg bg-teal-50 text-teal-600 mr-3 shadow-sm">
-        <FiSettings size={18} />
-      </div>
-      <h2 className="text-lg font-semibold text-gray-800">Management Information</h2>
-    </div>
-    {expandedSections.management ? (
-      <FiChevronDown className="text-gray-500 transition-transform duration-200" />
-    ) : (
-      <FiChevronRight className="text-gray-500 transition-transform duration-200" />
-    )}
-  </div>
+                <div 
+                  className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
+                  onClick={() => toggleSection('management')}
+                >
+                  <div className="flex items-center">
+                    <div className="p-2 rounded-lg bg-teal-50 text-teal-600 mr-3 shadow-sm">
+                      <FiSettings size={18} />
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-800">Management Information</h2>
+                  </div>
+                  {expandedSections.management ? (
+                    <FiChevronDown className="text-gray-500 transition-transform duration-200" />
+                  ) : (
+                    <FiChevronRight className="text-gray-500 transition-transform duration-200" />
+                  )}
+                </div>
 
-  {expandedSections.management && (
-    <div className="px-4 pb-4 space-y-4 animate-fadeIn">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1 relative">
-          <label className="block text-sm font-medium text-gray-700">Condition</label>
-          <select
-            name="stuff_management.condition"
-            value={productData.stuff_management.condition}
-            onChange={handleInputChange}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm appearance-none pr-7"
-          >
-            {conditions.map(condition => (
-              <option key={condition} value={condition}>{condition.charAt(0).toUpperCase() + condition.slice(1)}</option>
-            ))}
-          </select>
-          <div className="absolute right-2 top-[34px] w-4 h-4 rounded-full bg-black flex items-center justify-center pointer-events-none">
-            <FiChevronDown className="text-white" size={10} />
-          </div>
-        </div>
+                {expandedSections.management && (
+                  <div className="px-4 pb-4 space-y-4 animate-fadeIn">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1 relative">
+                        <label className="block text-sm font-medium text-gray-700">Condition</label>
+                        <select
+                          name="stuff_management.condition"
+                          value={productData.stuff_management.condition}
+                          onChange={handleInputChange}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm appearance-none pr-7"
+                        >
+                          {conditions.map(condition => (
+                            <option key={condition} value={condition}>{condition.charAt(0).toUpperCase() + condition.slice(1)}</option>
+                          ))}
+                        </select>
+                        <div className="absolute right-2 top-[34px] w-4 h-4 rounded-full bg-black flex items-center justify-center pointer-events-none">
+                          <FiChevronDown className="text-white" size={10} />
+                        </div>
+                      </div>
 
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Last Maintenance</label>
-          <input
-            type="date"
-            name="stuff_management.last_maintenance"
-            value={productData.stuff_management.last_maintenance}
-            onChange={handleInputChange}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
-          />
-        </div>
-      </div>
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">Last Maintenance</label>
+                        <input
+                          type="date"
+                          name="stuff_management.last_maintenance"
+                          value={productData.stuff_management.last_maintenance}
+                          onChange={handleInputChange}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
+                        />
+                      </div>
+                    </div>
 
-      <div className="space-y-1">
-        <label className="block text-sm font-medium text-gray-700">Contract Required</label>
-        <div className="mt-1">
-          {contractFile ? (
-            <div className="flex items-center justify-between p-2 border border-gray-300 rounded-md bg-gray-50 transition-all hover:bg-gray-100">
-              <div className="flex items-center">
-                <FiFileText className="text-teal-600 mr-2 text-sm" />
-                <span className="text-sm text-gray-700 truncate max-w-xs">{contractFile.name}</span>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">Contract Required</label>
+                      <div className="mt-1">
+                        {contractFile ? (
+                          <div className="flex items-center justify-between p-2 border border-gray-300 rounded-md bg-gray-50 transition-all hover:bg-gray-100">
+                            <div className="flex items-center">
+                              <FiFileText className="text-teal-600 mr-2 text-sm" />
+                              <span className="text-sm text-gray-700 truncate max-w-xs">{contractFile.name}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setContractFile(null)}
+                              className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
+                            >
+                              <FiX size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="cursor-pointer flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-md hover:border-teal-500 transition-all hover:bg-teal-50">
+                            <FiUpload className="text-gray-400 mb-1.5" size={20} />
+                            <span className="text-xs text-gray-600">Upload Contract Document</span>
+                            <span className="text-xxs text-gray-400 mt-0.5">PDF or Word document (max 5MB)</span>
+                            <input
+                              type="file"
+                              onChange={handleContractUpload}
+                              className="hidden"
+                              accept=".pdf,.doc,.docx"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={() => setContractFile(null)}
-                className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
-              >
-                <FiX size={14} />
-              </button>
-            </div>
-          ) : (
-            <label className="cursor-pointer flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-md hover:border-teal-500 transition-all hover:bg-teal-50">
-              <FiUpload className="text-gray-400 mb-1.5" size={20} />
-              <span className="text-xs text-gray-600">Upload Contract Document</span>
-              <span className="text-xxs text-gray-400 mt-0.5">PDF or Word document (max 5MB)</span>
-              <input
-                type="file"
-                onChange={handleContractUpload}
-                className="hidden"
-                accept=".pdf,.doc,.docx"
-              />
-            </label>
-          )}
-        </div>
-      </div>
-    </div>
-  )}
-</div>
             </div>
 
             {/* Right Column - Images and Category */}
             <div className="space-y-6">
               {/* Product Images Section */}
-         
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:border-teal-200">
-  <div 
-    className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
-    onClick={() => toggleSection('images')}
-  >
-    <div className="flex items-center">
-      <div className="p-2 rounded-lg bg-teal-50 text-teal-600 mr-3 shadow-sm">
-        <FiImage size={18} />
-      </div>
-      <h2 className="text-lg font-semibold text-gray-800">Product Images</h2>
-    </div>
-    {expandedSections.images ? (
-      <FiChevronDown className="text-gray-500 transition-transform duration-200" />
-    ) : (
-      <FiChevronRight className="text-gray-500 transition-transform duration-200" />
-    )}
-  </div>
-
-  {expandedSections.images && (
-    <div className="px-4 pb-4 space-y-4 animate-fadeIn">
-      {/* Hidden file input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleImageUpload}
-        className="hidden"
-        accept="image/*"
-        multiple
-      />
-
-      {/* Main/Principal Photo Display */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
-          Principal Photo *
-          <span className="ml-1 text-xs text-gray-500">(Required)</span>
-        </label>
-        <div className="relative group rounded-lg overflow-hidden bg-gray-100 aspect-square w-full">
-          {images[0] ? (
-            <>
-              <img
-                src={images[0].preview}
-                alt="Main product"
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                onLoad={() => URL.revokeObjectURL(images[0].preview)}
-              />
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeImage(0);
-                  }}
-                  className="p-2 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-colors"
-                  aria-label="Remove main image"
+                <div 
+                  className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
+                  onClick={() => toggleSection('images')}
                 >
-                  <FiX size={16} />
-                </button>
-              </div>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current.click()}
-              className="w-full h-full flex flex-col items-center justify-center hover:bg-teal-50 transition-colors"
-            >
-              <FiUpload className="text-gray-400 mb-2" size={24} />
-              <span className="text-sm text-gray-600">Click to upload main photo</span>
-              <span className="text-xs text-gray-400 mt-1">JPEG, PNG (max 5MB)</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Thumbnail Gallery */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
-          Additional Photos
-          <span className="ml-1 text-xs text-gray-500">(Max 4, optional)</span>
-        </label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[...Array(4)].map((_, index) => (
-            <div key={`thumbnail-${index}`} className="relative aspect-square">
-              {images[index + 1] ? (
-                <>
-                  <div className="w-full h-full bg-gray-100 rounded-lg overflow-hidden">
-                    <img
-                      src={images[index + 1].preview}
-                      alt={`Thumbnail ${index + 1}`}
-                      className="w-full h-full object-cover"
-                      onLoad={() => URL.revokeObjectURL(images[index + 1].preview)}
-                    />
+                  <div className="flex items-center">
+                    <div className="p-2 rounded-lg bg-teal-50 text-teal-600 mr-3 shadow-sm">
+                      <FiImage size={18} />
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-800">Product Images</h2>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index + 1)}
-                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                    aria-label={`Remove image ${index + 2}`}
-                  >
-                    <FiX size={12} />
-                  </button>
-                  <div className="absolute bottom-0 left-0 right-0 p-1 bg-white/90">
+                  {expandedSections.images ? (
+                    <FiChevronDown className="text-gray-500 transition-transform duration-200" />
+                  ) : (
+                    <FiChevronRight className="text-gray-500 transition-transform duration-200" />
+                  )}
+                </div>
+
+                {expandedSections.images && (
+                  <div className="px-4 pb-4 space-y-4 animate-fadeIn">
+                    {/* Hidden file input */}
                     <input
-                      type="text"
-                      value={images[index + 1].alt}
-                      onChange={(e) => updateImageAltText(index + 1, e.target.value)}
-                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
-                      placeholder="Image description"
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      accept="image/*"
+                      multiple
                     />
+
+                    {/* Main/Principal Photo Display */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Principal Photo *
+                        <span className="ml-1 text-xs text-gray-500">(Required)</span>
+                      </label>
+                      <div className="relative group rounded-lg overflow-hidden bg-gray-100 aspect-square w-full">
+                        {images[0] ? (
+                          <>
+                            <img
+                              src={images[0].preview}
+                              alt="Main product"
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              onLoad={() => URL.revokeObjectURL(images[0].preview)}
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeImage(0);
+                                }}
+                                className="p-2 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-colors"
+                                aria-label="Remove main image"
+                              >
+                                <FiX size={16} />
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current.click()}
+                            className="w-full h-full flex flex-col items-center justify-center hover:bg-teal-50 transition-colors"
+                          >
+                            <FiUpload className="text-gray-400 mb-2" size={24} />
+                            <span className="text-sm text-gray-600">Click to upload main photo</span>
+                            <span className="text-xs text-gray-400 mt-1">JPEG, PNG (max 5MB)</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Thumbnail Gallery */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Additional Photos
+                        <span className="ml-1 text-xs text-gray-500">(Max 4, optional)</span>
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {[...Array(4)].map((_, index) => (
+                          <div key={`thumbnail-${index}`} className="relative aspect-square">
+                            {images[index + 1] ? (
+                              <>
+                                <div className="w-full h-full bg-gray-100 rounded-lg overflow-hidden">
+                                  <img
+                                    src={images[index + 1].preview}
+                                    alt={`Thumbnail ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                    onLoad={() => URL.revokeObjectURL(images[index + 1].preview)}
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeImage(index + 1)}
+                                  className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                  aria-label={`Remove image ${index + 2}`}
+                                >
+                                  <FiX size={12} />
+                                </button>
+                                <div className="absolute bottom-0 left-0 right-0 p-1 bg-white/90">
+                                  <input
+                                    type="text"
+                                    value={images[index + 1].alt}
+                                    onChange={(e) => updateImageAltText(index + 1, e.target.value)}
+                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                    placeholder="Image description"
+                                  />
+                                </div>
+                              </>
+                            ) : images.length < 5 && (
+                              <button
+                                type="button"
+                                onClick={() => fileInputRef.current.click()}
+                                className="w-full h-full border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-teal-500 hover:bg-teal-50 transition-colors"
+                                disabled={images.length >= 5}
+                              >
+                                <FiUpload className="text-gray-400" size={16} />
+                                <span className="text-xs text-gray-500 mt-1">Add photo</span>
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Help text */}
+                    <p className="text-xs text-gray-500">
+                      {images.length > 0 ? (
+                        <>
+                          <span className="font-medium">Tip:</span> First image is your main display photo. You can upload up to 5 images total.
+                        </>
+                      ) : (
+                        "Upload at least one photo to continue. The first image will be used as the main display photo."
+                      )}
+                    </p>
+
+                    {/* Error message */}
+                    {error && (
+                      <p className="text-xs text-red-500">{error}</p>
+                    )}
                   </div>
-                </>
-              ) : images.length < 5 && (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current.click()}
-                  className="w-full h-full border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-teal-500 hover:bg-teal-50 transition-colors"
-                  disabled={images.length >= 5}
-                >
-                  <FiUpload className="text-gray-400" size={16} />
-                  <span className="text-xs text-gray-500 mt-1">Add photo</span>
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Help text */}
-      <p className="text-xs text-gray-500">
-        {images.length > 0 ? (
-          <>
-            <span className="font-medium">Tip:</span> First image is your main display photo. You can upload up to 5 images total.
-          </>
-        ) : (
-          "Upload at least one photo to continue. The first image will be used as the main display photo."
-        )}
-      </p>
-
-      {/* Error message */}
-      {error && (
-        <p className="text-xs text-red-500">{error}</p>
-      )}
-    </div>
-  )}
-</div>           {/* Category & Brand Section */}
+                )}
+              </div>           {/* Category & Brand Section */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:border-teal-200">
-  <div 
-    className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
-    onClick={() => toggleSection('category')}
-  >
-    <div className="flex items-center">
-      <div className="p-2 rounded-lg bg-teal-50 text-teal-600 mr-3 shadow-sm">
-        <FiLayers size={18} />
-      </div>
-      <h2 className="text-lg font-semibold text-gray-800">Category & Brand</h2>
-    </div>
-    {expandedSections.category ? (
-      <FiChevronDown className="text-gray-500 transition-transform duration-200" />
-    ) : (
-      <FiChevronRight className="text-gray-500 transition-transform duration-200" />
-    )}
-  </div>
+                <div 
+                  className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
+                  onClick={() => toggleSection('category')}
+                >
+                  <div className="flex items-center">
+                    <div className="p-2 rounded-lg bg-teal-50 text-teal-600 mr-3 shadow-sm">
+                      <FiLayers size={18} />
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-800">Category & Brand</h2>
+                  </div>
+                  {expandedSections.category ? (
+                    <FiChevronDown className="text-gray-500 transition-transform duration-200" />
+                  ) : (
+                    <FiChevronRight className="text-gray-500 transition-transform duration-200" />
+                  )}
+                </div>
 
-  {expandedSections.category && (
-    <div className="px-4 pb-4 space-y-4 animate-fadeIn">
-      <div className="space-y-1 relative">
-        <label className="block text-sm font-medium text-gray-700">Category *</label>
-        <select
-          name="category.name"
-          value={productData.category.name}
-          onChange={handleInputChange}
-          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm appearance-none pr-7"
-          required
-        >
-          <option value="">Select category</option>
-          {categories.map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
-        <div className="absolute right-2 top-[34px] w-4 h-4 rounded-full bg-black flex items-center justify-center pointer-events-none">
-          <FiChevronDown className="text-white" size={10} />
-        </div>
-      </div>
+                {expandedSections.category && (
+                  <div className="px-4 pb-4 space-y-4 animate-fadeIn">
+                    <div className="space-y-1 relative">
+                      <label className="block text-sm font-medium text-gray-700">Category *</label>
+                      <select
+                        name="category.id"
+                        value={productData.category.id}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm appearance-none pr-7"
+                        required
+                        disabled={loadingCategories}
+                      >
+                        <option value="">Select category</option>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                      <div className="absolute right-2 top-[34px] w-4 h-4 rounded-full bg-black flex items-center justify-center pointer-events-none">
+                        <FiChevronDown className="text-white" size={10} />
+                      </div>
+                      {loadingCategories && (
+                        <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-teal-500"></div>
+                        </div>
+                      )}
+                    </div>
 
-      {productData.category.name && (
-        <div className="space-y-1 relative">
-          <label className="block text-sm font-medium text-gray-700">Subcategory *</label>
-          <select
-            name="category.subcategory"
-            value={productData.category.subcategory}
-            onChange={handleInputChange}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm appearance-none pr-7"
-            required
-          >
-            <option value="">Select subcategory</option>
-            {subCategories[productData.category.name]?.map(sub => (
-              <option key={sub} value={sub}>{sub}</option>
-            ))}
-          </select>
-          <div className="absolute right-2 top-[34px] w-4 h-4 rounded-full bg-black flex items-center justify-center pointer-events-none">
-            <FiChevronDown className="text-white" size={10} />
-          </div>
-        </div>
-      )}
+                    {productData.category.id && (
+                      <div className="space-y-1 relative">
+                        <label className="block text-sm font-medium text-gray-700">Subcategory *</label>
+                        <select
+                          name="category.subcategory_id"
+                          value={productData.category.subcategory_id}
+                          onChange={handleInputChange}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm appearance-none pr-7"
+                          required
+                          disabled={loadingSubCategories || subCategories.length === 0}
+                        >
+                          <option value="">Select subcategory</option>
+                          {subCategories.map(sub => (
+                            <option key={sub.id} value={sub.id}>{sub.name}</option>
+                          ))}
+                        </select>
+                        <div className="absolute right-2 top-[34px] w-4 h-4 rounded-full bg-black flex items-center justify-center pointer-events-none">
+                          <FiChevronDown className="text-white" size={10} />
+                        </div>
+                        {loadingSubCategories && (
+                          <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-teal-500"></div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-      <div className="space-y-1">
-        <label className="block text-sm font-medium text-gray-700">Brand</label>
-        <input
-          type="text"
-          name="brand"
-          value={productData.brand}
-          onChange={handleInputChange}
-          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
-          placeholder="Product brand (optional)"
-        />
-      </div>
-    </div>
-  )}
-</div>
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">Brand</label>
+                      <input
+                        type="text"
+                        name="brand"
+                        value={productData.brand}
+                        onChange={handleInputChange}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 transition-all text-sm"
+                        placeholder="Product brand (optional)"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

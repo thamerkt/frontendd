@@ -11,25 +11,25 @@ const PartnerBenefits = () => {
       name: "Delivery Partners",
       icon: <Truck className="w-5 h-5" />,
       color: "bg-teal-500",
-      bgImage: "https://images.pexels.com/photos/4488645/pexels-photo-4488645.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+      bgImage: "/assets/dili.jpg"
     },
     {
       name: "Fleet Owners",
       icon: <Warehouse className="w-5 h-5" />,
       color: "bg-teal-600",
-      bgImage: "https://images.pexels.com/photos/4483773/pexels-photo-4483773.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+      bgImage: "/assets/fleet.jpg"
     },
     {
       name: "Tech Providers",
       icon: <Cpu className="w-5 h-5" />,
       color: "bg-teal-400",
-      bgImage: "https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+      bgImage: "/assets/tech.jpeg"
     },
     {
       name: "Financial Partners",
       icon: <CreditCard className="w-5 h-5" />,
       color: "bg-teal-300",
-      bgImage: "https://images.pexels.com/photos/4386437/pexels-photo-4386437.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+      bgImage: "/assets/tp2.jpg"
     }
   ];
 
@@ -201,16 +201,8 @@ const PartnerBenefits = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {partnerTypes.map((type, index) => (
-              <motion.div
+              <div
                 key={index}
-                initial={{ opacity: 0, y: 80 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ 
-                  delay: index * 0.15, 
-                  duration: 0.8,
-                  ease: [0.16, 1, 0.3, 1]
-                }}
-                viewport={{ once: true }}
                 className="relative h-80 rounded-3xl overflow-hidden group"
               >
                 <div 
@@ -219,25 +211,16 @@ const PartnerBenefits = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-teal-900/80 via-teal-800/50 to-teal-700/30" />
                 <div className="relative z-10 h-full flex flex-col justify-end p-8">
-                  <motion.div
-                    whileHover={{ 
-                      rotate: [0, 5, -5, 0],
-                      scale: [1, 1.1, 1.1, 1],
-                    }}
-                    className={`w-12 h-12 ${type.color} rounded-xl flex items-center justify-center mb-6 shadow-lg`}
-                  >
+                  <div className={`w-12 h-12 ${type.color} rounded-xl flex items-center justify-center mb-6 shadow-lg`}>
                     {type.icon}
-                  </motion.div>
+                  </div>
                   <h3 className="text-2xl font-bold text-white mb-3">{type.name}</h3>
-                  <motion.button
-                    whileHover={{ x: 8 }}
-                    className="text-left text-teal-200 font-semibold flex items-center gap-2 group"
-                  >
+                  <button className="text-left text-teal-200 font-semibold flex items-center gap-2 group">
                     Learn more
                     <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                  </motion.button>
+                  </button>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -245,88 +228,57 @@ const PartnerBenefits = () => {
         {/* Benefits Section */}
         <div className="bg-gradient-to-b from-white to-gray-50 py-28">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              viewport={{ once: true }}
-              className="flex flex-wrap justify-center gap-4 mb-16"
-            >
+            <div className="flex flex-wrap justify-center gap-4 mb-16">
               {partnerTypes.map((type) => (
-                <motion.button
+                <button
                   key={type.name}
-                  whileHover={{ 
-                    y: -4,
-                    backgroundColor: `${type.color}/20`
-                  }}
-                  whileTap={{ scale: 0.95 }}
                   className={`px-6 py-3 rounded-full ${type.color}/10 text-gray-800 font-medium flex items-center gap-2 transition-all border border-gray-200 hover:border-transparent`}
                 >
                   <span className={`w-3 h-3 rounded-full ${type.color}`}></span>
                   {type.name}
-                </motion.button>
+                </button>
               ))}
-            </motion.div>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <AnimatePresence>
-                {benefits.map((benefit, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 80, scale: 0.95 }}
-                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ 
-                      delay: index * 0.1, 
-                      duration: 0.6,
-                      ease: [0.16, 1, 0.3, 1]
-                    }}
-                    viewport={{ once: true, margin: "-50px" }}
-                    className="relative group"
-                    whileHover={{ 
-                      y: -12,
-                      boxShadow: "0 20px 40px -10px rgba(0,0,0,0.1)"
-                    }}
-                  >
-                    <div className="h-full bg-white rounded-2xl shadow-md hover:shadow-xl border border-gray-100 overflow-hidden transition-all duration-300">
-                      <div className="p-8">
-                        <motion.div 
-                          className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center mb-6 shadow-sm"
-                          whileHover={{ 
-                            rotate: [0, 5, -5, 0],
-                            scale: [1, 1.1, 1.1, 1],
-                          }}
-                        >
-                          <div className="text-white">
-                            {benefit.icon}
-                          </div>
-                        </motion.div>
-                        
-                        <h3 className="text-xl font-bold text-gray-900 mb-3">{benefit.title}</h3>
-                        <p className="text-gray-600 text-sm mb-6">{benefit.description}</p>
-                        
-                        <div className="flex flex-wrap gap-2 mb-6">
-                          {benefit.categories.map(cat => (
-                            <span key={cat} className="text-xs px-3 py-1.5 bg-gray-100 rounded-full text-gray-600">
-                              {cat}
-                            </span>
-                          ))}
-                        </div>
-                        
-                        <div className="text-base font-bold text-teal-600">
-                          {benefit.stat}
+              {benefits.map((benefit, index) => (
+                <div
+                  key={index}
+                  className="relative group"
+                >
+                  <div className="h-full bg-white rounded-2xl shadow-md hover:shadow-xl border border-gray-100 overflow-hidden transition-all duration-300">
+                    <div className="p-8">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center mb-6 shadow-sm">
+                        <div className="text-white">
+                          {benefit.icon}
                         </div>
                       </div>
+                      
+                      <h3 className="text-xl font-bold text-gray-900 mb-3">{benefit.title}</h3>
+                      <p className="text-gray-600 text-sm mb-6">{benefit.description}</p>
+                      
+                      <div className="flex flex-wrap gap-2 mb-6">
+                        {benefit.categories.map(cat => (
+                          <span key={cat} className="text-xs px-3 py-1.5 bg-gray-100 rounded-full text-gray-600">
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
+                      
+                      <div className="text-base font-bold text-teal-600">
+                        {benefit.stat}
+                      </div>
                     </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
         {/* Final CTA */}
         <div className="relative py-32 overflow-hidden">
-          <div className="absolute inset-0 bg-[url('https://images.pexels.com/photos/4488643/pexels-photo-4488643.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')] bg-cover bg-center" />
+         <div className="absolute inset-0 bg-[url('/assets/comm1.png')] bg-cover bg-center" />
           <div className="absolute inset-0 bg-gradient-to-r from-teal-900/90 to-teal-800/80" />
           
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

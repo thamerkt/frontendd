@@ -7,7 +7,6 @@ import PartnerTestimonials from '../components/landing-page/PartnerTestimonials'
 
 import PartnerHeroSection from "../components/landing-page/HeroSection";
 const LandingPagePartner = () => {
-  // Enhanced animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -33,7 +32,6 @@ const LandingPagePartner = () => {
 
   return (
     <div className="bg-white">
-      {/* Hero Section */}
       <motion.section
         initial="hidden"
         animate="visible"
@@ -42,7 +40,6 @@ const LandingPagePartner = () => {
         <PartnerHeroSection />
       </motion.section>
 
-      {/* Assurance Section */}
       <motion.section
         initial="hidden"
         whileInView="visible"
@@ -53,7 +50,6 @@ const LandingPagePartner = () => {
         <AssuranceSection />
       </motion.section>
 
-      {/* Finance Benefits */}
       <motion.section
         initial="hidden"
         whileInView="visible"
@@ -63,7 +59,6 @@ const LandingPagePartner = () => {
         <FinanceBenefits />
       </motion.section>
 
-      {/* Delivery Network */}
       <motion.section
         initial="hidden"
         whileInView="visible"
@@ -73,7 +68,6 @@ const LandingPagePartner = () => {
         <DeliveryNetwork />
       </motion.section>
 
-      {/* New Partner Content Section */}
       <motion.section
         initial="hidden"
         whileInView="visible"
@@ -81,10 +75,9 @@ const LandingPagePartner = () => {
         variants={containerVariants}
         className="bg-gray-50 py-16"
       >
-        
+        {/* Additional content can be added here */}
       </motion.section>
 
-      {/* Testimonials */}
       <motion.section
         initial="hidden"
         whileInView="visible"
@@ -94,7 +87,6 @@ const LandingPagePartner = () => {
         <PartnerTestimonials />
       </motion.section>
 
-      {/* Global Footer */}
       <motion.footer 
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}

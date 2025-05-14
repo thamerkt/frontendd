@@ -14,7 +14,7 @@ const VerificationFlow = () => {
     back: null,
     selfie: null
   });
-  const url='https://4499-196-224-227-105.ngrok-free.app'
+  const url='https://d537-196-239-28-180.ngrok-free.app/'
 
   const startVerification = async () => {
     try {

@@ -70,6 +70,7 @@ import BlogPost1 from "./components/blog1";
 import { BlogSection } from "./components/LandingPage";
 import BlogPost2 from "./components/blog2";
 import BlogPost3 from "./components/blog3";
+import LandingPagePartner from "./pages/landingpageee";
 const App = () => {
   
   useEffect(() => {
@@ -107,6 +108,7 @@ const App = () => {
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/collaboration" element={<LandingPagee />} />
+                <Route path="/Partnerhome" element={<LandingPagePartner />} />
                 <Route path="/contact-us" element={<ContactUs />} />
                 <Route path="/shopgrid" element={<ShopGrid />} />
                 <Route path="/contact" elemnt={<ContactUs />} />
@@ -193,4 +195,4 @@ const App = () => {
   );
 };
 
-export default App;
+  export default App;

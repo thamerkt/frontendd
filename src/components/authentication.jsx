@@ -80,7 +80,7 @@ const AuthForm = () => {
     const { credential } = credentialResponse;
 
     try {
-      const response = await fetch('https://4499-196-224-227-105.ngrok-free.app/user/auth/google/', {
+      const response = await fetch('https://d537-196-239-28-180.ngrok-free.app/user/auth/google/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential }),
@@ -146,7 +146,7 @@ const AuthForm = () => {
       // Get user info
       window.FB.api('/me', { fields: 'name,email' }, async (userInfo) => {
         try {
-          const fbResponse = await fetch('https://4499-196-224-227-105.ngrok-free.app/user/auth/facebook/', {
+          const fbResponse = await fetch('https://d537-196-239-28-180.ngrok-free.app/user/auth/facebook/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -268,18 +268,20 @@ const AuthForm = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          {isRegister ? "Create Your Account" : "Welcome Back"}
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          {isRegister ? "Get started with Everything Rentals" : "Sign in to access your account"}
-        </p>
-      </div>
+        <div className="bg-white py-8 px-6 shadow sm:rounded-lg sm:px-10">
+          <div className="text-center mb-8">
+            <img 
+              src="/assets/logo-ekrini.png" 
+              alt="Ekrini Logo" 
+              className="mx-auto h-16 w-auto mb-4" 
+            />
+            <h2 className="text-lg font-medium text-gray-900">
+              {isRegister ? "Get started with Ekrini.tn" : "Sign in to your account"}
+            </h2>
+          </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           {error && (
-            <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4">
+            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -293,9 +295,9 @@ const AuthForm = () => {
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email address
               </label>
               <div className="mt-1">
@@ -313,7 +315,7 @@ const AuthForm = () => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
               </label>
               <div className="mt-1 relative">
@@ -351,7 +353,7 @@ const AuthForm = () => {
             {isRegister && (
               <>
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                     Confirm Password
                   </label>
                   <div className="mt-1 relative">
@@ -387,7 +389,7 @@ const AuthForm = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
                     Account Type
                   </label>
                   <select
@@ -429,11 +431,11 @@ const AuthForm = () => {
               </div>
             )}
 
-            <div>
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 {loading ? (
                   <>
@@ -450,7 +452,7 @@ const AuthForm = () => {
             </div>
           </form>
 
-          <div className="mt-6">
+          <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
@@ -477,7 +479,7 @@ const AuthForm = () => {
 
               <button
                 onClick={handleFacebookLogin}
-                className="w-full inline-flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="w-full inline-flex justify-center items-center py-2.5 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 <svg className="w-5 h-5 mr-2" fill="#000000" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.53-4.5-10.02-10-10.02z"/>
