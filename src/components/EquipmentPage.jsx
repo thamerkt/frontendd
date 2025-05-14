@@ -1,25 +1,21 @@
-import { useState, useRef, useEffect, useMemo,useCallback  } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import EquipmentService from "../services/EquipmentService";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { motion, AnimatePresence } from "framer-motion";
-import { FiCalendar, FiChevronRight, FiPlus,FiX  } from 'react-icons/fi'; // For the icons
+import { FiCalendar, FiChevronRight, FiPlus, FiX } from 'react-icons/fi';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import FullCalendar from '@fullcalendar/react'; // FullCalendar component
-import dayGridPlugin from '@fullcalendar/daygrid'; // For month view in the calendar
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction'; 
 import { useParams } from 'react-router-dom';
 import TrackingService from "../services/TrackingService";
-import Cookies from 'js-cookie';
-import AuthForm from './authentication'
-
-
 import axios from "axios";
 import { 
   FaCreditCard, 
   FaMapMarkerAlt, 
-  FaChevronDown ,
+  FaChevronDown,
   FaChevronUp, 
   FaFileContract, 
   FaShoppingBag, 
@@ -42,17 +38,13 @@ import { FiCheckCircle } from "react-icons/fi";
 const DEFAULT_PRODUCT_IMAGE = "/assets/default-product.jpg";
 
 export default function ProductDetail() {
-
   const [events, setEvents] = useState([]);
-const [showCalendar, setShowCalendar] = useState(false);
-  // State declarations
+  const [showCalendar, setShowCalendar] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
   const [activeTab, setActiveTab] = useState('description');
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [id, setId] = useState(1);
   const [product, setProduct] = useState({});
   const [products, setProducts] = useState([]);
-  const [categorie, setCategorie] = useState("Electronics");
   const [wishlist, setWishlist] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [isHovering, setIsHovering] = useState(false);
@@ -62,71 +54,55 @@ const [showCalendar, setShowCalendar] = useState(false);
   const [expandedSpecs, setExpandedSpecs] = useState(false);
   
   const carouselRef = useRef(null);
+  const galleryRef = useRef(null);
+  const contentRef = useRef(null);
   
-  const {productId }=useParams();; // Fixed ID as per requirement
+  const { productId } = useParams();
   const contractLink = "/terms-and-conditions";
 
-  // Define images array
   const [images, setImages] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [quantityy, setQuantityy] = useState(1);
-  const [showLoginPopup, setShowLoginPopup] = useState(false);
+  const [isSticky, setIsSticky] = useState(false);
 
-  // Toggle the visibility of the form when the button is clicked
   const handleShowForm = () => setShowForm(!showForm);
+
   const getProductImage = useCallback((productId) => {
-    console.log('getProductImage called with productId:', productId);
-    console.log('Current images array:', images);
-  
     if (!Array.isArray(images) || images.length === 0) {
-      console.log('No images available');
       return null;
     }
   
     const productImages = images.filter(img => img?.stuff == productId);
-    console.log('Filtered product images:', productImages);
-  
     if (productImages.length === 0) {
-      console.log('No images found for this product');
       return null;
     }
   
     const mainImage = productImages.find(img => img?.position === 1);
-    console.log('Main image:', mainImage);
-  
     let url = mainImage?.url || productImages[0]?.url || null;
-    console.log('Initial URL:', url);
   
     if (url) {
-     
-        url = url.replace('host.docker.internal:8006', '192.168.1.15');
-        console.log('Processed Docker URL:', url);
-      
+      url = url.replace('host.docker.internal', '192.168.1.15');
     }
   
-    console.log('Final URL to be returned:', url);
     return url;
   }, [images]);
 
-  // Handle event date selection from the calendar
   const handleDateSelect = (info) => {
     setStartDate(info.startStr);
     setEndDate(info.endStr);
   };
 
-  // Handle the form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Submit logic (e.g., sending the data to the server)
     console.log('Form submitted:', { startDate, endDate, quantityy });
-    // Reset form fields
     setStartDate(null);
     setEndDate(null);
     setQuantityy(1);
     setShowForm(false);
   };
+
   const RELATED_PRODUCTS = [
     {
       id: 1,
@@ -142,10 +118,8 @@ const [showCalendar, setShowCalendar] = useState(false);
       rating: 5,
       image: DEFAULT_PRODUCT_IMAGE
     },
-    // Add more products as needed
   ];
 
-  // Product specifications
   const specifications = [
     { name: "Brand", value: product.brand || "N/A" },
     { name: "Model", value: product.model || "N/A" },
@@ -188,17 +162,14 @@ const [showCalendar, setShowCalendar] = useState(false);
   
   const [relatedProducts, setRelatedProducts] = useState([]);
 
-  // Memoized product images
   const productImages = useMemo(() => {
     return images.length > 0 ? images : [{ url: DEFAULT_PRODUCT_IMAGE }];
   }, [images]);
 
-  // Memoized visible products for carousel
   const visibleProducts = useMemo(() => {
     return relatedProducts.slice(currentIndex * 5, (currentIndex * 5) + 5);
   }, [currentIndex, relatedProducts]);
 
-  // Handlers
   const handleImageSelect = (index) => setSelectedImage(index);
   const prevSlide = () => {
     setCurrentIndex(prev => (prev === 0 ? Math.ceil(relatedProducts.length / 5) - 1 : prev - 1));
@@ -222,23 +193,18 @@ const [showCalendar, setShowCalendar] = useState(false);
     setExpandedSpecs(!expandedSpecs);
   };
 
-  // Fetch all required data
   useEffect(() => {
     const fetchData = async () => {
-      console.log(productId); // Logging the productId
-
       try {
         setLoading(true);
       
-        // Fetch product and images in parallel
         const [productData, productImages] = await Promise.all([
           EquipmentService.fetchRentalById(productId),
-          axios.get(`https://f468-41-230-62-140.ngrok-free.app/api/images/?stuff=${productId}`, {
+          axios.get(`http://localhost:8000/api/images/?stuff=${productId}`, {
             withCredentials: true,
           }),
         ]);
-        console.log(productImages)
-        // Process images to replace host.docker.internal with IP
+
         const processedImages = productImages.data.map(image => {
           if (image.url && image.url.includes('host.docker.internal')) {
             return {
@@ -249,36 +215,31 @@ const [showCalendar, setShowCalendar] = useState(false);
           return image;
         });
       
-        // Process detailed_description to replace host.docker.internal with IP
         const processedProductData = {
           ...productData,
           detailed_description: productData.detailed_description 
             ? productData.detailed_description.replace(
-                /http:\/\/host\.docker\.internal:8006/g,
-                'https://f468-41-230-62-140.ngrok-free.app'
+                /host\.docker\.internal/g, 
+                '192.168.1.15'
               )
             : productData.detailed_description
         };
-        
-        // Fetch related products based on category ID
+      
         const allProducts = await axios.get(
-          `https://f468-41-230-62-140.ngrok-free.app/api/stuffs/?category=${productData.category}`,
+          `http://localhost:8000/api/stuffs/?category=${productData.category}`,
           {
             withCredentials: true,
           }
         );
       
-        // Process related products' images and descriptions
         const processedRelatedProducts = allProducts.data.map(product => {
           return {
             ...product,
-            // Process image URLs if they exist
             ...(product.image && { 
               image: product.image.includes('host.docker.internal') 
                 ? product.image.replace('host.docker.internal', '192.168.1.15')
                 : product.image
             }),
-            // Process descriptions if they exist
             ...(product.detailed_description && {
               detailed_description: product.detailed_description.replace(
                 /host\.docker\.internal/g,
@@ -288,10 +249,9 @@ const [showCalendar, setShowCalendar] = useState(false);
           };
         });
       
-        setProduct(processedProductData); // Set the processed product data
+        setProduct(processedProductData);
         setImages(processedImages);
         setRelatedProducts(processedRelatedProducts);
-        console.log('Processed product data:', processedProductData);
       } catch (err) {
         console.error("Failed to fetch product data:", err);
         setError("Failed to load product details");
@@ -301,25 +261,35 @@ const [showCalendar, setShowCalendar] = useState(false);
       }
     };
 
-    // Track page view after product data is fetched
     const handleProductView = async (productId) => {
       await TrackingService.trackPageView(productId);
-      // Other tracking or actions can go here
     };
 
-    fetchData(); // Call to fetch product and related data
-    handleProductView(productId); // Track page view
+    fetchData();
+    handleProductView(productId);
+  }, [productId]);
 
-  }, [productId]); // Dependency array ensures it re-runs when productId changes
-
-  // Log product details when available
   useEffect(() => {
     if (product) {
-      console.log(product.detailed_description); // Log product details after data is fetched
+      console.log(product.detailed_description);
     }
   }, [product]);
 
-  // Loading and error states
+  useEffect(() => {
+    const handleScroll = () => {
+      if (galleryRef.current && contentRef.current) {
+        const galleryRect = galleryRef.current.getBoundingClientRect();
+        const contentRect = contentRef.current.getBoundingClientRect();
+        
+        // Check if we've scrolled past the gallery
+        setIsSticky(window.scrollY > galleryRect.bottom - galleryRect.height);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex justify-center items-center h-64">
@@ -338,7 +308,6 @@ const [showCalendar, setShowCalendar] = useState(false);
     );
   }
 
-  // Tab content components
   const tabContent = {
     description: (
       <div className="prose max-w-none text-gray-700">
@@ -352,8 +321,7 @@ const [showCalendar, setShowCalendar] = useState(false);
           <p>No description available for this product.</p>
         )}
       </div>
-    )
-    ,
+    ),
     specs: (
       <div>
         <h3 className="text-xl font-bold text-gray-900 mb-4">Technical Specifications</h3>
@@ -474,7 +442,6 @@ const [showCalendar, setShowCalendar] = useState(false);
   };
 
   return (
-    
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Breadcrumb */}
       <motion.div 
@@ -498,70 +465,19 @@ const [showCalendar, setShowCalendar] = useState(false);
         transition={{ duration: 0.5 }}
         className="grid md:grid-cols-2 gap-8 md:gap-12"
       >
-        {/* Image Gallery */}
-        <div className="space-y-4">
-          <div 
-            className="relative w-full h-96 bg-gray-50 rounded-xl overflow-hidden shadow-sm"
-            onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => setIsHovering(false)}
-          >
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={selectedImage}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                src={productImages[selectedImage]?.url || DEFAULT_PRODUCT_IMAGE}
-                alt={product.stuffname}
-                className="w-full h-full object-contain cursor-pointer"
-                style={{
-                  transform: isHovering ? 'scale(1.1)' : 'scale(1)',
-                  transition: 'transform 300ms ease-in-out'
-                }}
-                loading="lazy"
-              />
-            </AnimatePresence>
-
-            {/* Badges */}
-            <div className="absolute top-3 left-3 flex flex-col gap-2">
-              <span className="bg-teal-500 text-white text-xs font-bold px-2 py-1 rounded-md">NEW</span>
-            </div>
-            
-            {/* Zoom Icon that appears on hover */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: isHovering ? 1 : 0 }}
-              transition={{ duration: 0.2 }}
-              className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 cursor-pointer"
-              onClick={() => setShowZoomModal(true)}
-            >
-              <div className="p-3 bg-white bg-opacity-80 rounded-full">
-                <FaSearchPlus className="text-gray-700 text-2xl" />
-              </div>
-            </motion.div>
-            
-            <motion.button 
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setWishlist(!wishlist)}
-              className={`absolute top-4 right-4 p-3 rounded-full shadow-md ${
-                wishlist ? 'bg-teal-500 text-white' : 'bg-white text-gray-700'
-              } transition-colors duration-300 z-10`}
-              aria-label={wishlist ? "Remove from wishlist" : "Add to wishlist"}
-            >
-              <FaHeart className={wishlist ? 'fill-current' : ''} />
-            </motion.button>
-          </div>
-          
-          {/* Thumbnails */}
-          <div className="grid grid-cols-4 gap-3">
+        {/* Image Gallery - Sticky Container */}
+        <div 
+          ref={galleryRef}
+          className={`flex ${isSticky ? 'sticky top-4 h-fit' : ''}`}
+        >
+          {/* Thumbnails - Vertical on Left */}
+          <div className="flex flex-col mr-4 gap-3 overflow-y-auto max-h-[600px]">
             {productImages.map((img, index) => (
               <motion.div
                 key={img.id || index}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`relative aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all duration-300 ${
+                className={`relative w-20 h-20 rounded-md overflow-hidden cursor-pointer border-2 transition-all duration-300 ${
                   selectedImage === index ? "border-teal-500 shadow-md" : "border-transparent hover:border-gray-200"
                 }`}
                 onClick={() => handleImageSelect(index)}
@@ -575,10 +491,65 @@ const [showCalendar, setShowCalendar] = useState(false);
               </motion.div>
             ))}
           </div>
+
+          {/* Main Image */}
+          <div className="flex-1">
+            <div 
+              className="relative w-full h-96 bg-gray-50 rounded-xl overflow-hidden shadow-sm"
+              onMouseEnter={() => setIsHovering(true)}
+              onMouseLeave={() => setIsHovering(false)}
+            >
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={selectedImage}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  src={productImages[selectedImage]?.url || DEFAULT_PRODUCT_IMAGE}
+                  alt={product.stuffname}
+                  className="w-full h-full object-contain cursor-pointer"
+                  style={{
+                    transform: isHovering ? 'scale(1.1)' : 'scale(1)',
+                    transition: 'transform 300ms ease-in-out'
+                  }}
+                  loading="lazy"
+                />
+              </AnimatePresence>
+
+              <div className="absolute top-3 left-3 flex flex-col gap-2">
+                <span className="bg-teal-500 text-white text-xs font-bold px-2 py-1 rounded-md">NEW</span>
+              </div>
+              
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: isHovering ? 1 : 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 cursor-pointer"
+                onClick={() => setShowZoomModal(true)}
+              >
+                <div className="p-3 bg-white bg-opacity-80 rounded-full">
+                  <FaSearchPlus className="text-gray-700 text-2xl" />
+                </div>
+              </motion.div>
+              
+              <motion.button 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setWishlist(!wishlist)}
+                className={`absolute top-4 right-4 p-3 rounded-full shadow-md ${
+                  wishlist ? 'bg-teal-500 text-white' : 'bg-white text-gray-700'
+                } transition-colors duration-300 z-10`}
+                aria-label={wishlist ? "Remove from wishlist" : "Add to wishlist"}
+              >
+                <FaHeart className={wishlist ? 'fill-current' : ''} />
+              </motion.button>
+            </div>
+          </div>
         </div>
 
         {/* Product Info */}
-        <div className="space-y-6">
+        <div ref={contentRef} className="space-y-6">
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{product.stuffname}</h1>
           
           <div className="flex items-center">
@@ -643,64 +614,41 @@ const [showCalendar, setShowCalendar] = useState(false);
             </div>
           </div>
           
-          {/* Rental Options */}
+          {/* Quantity Selector */}
           <div className="mt-6 bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-medium text-gray-900 mb-3">Rental Options</h3>
-            
-            {/* Duration Selector */}
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {['1 Day', '3 Days', '1 Week'].map((option) => (
-                <motion.button
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  key={option}
-                  className={`py-2 px-3 rounded-md text-sm font-medium ${
-                    option === '3 Days' 
-                      ? 'bg-teal-600 text-white shadow-md' 
-                      : 'bg-white border border-gray-200 text-gray-700 hover:border-teal-300'
-                  }`}
-                >
-                  {option}
-                </motion.button>
-              ))}
-            </div>
-            
-            {/* Quantity Selector */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-              <div className="flex items-center">
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={decreaseQuantity}
-                  className="px-3 py-2 border border-gray-300 rounded-l-md bg-gray-50 text-gray-600 hover:bg-gray-100 focus:outline-none"
-                >
-                  -
-                </motion.button>
-                <div className="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-900 text-center w-16">
-                  {quantity}
-                </div>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={increaseQuantity}
-                  className="px-3 py-2 border border-gray-300 rounded-r-md bg-gray-50 text-gray-600 hover:bg-gray-100 focus:outline-none"
-                >
-                  +
-                </motion.button>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+            <div className="flex items-center">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={decreaseQuantity}
+                className="px-3 py-2 border border-gray-300 rounded-l-md bg-gray-50 text-gray-600 hover:bg-gray-100 focus:outline-none"
+              >
+                -
+              </motion.button>
+              <div className="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-900 text-center w-16">
+                {quantity}
               </div>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={increaseQuantity}
+                className="px-3 py-2 border border-gray-300 rounded-r-md bg-gray-50 text-gray-600 hover:bg-gray-100 focus:outline-none"
+              >
+                +
+              </motion.button>
             </div>
           </div>
           
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 mt-6">
-          <motion.button
-  whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(13, 148, 136, 0.3)" }}
-  whileTap={{ scale: 0.98 }}
-  onClick={() => setShowCalendar(true)}
-  className="flex-1 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-all duration-300 shadow-md"
->
-  <FaShoppingBag />
-  Rent Now
-</motion.button>
+            <motion.button
+              whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(13, 148, 136, 0.3)" }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowCalendar(true)}
+              className="flex-1 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-all duration-300 shadow-md"
+            >
+              <FaShoppingBag />
+              Rent Now
+            </motion.button>
             
             <motion.button
               whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)" }}
@@ -748,17 +696,16 @@ const [showCalendar, setShowCalendar] = useState(false);
           </div>
         </div>
       </motion.div>
+
       <CalendarSidebar
-  product={product}
-  showForm={showCalendar}
-  setShowForm={setShowCalendar}
-  onEventCreated={(newEvent) => {
-    setEvents([...events, newEvent]);
-    // You might want to save this to your backend here
-  }}
-  existingEvents={events}
-  setShowLoginPopup={setShowLoginPopup}
-/>
+        product={product}
+        showForm={showCalendar}
+        setShowForm={setShowCalendar}
+        onEventCreated={(newEvent) => {
+          setEvents([...events, newEvent]);
+        }}
+        existingEvents={events}
+      />
 
       {/* Zoom Modal */}
       <AnimatePresence>
@@ -959,52 +906,18 @@ const [showCalendar, setShowCalendar] = useState(false);
           ))}
         </div>
       </motion.div>
-      {/* Login Popup */}
-      <AnimatePresence>
-  {showLoginPopup && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-2xl shadow-xl w-[450px] h-[600px] max-w-full p-6 flex flex-col justify-center">
-        <AuthForm 
-          isPopup={true} 
-          onClose={() => setShowLoginPopup(false)}
-          onSuccess={() => {
-            setShowLoginPopup(false);
-            setShowCalendar(true); // Reopen calendar after successful login
-          }}
-        />
-      </div>
-    </div>
-  )}
-</AnimatePresence>
-
-
-
 
       <ToastContainer position="bottom-right" />
-     
-
     </div>
-   
-   
-
-);
+  );
 };
-
-
-
-import { format, parseISO, addDays, differenceInDays } from 'date-fns';
-
-
-
-
 
 const CalendarSidebar = ({ 
   product, 
   showForm, 
   setShowForm, 
   onEventCreated,
-  existingEvents = [],
-  setShowLoginPopup
+  existingEvents = []
 }) => {
   const [selectedDates, setSelectedDates] = useState([]);
   const [quantity, setQuantity] = useState(1);
@@ -1012,113 +925,7 @@ const CalendarSidebar = ({
   const [view, setView] = useState('dayGridMonth');
   const calendarRef = useRef(null);
   const [events, setEvents] = useState(existingEvents);
-  const [isLoading, setIsLoading] = useState(false);
-  const sidebarRef = useRef(null);
-  const [sidebarWidth, setSidebarWidth] = useState(400);
-  const [isResizing, setIsResizing] = useState(false);
-  const [timeSlots, setTimeSlots] = useState({});
 
-  // Handle sidebar resizing
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (!isResizing) return;
-      const newWidth = window.innerWidth - e.clientX;
-      if (newWidth > 300 && newWidth < 800) {
-        setSidebarWidth(newWidth);
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
-
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isResizing]);
-
-  // Fetch existing rental requests for this product
-  useEffect(() => {
-    const fetchRentalRequests = async () => {
-      if (!product?.id) return;
-      
-      setIsLoading(true);
-      try {
-        const response = await axios.get(
-          `https://f468-41-230-62-140.ngrok-free.app/rental/rental_requests/?equipment=${product.id}`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-            withCredentials: true,
-          }
-        );
-
-        // Transform API data to FullCalendar event format
-        const rentalEvents = response.data.map(request => ({
-          id: request.id,
-          title: `Rental: ${product.stuffname}`,
-          start: request.start_date,
-          end: request.end_date,
-          extendedProps: {
-            productId: product.id,
-            quantity: request.quantity || 1,
-            status: request.status,
-            rentalRequestId: request.id
-          },
-          color: request.status === 'pending' ? '#f59e0b' : '#10b981', // Yellow for pending, green for approved
-          textColor: '#ffffff',
-          borderColor: '#ffffff',
-          display: 'block'
-        }));
-
-        setEvents(rentalEvents);
-        processTimeSlots(response.data);
-      } catch (error) {
-        console.error('Error fetching rental requests:', error);
-        toast.error('Failed to load existing rental schedules');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchRentalRequests();
-  }, [product?.id]);
-
-  // Process time slots to show availability
-  const processTimeSlots = (requests) => {
-    const slots = {};
-    
-    requests.forEach(request => {
-      const startDate = new Date(request.start_date);
-      const endDate = new Date(request.end_date);
-      
-      const dateKey = startDate.toISOString().split('T')[0];
-      
-      if (!slots[dateKey]) {
-        slots[dateKey] = {
-          active: 0,
-          pending: 0
-        };
-      }
-      
-      if (request.status === 'confirmed') {
-        slots[dateKey].active += 1;
-      } else if (request.status === 'pending') {
-        slots[dateKey].pending += 1;
-      }
-    });
-    
-    setTimeSlots(slots);
-  };
-
-  // Calculate duration between two dates
   const calculateDuration = () => {
     if (selectedDates.length === 2) {
       return differenceInDays(
@@ -1129,13 +936,11 @@ const CalendarSidebar = ({
     return 0;
   };
 
-  // Calculate total price
   const calculateTotalPrice = () => {
     const duration = calculateDuration();
     return (duration * product.price_per_day * quantity).toFixed(2);
   };
 
-  // Handle date selection from calendar
   const handleDateSelect = (selectInfo) => {
     const { startStr, endStr } = selectInfo;
     const endDate = endStr ? format(addDays(parseISO(endStr), -1), 'yyyy-MM-dd') : startStr;
@@ -1147,27 +952,19 @@ const CalendarSidebar = ({
     }
   };
 
-  // Handle event creationC
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const user = localStorage.getItem("user");
-  if (!user) {
-    setShowForm(false); // Close calendar
-    setShowLoginPopup(true); // Show auth popup
-    return;
-  }
-
-  if (selectedDates.length !== 2) {
-    toast.error('Please select start and end dates');
-    return;
-  }
+    if (selectedDates.length !== 2) {
+      toast.error('Please select start and end dates');
+      return;
+    }
 
     try {
       const rentalRequestData = {
         equipment: product.id,
         rental: 2,
-        client: Cookies.get('keycloak_user_id'),
+        client: 10,
         start_date: selectedDates[0],
         end_date: selectedDates[1],
         status: "pending",
@@ -1176,7 +973,7 @@ const CalendarSidebar = ({
       };
 
       const response = await axios.post(
-        "https://f468-41-230-62-140.ngrok-free.app/rental/rental_requests/",
+        "http://127.0.0.1:8001/rental/rental_requests/",
         rentalRequestData,
         {
           headers: {
@@ -1186,7 +983,6 @@ const CalendarSidebar = ({
       );
 
       const newEvent = {
-        id: response.data.id,
         title: `Rental: ${product.stuffname}`,
         start: selectedDates[0],
         end: selectedDates[1],
@@ -1195,12 +991,10 @@ const CalendarSidebar = ({
           quantity,
           specialRequests,
           totalPrice: calculateTotalPrice(),
-          rentalRequestId: response.data.id,
-          status: "pending"
+          rentalRequestId: response.data.id
         },
-        color: '#f59e0b',
-        textColor: '#ffffff',
-        borderColor: '#ffffff'
+        color: '#0d9488',
+        textColor: '#ffffff'
       };
 
       setEvents([...events, newEvent]);
@@ -1214,61 +1008,9 @@ const CalendarSidebar = ({
     }
   };
 
-  // Change calendar view
   const changeView = (newView) => {
     setView(newView);
     calendarRef.current.getApi().changeView(newView);
-  };
-
-  // Custom slot rendering for time slots
-  const slotLaneContent = (arg) => {
-    const dateStr = arg.date.toISOString().split('T')[0];
-    const slotInfo = timeSlots[dateStr];
-    
-    if (!slotInfo) return null;
-    
-    return (
-      <div className="fc-timegrid-slot-lane-content">
-        {slotInfo.active > 0 && (
-          <div className="fc-timegrid-slot-bar fc-timegrid-slot-bar-active">
-            <div className="fc-timegrid-slot-bar-inner" style={{ backgroundColor: '#10b981', height: '100%' }}>
-              <span className="fc-timegrid-slot-bar-count">{slotInfo.active}</span>
-            </div>
-          </div>
-        )}
-        {slotInfo.pending > 0 && (
-          <div className="fc-timegrid-slot-bar fc-timegrid-slot-bar-pending">
-            <div className="fc-timegrid-slot-bar-inner" style={{ backgroundColor: '#f59e0b', height: '100%' }}>
-              <span className="fc-timegrid-slot-bar-count">{slotInfo.pending}</span>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Event content render
-  const renderEventContent = (eventInfo) => {
-    return (
-      <div className="p-1 w-full">
-        <div className="font-medium truncate">{eventInfo.event.title}</div>
-        <div className="text-xs opacity-80">
-          {format(parseISO(eventInfo.event.startStr), 'MMM d')} - 
-          {format(parseISO(eventInfo.event.endStr), 'MMM d')}
-        </div>
-        {eventInfo.event.extendedProps.status && (
-          <div className="text-xs mt-1">
-            <span className={`inline-block px-1 rounded ${
-              eventInfo.event.extendedProps.status === 'pending' 
-                ? 'bg-yellow-100 text-yellow-800' 
-                : 'bg-green-100 text-green-800'
-            }`}>
-              {eventInfo.event.extendedProps.status}
-            </span>
-          </div>
-        )}
-      </div>
-    );
   };
 
   return (
@@ -1280,29 +1022,18 @@ const CalendarSidebar = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          {/* Overlay */}
           <motion.div 
             className="absolute inset-0 bg-black bg-opacity-50"
             onClick={() => setShowForm(false)}
           />
 
-          {/* Resizable Sidebar */}
           <motion.div
-            ref={sidebarRef}
-            className="absolute right-0 top-0 h-full bg-white shadow-xl flex flex-col"
-            style={{ width: `${sidebarWidth}px` }}
+            className="absolute right-0 top-0 h-full w-full sm:w-1/2 lg:w-1/3 xl:w-1/4 bg-white shadow-xl flex flex-col"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
-            {/* Resize handle */}
-            <div 
-              className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize bg-gray-200 hover:bg-teal-500 active:bg-teal-600"
-              onMouseDown={() => setIsResizing(true)}
-            />
-            
-            {/* Header */}
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-teal-600 to-teal-700 text-white">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
@@ -1323,7 +1054,6 @@ const CalendarSidebar = ({
               </div>
             </div>
 
-            {/* View Toggle */}
             <div className="flex border-b border-gray-200">
               <button
                 onClick={() => changeView('dayGridMonth')}
@@ -1351,59 +1081,32 @@ const CalendarSidebar = ({
               </button>
             </div>
 
-            {/* Content */}
             <div className="flex-1 overflow-y-auto flex flex-col">
-              {/* Calendar Section */}
               <div className="p-4 border-b border-gray-200">
-                {isLoading ? (
-                  <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
-                  </div>
-                ) : (
-                  <FullCalendar
-                    ref={calendarRef}
-                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-                    initialView={view}
-                    selectable={true}
-                    select={handleDateSelect}
-                    events={events}
-                    headerToolbar={false}
-                    height={300}
-                    selectMirror={true}
-                    dayMaxEvents={true}
-                    weekends={true}
-                    nowIndicator={true}
-                    editable={true}
-                    eventResizableFromStart={true}
-                    eventContent={renderEventContent}
-                    slotLaneContent={slotLaneContent}
-                    selectConstraint={{
-                      start: new Date().toISOString().split('T')[0],
-                      end: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
-                    }}
-                    selectOverlap={(selectInfo) => {
-                      return !events.some(event => {
-                        if (event.extendedProps.status !== 'confirmed') return false;
-                        
-                        const eventStart = new Date(event.start);
-                        const eventEnd = new Date(event.end);
-                        const selectStart = new Date(selectInfo.start);
-                        const selectEnd = new Date(selectInfo.end);
-                        
-                        return (
-                          (selectStart >= eventStart && selectStart < eventEnd) ||
-                          (selectEnd > eventStart && selectEnd <= eventEnd) ||
-                          (selectStart <= eventStart && selectEnd >= eventEnd)
-                        );
-                      });
-                    }}
-                  />
-                )}
+                <FullCalendar
+                  ref={calendarRef}
+                  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+                  initialView={view}
+                  selectable={true}
+                  select={handleDateSelect}
+                  events={events}
+                  headerToolbar={false}
+                  height={300}
+                  selectMirror={true}
+                  dayMaxEvents={true}
+                  weekends={true}
+                  nowIndicator={true}
+                  editable={true}
+                  eventResizableFromStart={true}
+                  selectOverlap={false}
+                  selectConstraint={{
+                    start: new Date().toISOString().split('T')[0],
+                    end: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
+                  }}
+                />
               </div>
 
-              {/* Form Section */}
               <form onSubmit={handleSubmit} className="p-4 space-y-4 flex-1">
-                {/* Selected Dates */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="block text-sm font-medium text-gray-700">Start Date</label>
@@ -1427,7 +1130,7 @@ const CalendarSidebar = ({
                     <div className="relative">
                       <input
                         type="datetime-local"
-                        value={selectedDates[1] ? format(parseISO(selectedDates[1]), "yyyy-MM-dd'T'HH:mm") : ''}
+                        value={selectedDates[1] ? format(parseISO(selectedDates[0]), "yyyy-MM-dd'T'HH:mm") : ''}
                         onChange={(e) => {
                           const newDates = [...selectedDates];
                           newDates[1] = e.target.value;
@@ -1442,7 +1145,6 @@ const CalendarSidebar = ({
                   </div>
                 </div>
 
-                {/* Rental Summary */}
                 {selectedDates.length === 2 && (
                   <div className="bg-teal-50 p-4 rounded-lg border border-teal-100">
                     <h3 className="font-medium text-teal-800 mb-2">Rental Summary</h3>
@@ -1467,7 +1169,6 @@ const CalendarSidebar = ({
                   </div>
                 )}
 
-                {/* Quantity Field */}
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">Quantity</label>
                   <div className="flex items-center">
@@ -1493,7 +1194,6 @@ const CalendarSidebar = ({
                   </div>
                 </div>
 
-                {/* Special Requests */}
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">Special Requests</label>
                   <textarea
@@ -1507,7 +1207,6 @@ const CalendarSidebar = ({
               </form>
             </div>
 
-            {/* Footer */}
             <div className="p-4 border-t border-gray-200 bg-gray-50">
               <div className="flex gap-3">
                 <motion.button
@@ -1542,4 +1241,3 @@ const CalendarSidebar = ({
     </AnimatePresence>
   );
 };
-

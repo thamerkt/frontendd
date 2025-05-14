@@ -15,7 +15,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
 
   // Initialize Facebook SDK
   useEffect(() => {
-    window.fbAsyncInit = function() {
+    window.fbAsyncInit = () => {
       window.FB.init({
         appId: facebookAppId,
         cookie: true,
@@ -37,9 +37,25 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
     const userData = localStorage.getItem('user');
     if (userData) {
       setTimeout(() => {
-        const role = JSON.parse(userData)?.role || 'customer';
+        const user = JSON.parse(userData);
+        const role = user?.role || 'customer';
+        
+        // Check if user is suspended
+        if (user?.is_suspended) {
+          toast.error("Your account has been suspended. Please contact support.");
+          return;
+        }
+
+        // Check if user is verified (except for admin)
+        if (role !== 'admin' && !user?.is_verified) {
+          toast.warning("Please verify your email before proceeding.");
+          return;
+        }
+
         if (role === 'customer') {
           navigate('/');
+        } else if (role === 'admin') {
+          navigate('/owner/dashboard');
         } else {
           navigate('/collaboration');
         }
@@ -67,7 +83,14 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const value = e.target.value;
+    const field = e.target.name;
+    
+    setFormData(prevData => ({
+      ...prevData,
+      [field]: value
+    }));
+    
     setError("");
   };
 
@@ -87,27 +110,45 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
         console.log('User authenticated:', data);
 
         if (data.userdata) {
-          localStorage.setItem('user', JSON.stringify({
+          const userInfo = {
             email: data.userdata.email,
             role: data.userdata.role || 'customer',
             first_name: data.userdata.first_name,
-            last_name: data.userdata.last_name
-          }));
-        }
+            last_name: data.userdata.last_name,
+            is_verified: data.userdata.is_verified || false,
+            is_suspended: data.userdata.is_suspended || false
+          };
+          
+          localStorage.setItem('user', JSON.stringify(userInfo));
+          
 
-        toast.success("Google login successful! Redirecting...");
-        setTimeout(() => {
-          const role = data.userdata?.role || 'customer';
-          if (role === 'customer') {
-            navigate('/home');
-          } else {
-            navigate('/collaboration');
+          // Check verification and suspension status
+          if (userInfo.is_suspended) {
+            toast.error("Your account has been suspended. Please contact support.");
+            return;
           }
-        }, 3000);
+
+          if (!userInfo.is_verified && userInfo.role !== 'admin') {
+            toast.warning("Please verify your email before proceeding.");
+            return;
+          }
+
+          toast.success("Google login successful! Redirecting...");
+          setTimeout(() => {
+            const role = userInfo.role;
+            if (role === 'customer') {
+              navigate('/home');
+            } else if (role === 'admin') {
+              navigate('/owner/dashboard');
+            } else {
+              navigate('/collaboration');
+            }
+          }, 3000);
+        }
       } else {
         const errorData = await response.json();
         console.error('Authentication error:', errorData);
-        toast.error("Google login failed. Please try again.");
+        toast.error(errorData.message || "Google login failed. Please try again.");
       }
     } catch (error) {
       console.error('Network error:', error);
@@ -156,36 +197,46 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
             console.log('User authenticated:', data);
 
             if (data.userdata) {
-              localStorage.setItem('user', JSON.stringify({
+              const userInfo = {
                 email: data.userdata.email,
                 role: data.userdata.role || 'customer',
                 first_name: data.userdata.first_name,
                 last_name: data.userdata.last_name,
-                token: data.userdata.access_token
-              }));
-            }
+                token: data.userdata.access_token,
+                is_verified: data.userdata.is_verified || false,
+                is_suspended: data.userdata.is_suspended || false
+              };
+              
+              localStorage.setItem('user', JSON.stringify(userInfo));
 
-            toast.success("Facebook login successful! Redirecting...");
+              // Check verification and suspension status
+              if (userInfo.is_suspended) {
+                toast.error("Your account has been suspended. Please contact support.");
+                return;
+              }
 
-            if (data.userdata?.user_exists === true) {
-              if (data.user) {
+              if (!userInfo.is_verified && userInfo.role !== 'admin') {
+                toast.warning("Please verify your email before proceeding.");
+                return;
+              }
+
+              if (data.userdata?.user_exists === true) {
+                toast.success("Facebook login successful! Redirecting...");
                 setTimeout(() => {
-                  const role = data.userdata?.role || 'customer';
+                  const role = userInfo.role;
                   if (role === 'customer') {
                     navigate('/');
+                  } else if (role === 'admin') {
+                    navigate('/owner/dashboard');
                   } else {
                     navigate('/collaboration');
                   }
                 }, 3000);
               } else {
-                const errorData = await fbResponse.json();
-                console.error('Authentication error:', errorData);
-                toast.error(errorData.message || "Facebook login failed. Please try again.");
+                setTimeout(() => {
+                  navigate('/register/email-verification');
+                }, 3000);
               }
-            } else {
-              setTimeout(() => {
-                navigate('/register/email-verification');
-              }, 3000);
             }
           } else {
             const errorData = await fbResponse.json();
@@ -206,51 +257,112 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
-
+  
     if (isRegister) {
       if (formData.password !== formData.confirmPassword) {
         setError("Passwords do not match!");
+        toast.error("Passwords do not match!", {
+          style: { backgroundColor: '#ef4444' }
+        });
         return;
       }
-
+  
       if (!validatePassword(formData.password)) {
         setError("Password must be at least 8 characters, include a number and a special character.");
+        toast.error("Password must be at least 8 characters, include a number and a special character.", {
+          style: { backgroundColor: '#ef4444' }
+        });
         return;
       }
     }
-
+  
     setLoading(true);
-
+  
     try {
       if (isRegister) {
         await authStore.signup(formData.email, formData.password, formData.role);
         setFormData({ email: "", password: "", confirmPassword: "", role: "customer" });
-        toast.success("Registration successful! Redirecting...");
+        toast.success("Registration successful! Please check your email for verification.", {
+          style: { backgroundColor: '#10b981' }
+        });
+        sessionStorage.setItem('progress', JSON.stringify({ "progress": "step1" }));
         setTimeout(() => navigate("/register/email-verification"), 3000);
       } else {
         const userData = await authStore.login(formData.email, formData.password);
-        localStorage.setItem('user', JSON.stringify({
-          email: userData.email,
-          role: userData.role || 'customer',
-          first_name: userData.first_name,
-          last_name: userData.last_name
-        }));
         
-        toast.success("Login successful! Redirecting...");
+        // Check if user is suspended
+        if (userData.user.is_suspended) {
+          toast.error("Your account has been suspended. Please contact support.", {
+            style: { backgroundColor: '#ef4444' }
+          });
+          return;
+        }
+  
+        // Check if user is verified (except for admin)
+        const roles = userData.user.roles || [];
+        const isEmptyRoles = roles.length === 0;
+        
+        if (!isEmptyRoles && !userData.user.is_verified) {
+          toast.warning("Your account is not verified. Please check your email for verification instructions.", {
+            style: { backgroundColor: '#f59e0b' }
+          });
+          return;
+        }
+  
+        // Determine the role
+        let role = 'customer'; // default
+        if (isEmptyRoles) {
+          role = 'admin';
+        } else if (roles.includes('customer')) {
+          role = 'customer';
+        } else if (roles.includes('equipment_manager_company') || roles.includes('equipment_manager_individual')) {
+          role = 'equipment_manager';
+        }
+      
+        // Store user data
+        localStorage.setItem('user', JSON.stringify({
+          email: userData.user.username,
+          role,
+          user_id: userData.user_id,
+          first_name: userData.first_name,
+          last_name: userData.last_name,
+          is_verified: userData.user.is_verified,
+          is_suspended: userData.user.is_suspended
+        }));
+      
+        // Show appropriate success message
+        if (isEmptyRoles) {
+          toast.success("Admin login successful! Redirecting to dashboard...", {
+            style: { backgroundColor: '#4f46e5' }
+          });
+        } else {
+          toast.success("Login successful! Redirecting...", {
+            style: { backgroundColor: '#10b981' }
+          });
+        }
+      
+        // Redirect based on role
         setTimeout(() => {
-          if (userData.role === 'customer') {
+          if (role === 'admin') {
+            navigate('/owner/dashboard');
+          } else if (role === 'customer') {
             navigate('/');
-          } else {
+          } else if (role === 'equipment_manager') {
             navigate('/collaboration');
           }
+    
           if (isPopup) onClose();
         }, 3000);
       }
     } catch (error) {
       console.error(error);
       const action = isRegister ? "Registration" : "Login";
-      setError(`${action} Failed. Please try again.`);
-      toast.error(`${action} Failed. Please try again.`);
+      const errorMessage = error.response?.data?.message || `${action} Failed. Please try again.`;
+      
+      setError(errorMessage);
+      toast.error(errorMessage, {
+        style: { backgroundColor: '#ef4444' }
+      });
     } finally {
       setLoading(false);
     }

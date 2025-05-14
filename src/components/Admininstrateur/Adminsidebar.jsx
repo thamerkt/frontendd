@@ -6,20 +6,21 @@ import {
 import { NavLink, useLocation } from "react-router-dom";
 import { useState } from "react";
 
-const SidebarAdmin = () => {
+const SidebarAdministrateur = () => {
   const location = useLocation();
   const [hoveredItem, setHoveredItem] = useState(null);
-  const [isExpanded, setIsExpanded] = useState(true);
-  const isAdminPage = location.pathname.startsWith('/admin');
+  // Sidebar is always expanded (fixed)
+  const isExpanded = true;
+  const isAdminPage = location.pathname.startsWith('/owner');
 
   const menuItems = [
-    { name: "Dashboard", icon: Home, path: "/admin/dashbord" },
-    { name: "Analytics", icon: BarChart2, path: "/admin/analytics" },
-    { name: "Clients", icon: Users, path: "/admin/clients" },
-    { name: "Bookings", icon: CalendarDays, path: "/admin/booking" },
-    { name: "Products", icon: Box, path: "/admin/products" },
-    { name: "History", icon: History, path: "/admin/history" },
-    { name: "Settings", icon: Settings, path: "/admin/settings" },
+    { name: "Dashboard", icon: Home, path: "/owner/dashboard" },
+    { name: "users", icon: Users, path: "/owner/users" },
+    { name: "categories", icon: CalendarDays, path: "/owner/categorie" },
+    { name: "Products", icon: Box, path: "/owner/products" },
+    { name: "history", icon: History, path: "/owner/history" },
+    { name: "contracts", icon: History, path: "/owner/contracts" },
+    { name: "Settings", icon: Settings, path: "/owner/settings" },
   ];
 
   if (!isAdminPage) return null;
@@ -29,10 +30,10 @@ const SidebarAdmin = () => {
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-100 flex flex-col overflow-y-auto z-50 transition-all duration-300 
-        ${isExpanded ? "w-64" : "w-20"}`}
+      className={`fixed left-0 top-0 h-full bg-white border-r border-gray-100 flex flex-col overflow-y-auto z-50 transition-all duration-300 w-64`}
+      style={{ minHeight: "100vh" }}
     >
-      {/* Logo Section - Updated to match client sidebar */}
+      {/* Logo Section */}
       <motion.div
         whileHover={{ scale: 1.02 }}
         className="p-6 pb-4 border-b border-gray-100"
@@ -42,11 +43,10 @@ const SidebarAdmin = () => {
             initial={{ rotate: -10 }}
             animate={{ rotate: 0 }}
             transition={{ type: "spring", stiffness: 300 }}
-            className=""
           >
-            <img width={120} src="../assets/logo-ekrini.png" alt="logo-ekrini.png"/>
+            <img width={120} src="../assets/logo-ekrini.png" alt="logo-ekrini.png" className="block"/>
+            <img width={40} src="../assets/logo-icon.png" alt="logo-icon.png" className="hidden"/>
           </motion.div>
-          <br />
           <AnimatePresence>
             {isExpanded && (
               <motion.div
@@ -61,13 +61,7 @@ const SidebarAdmin = () => {
             )}
           </AnimatePresence>
         </div>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="absolute top-6 right-4 p-1 rounded-md hover:bg-gray-100 text-gray-500"
-        >
-          <ChevronRight className={`transition-transform ${!isExpanded ? "rotate-180" : ""}`} size={18} />
-        </motion.button>
+        {/* Chevron button removed */}
       </motion.div>
 
       {/* Navigation */}
@@ -97,17 +91,17 @@ const SidebarAdmin = () => {
 
                   <motion.div
                     className={`relative z-10 flex items-center transition-colors ${isActive ? 'text-teal-600' : 'text-gray-600 hover:text-gray-900'}`}
-                    whileHover={{ x: isExpanded ? 3 : 0 }}
+                    whileHover={{ x: 3 }}
                   >
                     <motion.div
                       animate={{
                         scale: isActive ? 1.15 : 1,
-                        color: isActive ? '#0d9488' : isExpanded ? '#4b5563' : '#0d9488'
+                        color: isActive ? '#0d9488' : '#4b5563'
                       }}
                       transition={{ type: "spring", stiffness: 500 }}
                       className="flex-shrink-0"
                     >
-                      <Icon size={20} className={isExpanded ? "mr-3" : "mx-auto"} />
+                      <Icon size={20} className="mr-3" />
                     </motion.div>
                     <AnimatePresence>
                       {isExpanded && (
@@ -117,7 +111,7 @@ const SidebarAdmin = () => {
                           exit={{ opacity: 0, x: -10 }}
                           className="flex items-center justify-between w-full"
                         >
-                          <motion.span className="text-sm font-medium whitespace-nowrap">
+                          <motion.span className="text-sm font-medium whitespace-nowrap capitalize">
                             {item.name}
                           </motion.span>
                           <motion.div
@@ -161,7 +155,7 @@ const SidebarAdmin = () => {
                   Admin User
                 </motion.p>
                 <motion.p className="text-xs text-gray-500 truncate">
-                  administrator@everythingrentals.com
+                  administrator@example.com
                 </motion.p>
               </motion.div>
             )}
@@ -172,7 +166,7 @@ const SidebarAdmin = () => {
           <motion.button
             whileHover={{ x: 2 }}
             whileTap={{ scale: 0.98 }}
-            className="mt-4 w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50 transition-colors"
+            className="  mt-4 w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <span>Log out</span>
             <LogOut size={16} />
@@ -183,4 +177,4 @@ const SidebarAdmin = () => {
   );
 };
 
-export default SidebarAdmin;
+export default SidebarAdministrateur;

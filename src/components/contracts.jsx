@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { FiSearch, FiFilter, FiDownload, FiTrash2, FiEye, FiMoreVertical } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import { SelectInput } from "../../Customcss/custom";
-import HistoryService from "../../services/HistoryServcie";
+import { SelectInput } from "../Customcss/custom";
+import ContractService from "../services/contractService";
 import { useLocation } from "react-router-dom";
 import * as XLSX from 'xlsx';
 
-export default function History() {
-    const [historyData, setHistoryData] = useState([]);
+export default function Contracts() {
+    const [contractsData, setContractsData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [filter, setFilter] = useState('');
@@ -19,10 +19,11 @@ export default function History() {
     const location = useLocation();
 
     const filterOptions = [
-        { value: 'statut', label: 'Status' },
+        { value: 'status', label: 'Status' },
         { value: 'equipment', label: 'Equipment' },
-        { value: 'client', label: 'Client' },
-        { value: 'cout_total', label: 'Price' }
+        { value: 'client_name', label: 'Client' },
+        { value: 'owner_name', label: 'Owner' },
+        { value: 'total_price', label: 'Price' }
     ];
 
     // Close dropdown when clicking outside
@@ -55,23 +56,23 @@ export default function History() {
                 
                 // Determine which fetch method to use based on the URL path
                 if (location.pathname.startsWith('/admin')) {
-                    data = await HistoryService.fetchHistoryByParam({ bailleur: 201 });
+                    data = await ContractService.fetchContracts('owner_name', 'John');
                 } else if (location.pathname.startsWith('/owner')) {
-                    data = await HistoryService.fetchHistoryByParam();
+                    data = await ContractService.fetchContracts();
                 } else if (location.pathname.startsWith('/client')) {
-                    data = await HistoryService.fetchHistoryByParam({ client: 301 });
+                    data = await ContractService.fetchContracts('client_name', 'Acme Corporation');
                 } else {
                     // Default to regular fetch if path doesn't match
-                    data = await HistoryService.fetchHistory();
+                    data = await ContractService.fetchContracts();
                 }
                 
-                setHistoryData(data || []);
+                setContractsData(data || []);
                 setFilteredData(data || []);
                 setError(null);
             } catch (e) {
-                console.error("Error fetching history data:", e.message);
-                setError("Failed to load history data");
-                setHistoryData([]);
+                console.error("Error fetching contracts data:", e.message);
+                setError("Failed to load contracts data");
+                setContractsData([]);
                 setFilteredData([]);
             } finally {
                 setIsLoading(false);
@@ -79,13 +80,13 @@ export default function History() {
         };
 
         fetchData();
-    }, [location.pathname]); // Add location.pathname as dependency
+    }, [location.pathname]);
 
     useEffect(() => {
         const applyFilters = () => {
-            if (!historyData || !Array.isArray(historyData)) return;
+            if (!contractsData || !Array.isArray(contractsData)) return;
 
-            let filtered = [...historyData];
+            let filtered = [...contractsData];
 
             if (filter) {
                 filtered = filtered.filter(item => {
@@ -106,7 +107,7 @@ export default function History() {
         };
 
         applyFilters();
-    }, [historyData, filter, searchTerm]);
+    }, [contractsData, filter, searchTerm]);
 
     const getStatusColor = (status) => {
         if (!status) return 'bg-gray-100 text-gray-800';
@@ -118,6 +119,10 @@ export default function History() {
                 return 'bg-red-100 text-red-800';
             case 'pending':
                 return 'bg-yellow-100 text-yellow-800';
+            case 'signed':
+                return 'bg-blue-100 text-blue-800';
+            case 'expired':
+                return 'bg-purple-100 text-purple-800';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
@@ -129,20 +134,33 @@ export default function History() {
         );
     };
 
-    const deleteSelected = () => {
-        alert(`Would delete items: ${selectedItems.join(', ')}`);
-        setSelectedItems([]);
+    const deleteSelected = async () => {
+        try {
+            await Promise.all(selectedItems.map(id => 
+                ContractService.deleteContract(id)
+            ));
+            // Remove deleted items from state
+            setContractsData(prev => prev.filter(item => !selectedItems.includes(item.id)));
+            setFilteredData(prev => prev.filter(item => !selectedItems.includes(item.id)));
+            setSelectedItems([]);
+        } catch (e) {
+            console.error("Error deleting contracts:", e);
+            alert("Failed to delete some contracts");
+        }
     };
 
     const exportToExcel = () => {
         // Prepare data for export
         const dataToExport = filteredData.map(item => ({
-            Period: item.date_debut || 'N/A',
-            Client: item.client || 'N/A',
-            Equipment: item.equipment || 'N/A',
-            Bailleur: item.bailleur_nom || 'N/A',
-            Status: item.statut || 'N/A',
-            'Total Cost': item.cout_total || 'N/A'
+            'Contract ID': item.id || 'N/A',
+            'Start Date': item.start_date || 'N/A',
+            'End Date': item.end_date || 'N/A',
+            'Client': item.client_name || 'N/A',
+            'Owner': item.owner_name || 'N/A',
+            'Equipment': item.equipment || 'N/A',
+            'Status': item.status || 'N/A',
+            'Total Price': item.total_value || 'N/A',
+            'Signed Date': item.signed_date || 'Not signed'
         }));
 
         // Create worksheet
@@ -150,10 +168,10 @@ export default function History() {
         
         // Create workbook
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "History");
+        XLSX.utils.book_append_sheet(wb, ws, "Contracts");
         
         // Generate Excel file and trigger download
-        XLSX.writeFile(wb, `History_Export_${new Date().toISOString().slice(0,10)}.xlsx`);
+        XLSX.writeFile(wb, `Contracts_Export_${new Date().toISOString().slice(0,10)}.xlsx`);
     };
 
     if (isLoading) {
@@ -161,7 +179,7 @@ export default function History() {
             <div className="ml-64 p-6 bg-gray-50 min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading history data...</p>
+                    <p className="mt-4 text-gray-600">Loading contracts data...</p>
                 </div>
             </div>
         );
@@ -187,8 +205,8 @@ export default function History() {
         <div className="ml-64 p-6 bg-gray-50 min-h-screen">
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
                 <div className="mb-4 md:mb-0">
-                    <h2 className="text-2xl font-bold text-gray-800">History</h2>
-                    <p className="text-teal-500">Showing your all histories</p>
+                    <h2 className="text-2xl font-bold text-gray-800">Contracts</h2>
+                    <p className="text-teal-500">Showing your all contracts</p>
                 </div>
                 
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
@@ -196,7 +214,7 @@ export default function History() {
                         <FiSearch className="text-gray-400 mr-2" />
                         <input
                             type="text"
-                            placeholder="Search history..."
+                            placeholder="Search contracts..."
                             className="outline-none w-full"
                             value={searchTerm}
                             onChange={handleSearchChange}
@@ -235,22 +253,25 @@ export default function History() {
                                     Select
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Contract ID
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Period
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Client
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Equipment
+                                    Owner
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Bailleur
+                                    Equipment
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Status
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Total Cost
+                                    Total Price
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Actions
@@ -272,25 +293,30 @@ export default function History() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-gray-900">
-                                                {item.date_debut || 'N/A'}
+                                                #{item.id || 'N/A'}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">{item.client || 'N/A'}</div>
+                                            <div className="text-sm text-gray-900">
+                                                {item.start_date || 'N/A'} to {item.end_date || 'N/A'}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm font-medium text-gray-900">{item.client_name || 'N/A'}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-900">{item.owner_name || 'N/A'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm text-gray-900">{item.equipment || 'N/A'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{item.bailleur_nom || 'N/A'}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(item.statut)}`}>
-                                                {item.statut || 'N/A'}
+                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(item.status)}`}>
+                                                {item.status || 'N/A'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {item.cout_total || 'N/A'}
+                                            {item.total_value ? `$${item.total_value}` : 'N/A'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="relative inline-block text-left" ref={moreRef}>
@@ -318,7 +344,8 @@ export default function History() {
                                                                 <button
                                                                     className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left transition-colors"
                                                                     onClick={() => {
-                                                                        alert(`View details for ${item.id}`);
+                                                                        // Navigate to contract details
+                                                                        window.location.href = `/contracts/${item.id}`;
                                                                         setMoreVisible(null);
                                                                     }}
                                                                 >
@@ -326,8 +353,16 @@ export default function History() {
                                                                 </button>
                                                                 <button
                                                                     className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left transition-colors"
-                                                                    onClick={() => {
-                                                                        alert(`Delete item ${item.id}`);
+                                                                    onClick={async () => {
+                                                                        try {
+                                                                            await ContractService.deleteContract(item.id);
+                                                                            // Remove from state
+                                                                            setContractsData(prev => prev.filter(contract => contract.id !== item.id));
+                                                                            setFilteredData(prev => prev.filter(contract => contract.id !== item.id));
+                                                                        } catch (e) {
+                                                                            console.error("Error deleting contract:", e);
+                                                                            alert("Failed to delete contract");
+                                                                        }
                                                                         setMoreVisible(null);
                                                                     }}
                                                                 >
@@ -344,8 +379,8 @@ export default function History() {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="8" className="px-6 py-4 text-center text-sm text-gray-500">
-                                        No history data available
+                                    <td colSpan="9" className="px-6 py-4 text-center text-sm text-gray-500">
+                                        No contracts data available
                                     </td>
                                 </tr>
                             )}
@@ -356,7 +391,7 @@ export default function History() {
                 {filteredData && filteredData.length > 0 && (
                     <div className="mt-4 flex justify-between items-center">
                         <div className="text-sm text-gray-500">
-                            Showing {filteredData.length} of {historyData.length} records
+                            Showing {filteredData.length} of {contractsData.length} records
                         </div>
                         <button
                             onClick={exportToExcel}

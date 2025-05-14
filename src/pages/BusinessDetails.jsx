@@ -131,7 +131,7 @@ const BusinessDetail = () => {
   
     try {
       const response = await axios.post(
-        'https://f468-41-230-62-140.ngrok-free.app/ocr/verification/company/',
+        'http://localhost:8000/ocr/verification/company/',
         company,
         
       );
@@ -147,7 +147,7 @@ const BusinessDetail = () => {
         setProgress(newProgress);
         localStorage.setItem('registrationProgress', JSON.stringify(newProgress));
         toast.success("Business profile submitted successfully!");
-  
+        sessionStorage.setItem('progress', JSON.stringify({ "progress": "step4" }));
         setTimeout(() => navigate("/register/identity-verification"), 2000);
       } else {
         toast.error(
@@ -192,9 +192,7 @@ const BusinessDetail = () => {
       {/* Progress Bar */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm md:text-base font-medium text-gray-700 capitalize">
-            {progress.phase.replace(/([A-Z])/g, ' $1').trim()} ({progress.step}/{progress.totalSteps})
-          </span>
+          
           <span className="text-xs md:text-sm text-gray-500">
             Step {progress.step} of {progress.totalSteps}
           </span>

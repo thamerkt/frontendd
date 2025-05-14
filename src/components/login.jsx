@@ -35,7 +35,7 @@ const Login = () => {
   
       try {
         // Send the authorization code to your Django backend
-        const response = await fetch('https://f468-41-230-62-140.ngrok-free.app/user/auth/google/', {
+        const response = await fetch('http://localhost:8000/user/auth/google/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ credential }),

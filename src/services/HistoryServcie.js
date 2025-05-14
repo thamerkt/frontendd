@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://f468-41-230-62-140.ngrok-free.apphistory/"; 
+const API_URL = "http://localhost:8000/history/"; 
 
 
 
@@ -18,17 +18,13 @@ const handleError = (error) => {
 };
 
 const HistoryService = {
-   fetchHistory : async () => {
-    try {
-        
-        const response = await axios.get(`${API_URL}historiques/`, 
-        );
-        console.log(response.data);
-        return response.data
-    } catch (error) {
-        console.error("Error fetching history:", error);
-    }
-},
+    fetchHistoryByParam: (filters = {}) => {
+        const queryParams = new URLSearchParams(filters).toString();
+        const url = `${API_URL}historiques/${queryParams ? `?${queryParams}` : ""}`;
+        return axios.get(url)
+        .then(response => response.data)
+        .catch(handleError);
+    },
 
     DeleteHistory: async (historyId) => {
         try {

@@ -246,7 +246,7 @@ const ProfileForm = () => {
         }, 3000);
       }
   
-      localStorage.setItem('registrationProgress', JSON.stringify(newProgress));
+      sessionStorage.setItem('progress', JSON.stringify({ "progress": "step3" }));
       toast.success('Profile created successfully!');
   
     } catch (error) {
