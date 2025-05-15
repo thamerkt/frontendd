@@ -57,7 +57,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
         } else if (role === 'admin') {
           navigate('/owner/dashboard');
         } else {
-          navigate('/collaboration');
+          navigate('/');
         }
       }, 1000);
     }
@@ -97,51 +97,61 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
   const handleSuccess = async (credentialResponse) => {
     console.log("Google OAuth Success:", credentialResponse);
     const { credential } = credentialResponse;
-
+  
     try {
       const response = await fetch('https://f468-41-230-62-140.ngrok-free.app/user/auth/google/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential }),
       });
-
+  
       if (response.ok) {
         const data = await response.json();
         console.log('User authenticated:', data);
-
+  
         if (data.userdata) {
+          const roles = data.userdata.roles || [];
+          let role = 'customer'; // default
+          
+          if (roles.includes('customer')) {
+            role = 'customer';
+          } else if (roles.includes('equipment_manager_company') || roles.includes('equipment_manager_individual')) {
+            role = 'rental';
+          } else if (roles.length === 0) {
+            role = 'admin';
+          }
+  
           const userInfo = {
             email: data.userdata.email,
-            role: data.userdata.role || 'customer',
+            role: role,
             first_name: data.userdata.first_name,
             last_name: data.userdata.last_name,
             is_verified: data.userdata.is_verified || false,
-            is_suspended: data.userdata.is_suspended || false
+            is_suspended: data.userdata.is_suspended || false,
+            token: data.token?.access_token // Store the access token if available
           };
           
           localStorage.setItem('user', JSON.stringify(userInfo));
           
-
           // Check verification and suspension status
           if (userInfo.is_suspended) {
             toast.error("Your account has been suspended. Please contact support.");
             return;
           }
-
+  
           if (!userInfo.is_verified && userInfo.role !== 'admin') {
             toast.warning("Please verify your email before proceeding.");
             return;
           }
-
+  
           toast.success("Google login successful! Redirecting...");
           setTimeout(() => {
-            const role = userInfo.role;
             if (role === 'customer') {
-              navigate('/home');
+              navigate('/client/dashboard');
             } else if (role === 'admin') {
               navigate('/owner/dashboard');
-            } else {
-              navigate('/collaboration');
+            } else if (role === 'rental') {
+              navigate('/');
             }
           }, 3000);
         }
@@ -261,17 +271,13 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
     if (isRegister) {
       if (formData.password !== formData.confirmPassword) {
         setError("Passwords do not match!");
-        toast.error("Passwords do not match!", {
-          style: { backgroundColor: '#ef4444' }
-        });
+        toast.error("Passwords do not match!");
         return;
       }
   
       if (!validatePassword(formData.password)) {
         setError("Password must be at least 8 characters, include a number and a special character.");
-        toast.error("Password must be at least 8 characters, include a number and a special character.", {
-          style: { backgroundColor: '#ef4444' }
-        });
+        toast.error("Password must be at least 8 characters, include a number and a special character.");
         return;
       }
     }
@@ -282,9 +288,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
       if (isRegister) {
         await authStore.signup(formData.email, formData.password, formData.role);
         setFormData({ email: "", password: "", confirmPassword: "", role: "customer" });
-        toast.success("Registration successful! Please check your email for verification.", {
-          style: { backgroundColor: '#10b981' }
-        });
+        toast.success("Registration successful! Please check your email for verification.", );
         sessionStorage.setItem('progress', JSON.stringify({ "progress": "step1" }));
         setTimeout(() => navigate("/register/email-verification"), 3000);
       } else {
@@ -292,9 +296,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
         
         // Check if user is suspended
         if (userData.user.is_suspended) {
-          toast.error("Your account has been suspended. Please contact support.", {
-            style: { backgroundColor: '#ef4444' }
-          });
+          toast.error("Your account has been suspended. Please contact support.");
           return;
         }
   
@@ -303,20 +305,18 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
         const isEmptyRoles = roles.length === 0;
         
         if (!isEmptyRoles && !userData.user.is_verified) {
-          toast.warning("Your account is not verified. Please check your email for verification instructions.", {
-            style: { backgroundColor: '#f59e0b' }
-          });
+          toast.warning("Your account is not verified. Please check your email for verification instructions.");
           return;
         }
   
-        // Determine the role
+        // Determine the role based on roles array
         let role = 'customer'; // default
         if (isEmptyRoles) {
           role = 'admin';
         } else if (roles.includes('customer')) {
           role = 'customer';
         } else if (roles.includes('equipment_manager_company') || roles.includes('equipment_manager_individual')) {
-          role = 'equipment_manager';
+          role = 'rental';
         }
       
         // Store user data
@@ -327,18 +327,15 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
           first_name: userData.first_name,
           last_name: userData.last_name,
           is_verified: userData.user.is_verified,
-          is_suspended: userData.user.is_suspended
+          is_suspended: userData.user.is_suspended,
+          token: userData.token.access_token // Store the access token
         }));
       
         // Show appropriate success message
         if (isEmptyRoles) {
-          toast.success("Admin login successful! Redirecting to dashboard...", {
-            style: { backgroundColor: '#4f46e5' }
-          });
+          toast.success("Admin login successful! Redirecting to dashboard...");
         } else {
-          toast.success("Login successful! Redirecting...", {
-            style: { backgroundColor: '#10b981' }
-          });
+          toast.success("Login successful! Redirecting...");
         }
       
         // Redirect based on role
@@ -346,11 +343,11 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
           if (role === 'admin') {
             navigate('/owner/dashboard');
           } else if (role === 'customer') {
+            navigate('/client/dashboard');
+          } else if (role === 'rental') {
             navigate('/');
-          } else if (role === 'equipment_manager') {
-            navigate('/collaboration');
           }
-    
+  
           if (isPopup) onClose();
         }, 3000);
       }
@@ -360,9 +357,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
       const errorMessage = error.response?.data?.message || `${action} Failed. Please try again.`;
       
       setError(errorMessage);
-      toast.error(errorMessage, {
-        style: { backgroundColor: '#ef4444' }
-      });
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -402,7 +397,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
       <div className={`${isPopup ? '' : 'mt-8 sm:mx-auto sm:w-full sm:max-w-md'}`}>
         <div className={`bg-white ${isPopup ? 'p-4' : 'py-8 px-4 shadow sm:rounded-lg sm:px-10'}`}>
           {error && (
-            <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4">
+            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -416,9 +411,9 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email address
               </label>
               <div className="mt-1">
@@ -436,7 +431,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
               </label>
               <div className="mt-1 relative">
@@ -474,7 +469,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
             {isRegister && (
               <>
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                     Confirm Password
                   </label>
                   <div className="mt-1 relative">
@@ -510,7 +505,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
                 </div>
 
                 <div>
-                  <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
                     Account Type
                   </label>
                   <select
@@ -552,11 +547,11 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
               </div>
             )}
 
-            <div>
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 {loading ? (
                   <>
@@ -573,7 +568,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
             </div>
           </form>
 
-          <div className="mt-6">
+          <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
@@ -600,7 +595,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
 
               <button
                 onClick={handleFacebookLogin}
-                className="w-full inline-flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="w-full inline-flex justify-center items-center py-2.5 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 <svg className="w-5 h-5 mr-2" fill="#000000" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.53-4.5-10.02-10-10.02z"/>

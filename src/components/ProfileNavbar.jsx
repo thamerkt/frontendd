@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Bell, ChevronDown, Settings, LogOut, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useClickAway } from 'react-use';
+import authStore from '../redux/authStore';
+import Cookies from 'js-cookie';
 
 
 export default function ProfileNavbar({ user, logout }) {
@@ -74,6 +76,20 @@ export default function ProfileNavbar({ user, logout }) {
     return ['/owner', '/client', '/partner', '/admin'].some(prefix =>
       path.startsWith(prefix)
     );
+  };
+  const handleLogout = async () => {
+   
+  
+    // Remove user from localStorage
+    const token = Cookies.get('token');
+    try {
+      await authStore.logout(token);
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  
+    // Redirect to /login
+    navigate('/login');
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -227,7 +243,7 @@ export default function ProfileNavbar({ user, logout }) {
                 </li>
                 <li>
                   <button
-                    onClick={logout}
+                    onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
                   >
                     <LogOut className="w-4 h-4 mr-2 text-gray-400" />

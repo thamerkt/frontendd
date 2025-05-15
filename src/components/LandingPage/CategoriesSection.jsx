@@ -125,6 +125,20 @@ export default function CategoriesSection() {
     }
   };
 
+  // Auto-rotate carousel
+  useEffect(() => {
+    if (!selectedCategory || !items[selectedCategory]?.length) return;
+    
+    const interval = setInterval(() => {
+      setDirection(1);
+      setCurrentIndex(prev => 
+        prev + 1 >= Math.ceil(items[selectedCategory].length / cardsPerPage) ? 0 : prev + 1
+      );
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [selectedCategory, items]);
+
   // Fetch data
   const fetchData = useCallback(async () => {
     try {
@@ -336,39 +350,37 @@ export default function CategoriesSection() {
         {/* Products Section */}
         {selectedCategory && items[selectedCategory]?.length > 0 && (
           <div className="relative">
-            {/* Navigation Controls - Apple Style */}
-            {items[selectedCategory]?.length > cardsPerPage && (
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <div className="hidden sm:flex gap-1">
-                  {Array.from({ length: Math.ceil(items[selectedCategory].length / cardsPerPage) }).map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => goToSlide(index)}
-                      className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                        index === currentIndex ? "bg-gray-900 scale-125" : "bg-gray-300 hover:bg-gray-400"
-                      }`}
-                      aria-label={`Go to slide ${index + 1}`}
-                    />
-                  ))}
-                </div>
-                <div className="flex gap-2">
+            {/* Navigation Controls */}
+            <div className="flex items-center justify-between mb-6 px-4">
+              <div className="flex gap-1">
+                {Array.from({ length: Math.ceil(items[selectedCategory].length / cardsPerPage) }).map((_, index) => (
                   <button
-                    onClick={handlePrev}
-                    className="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md"
-                    aria-label="Previous"
-                  >
-                    <ChevronLeft className="w-5 h-5 text-gray-700" />
-                  </button>
-                  <button
-                    onClick={handleNext}
-                    className="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md"
-                    aria-label="Next"
-                  >
-                    <ChevronRight className="w-5 h-5 text-gray-700" />
-                  </button>
-                </div>
+                    key={index}
+                    onClick={() => goToSlide(index)}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      index === currentIndex ? "bg-gray-900 scale-125" : "bg-gray-300 hover:bg-gray-400"
+                    }`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
               </div>
-            )}
+              <div className="flex gap-2">
+                <button
+                  onClick={handlePrev}
+                  className="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md"
+                  aria-label="Previous"
+                >
+                  <ChevronLeft className="w-5 h-5 text-gray-700" />
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md"
+                  aria-label="Next"
+                >
+                  <ChevronRight className="w-5 h-5 text-gray-700" />
+                </button>
+              </div>
+            </div>
 
             <div className="relative min-h-[520px]">
               <AnimatePresence custom={direction} initial={false} mode="wait">
@@ -512,22 +524,6 @@ export default function CategoriesSection() {
                 </motion.div>
               </AnimatePresence>
             </div>
-
-            {/* Mobile Navigation Dots */}
-            {items[selectedCategory]?.length > cardsPerPage && (
-              <div className="sm:hidden flex justify-center gap-2 mt-6">
-                {Array.from({ length: Math.ceil(items[selectedCategory].length / cardsPerPage) }).map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => goToSlide(index)}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                      index === currentIndex ? "bg-gray-900 scale-125" : "bg-gray-300 hover:bg-gray-400"
-                    }`}
-                    aria-label={`Go to slide ${index + 1}`}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         )}
 

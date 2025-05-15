@@ -25,6 +25,7 @@ const AdminCategoriesPage = () => {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [expandedCategories, setExpandedCategories] = useState({});
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   
   const [stats, setStats] = useState({
     totalCategories: 0,
@@ -297,7 +298,11 @@ const AdminCategoriesPage = () => {
   }
 
   return (
-    <div className="p-6 space-y-6 min-h-screen bg-gray-50">
+    <div className="w-full max-w-7xl mx-auto p-6 space-y-6 min-h-screen bg-gray-50"
+    style={{
+      marginLeft: isSidebarExpanded ? '16rem' : '5rem',
+      transition: 'margin-left 0.3s cubic-bezier(0.4,0,0.2,1)'
+    }}>
       <ToastContainer 
         position="top-right"
         autoClose={5000}

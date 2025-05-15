@@ -279,21 +279,7 @@ const Dashboard = () => {
                         />
                     </div>
                     
-                    <div className="flex items-center space-x-4">
-                        <div className="relative">
-                            <button className="p-1 rounded-full text-gray-500 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-500">
-                                <FaBell className="h-5 w-5" />
-                                <span className="absolute top-0 right-0 h-2.5 w-2.5 bg-red-500 rounded-full"></span>
-                            </button>
-                        </div>
-                        
-                        <div className="flex items-center">
-                            <div className="h-8 w-8 rounded-full bg-teal-100 flex items-center justify-center">
-                                <span className="text-teal-600 font-medium text-sm">AD</span>
-                            </div>
-                            <span className="ml-2 text-sm font-medium text-gray-700">Admin</span>
-                        </div>
-                    </div>
+                    
                 </header>
 
                 {/* Dashboard Content */}

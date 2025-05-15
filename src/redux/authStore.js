@@ -101,9 +101,9 @@ const authStore = {
     } catch (e) { handleError(e, "Password reset failed"); }
   },
 
-  logout: async () => {
+  logout: async (token) => {
     try {
-      await axios.post(`${API_URL}/logout/`, {});
+      await axios.post(`${API_URL}/logout/`, {refresh_token: token});
     } catch {}
     Cookies.remove("token");
     Cookies.remove("keycloak_user_id");

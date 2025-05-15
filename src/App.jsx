@@ -62,7 +62,7 @@ import CheckoutProcess from "./components/paymentProcess";
 import ContractSigner from "./components/signature";
 import AddProductForm from "./pages/AddProduct";
 import ImageGallery from "./components/test";
-
+import ClientDashboard from "./pages/Client/dashboard";
 import BlogPost1 from "./components/blog1";
 import BlogPost2 from "./components/blog2";
 import BlogPost3 from "./components/blog3";
@@ -148,7 +148,7 @@ const App = () => {
                   <Route path="/register/identity-verification/verification/verification-complete" element={<VerificationComplete />} />
 
                   {/* Admin Routes */}
-                  <Route path="/admin" element={<ProtectedRoute role="owner" />}>
+                  <Route path="/admin" element={<ProtectedRoute role="rental" />}>
                     <Route path="dashbord" element={<Dashboard />} />
                     <Route path="booking" element={<BookingComponent />} />
                     <Route path="products" element={<ProductsPage />} />
@@ -181,7 +181,7 @@ const App = () => {
 
                   {/* Client Routes */}
                   <Route path="/client" element={<ProtectedRoute role="customer" />}>
-                    <Route path="dashboard" element={<Dashboard />} />
+                    <Route path="dashboard" element={<ClientDashboard />} />
                     <Route path="bookings" element={<BookingComponent />} />
                     <Route path="favorites" element={<FavoritesPage />} />
                     <Route path="products" element={<ProductsPage />} />

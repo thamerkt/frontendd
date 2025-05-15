@@ -5,11 +5,11 @@ const DeliveryNetwork = () => {
   // Updated image URLs with reliable sources
   const images = {
     background: [
-      "https://images.pexels.com/photos/4386431/pexels-photo-4386431.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+      "/assets/bus.jpg", 
       "https://images.pexels.com/photos/4386466/pexels-photo-4386466.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
     ],
     main: [
-      "https://images.pexels.com/photos/4386158/pexels-photo-4386158.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+      "/assets/tunisa.png",  // Changed this line to use local asset
       "https://images.pexels.com/photos/6269868/pexels-photo-6269868.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
     ]
   };

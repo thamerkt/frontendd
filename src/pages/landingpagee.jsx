@@ -29,7 +29,7 @@ const LandingPagee = () => {
     {
       title: "List Your Equipment",
       description: "Create your listing in minutes with our simple process",
-      image: "/assets/listing-product.jpg",
+      image: "/assets/List.png",
       features: [
         "Upload photos and details of your equipment",
         "Set your own rental price and availability",
@@ -39,7 +39,7 @@ const LandingPagee = () => {
     {
       title: "Manage Bookings",
       description: "We handle the logistics so you don't have to",
-      image: "/assets/book.jpg",
+      image: "/assets/manage.png",
       features: [
         "Get booking requests from verified renters",
         "Automated scheduling calendar",
@@ -49,7 +49,7 @@ const LandingPagee = () => {
     {
       title: "Get Paid Securely",
       description: "Receive payments directly to your account",
-      image: "/assets/Credit Card Security.jpg",
+      image: "/assets/paied.png",
       features: [
         "Protected by our $1M damage guarantee",
         "Direct deposit to your bank account",
@@ -59,8 +59,7 @@ const LandingPagee = () => {
   ];
 
   const bannerData = {
-    title: "Your Tools Are Wasting Money. Rent Them Out!",
-    description: "Connect with Customers around the world and list your own items for rent",
+    
     buttons: [
       { label: "List Your Equipment" },
       { label: "Browse Rentals" }
@@ -135,76 +134,82 @@ const LandingPagee = () => {
       </motion.div>
 
       {/* Benefits Section */}
-      <motion.section
-        className="py-20 bg-gray-50"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-      >
-        <div className="container mx-auto px-4 sm:px-6 py-16">
-          <motion.div 
+     <motion.section
+    className="py-20 bg-gray-50 relative"
+    initial={{ opacity: 0 }}
+    whileInView={{ opacity: 1 }}
+    transition={{ duration: 0.8 }}
+    style={{
+        backgroundImage: "url('/assets/back2.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat"
+    }}
+>
+    <div className="container mx-auto px-4 sm:px-6 py-16">
+        <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
             className="text-center mb-16 max-w-3xl mx-auto"
-          >
+        >
             <span className="inline-block bg-teal-100 text-teal-800 text-xs font-semibold px-3 py-1 rounded-full mb-4">
-              MONETIZE YOUR ASSETS
+                MONETIZE YOUR ASSETS
             </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Turn Your Idle Equipment <span className="text-teal-600">Into Income</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                Turn Your Idle Equipment <span className="text-teal-600">Into Income</span>
             </h2>
-            <p className="text-gray-600 text-lg">
-              Your unused tools and equipment could be earning you money right now
+            <p className="text-white text-lg">
+                Your unused tools and equipment could be earning you money right now
             </p>
             <div className="w-20 h-1 bg-gradient-to-r from-teal-400 to-teal-600 mx-auto mt-6 rounded-full"></div>
-          </motion.div>
+        </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {[
-              {
-                icon: <DollarSign className="w-6 h-6 text-teal-600" />,
-                title: "Earn Passive Income",
-                description: "Make money from equipment that's sitting idle. The average user earns $300+/month per listed item.",
-                cta: "See earnings calculator"
-              },
-              {
-                icon: <Shield className="w-6 h-6 text-teal-600" />,
-                title: "Full Protection",
-                description: "Our $1M damage protection and verified renter system gives you peace of mind.",
-                cta: "How protection works"
-              },
-              {
-                icon: <Zap className="w-6 h-6 text-teal-600" />,
-                title: "Easy Management",
-                description: "List in under 5 minutes. Our tools handle scheduling and payments automatically.",
-                cta: "Start listing now"
-              }
+                {
+                    icon: <DollarSign className="w-6 h-6 text-teal-600" />,
+                    title: "Earn Passive Income",
+                    description: "Make money from equipment that's sitting idle. The average user earns $300+/month per listed item.",
+                    cta: "See earnings calculator"
+                },
+                {
+                    icon: <Shield className="w-6 h-6 text-teal-600" />,
+                    title: "Full Protection",
+                    description: "Our $1M damage protection and verified renter system gives you peace of mind.",
+                    cta: "How protection works"
+                },
+                {
+                    icon: <Zap className="w-6 h-6 text-teal-600" />,
+                    title: "Easy Management",
+                    description: "List in under 5 minutes. Our tools handle scheduling and payments automatically.",
+                    cta: "Start listing now"
+                }
             ].map((benefit, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-all border border-gray-100"
-                whileHover={{ y: -8 }}
-              >
-                <div className="w-14 h-14 bg-teal-50 rounded-xl flex items-center justify-center mb-6">
-                  {benefit.icon}
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">{benefit.title}</h3>
-                <p className="text-gray-600 mb-6">{benefit.description}</p>
-                <button className="text-teal-600 font-semibold flex items-center group">
-                  {benefit.cta}
-                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </button>
-              </motion.div>
+                <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-all border border-gray-100"
+                    whileHover={{ y: -8 }}
+                >
+                    <div className="w-14 h-14 bg-teal-50 rounded-xl flex items-center justify-center mb-6">
+                        {benefit.icon}
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">{benefit.title}</h3>
+                    <p className="text-gray-600 mb-6">{benefit.description}</p>
+                    <button className="text-teal-600 font-semibold flex items-center group">
+                        {benefit.cta}
+                        <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                </motion.div>
             ))}
-          </div>
         </div>
-      </motion.section>
+    </div>
+</motion.section>
 
       {/* Popular Rentals */}
       <motion.section

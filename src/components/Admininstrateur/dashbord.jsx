@@ -137,34 +137,7 @@ const Dashboard = () => {
             {/* Main Content */}
             <div className="flex-1 ml-20 lg:ml-64 overflow-y-auto h-screen">
                 {/* Top Navigation */}
-                <header className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shadow-sm">
-                    <div className="relative w-64">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <FaSearch className="text-gray-400" />
-                        </div>
-                        <input 
-                            type="text" 
-                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 sm:text-sm" 
-                            placeholder="Search..."
-                        />
-                    </div>
-                    
-                    <div className="flex items-center space-x-4">
-                        <div className="relative">
-                            <button className="p-1 rounded-full text-gray-500 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-500">
-                                <FaBell className="h-5 w-5" />
-                                <span className="absolute top-0 right-0 h-2.5 w-2.5 bg-red-500 rounded-full"></span>
-                            </button>
-                        </div>
-                        
-                        <div className="flex items-center">
-                            <div className="h-8 w-8 rounded-full bg-teal-100 flex items-center justify-center">
-                                <span className="text-teal-600 font-medium text-sm">AD</span>
-                            </div>
-                            <span className="ml-2 text-sm font-medium text-gray-700">Admin</span>
-                        </div>
-                    </div>
-                </header>
+                
 
                 {/* Dashboard Content */}
                 <main className="p-6">
