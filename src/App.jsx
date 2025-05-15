@@ -89,7 +89,7 @@ const App = () => {
 
   return (
     <Provider store={store}>
-      <AuthProvider>
+      
         <Router>
           <div className="min-h-screen flex flex-col">
             <Navbar />
@@ -205,7 +205,7 @@ const App = () => {
             </div>
           </div>
         </Router>
-      </AuthProvider>
+      
     </Provider>
   );
 };

@@ -1,6 +1,6 @@
 import Cookies from "js-cookie";
 
-const API_URL = "http://localhost:8000/contracts"; // no trailing slash
+const API_URL = "https://b010-41-230-62-140.ngrok-free.app/contracts"; // no trailing slash
 
 const getHeaders = (isJson = false) => {
   const token = Cookies.get("token");
@@ -34,7 +34,7 @@ const request = async (method, url, data = null, isJson = false) => {
       }
     }
 
-    const res = await fetch(url, options);
+    const res = await fetch(url, options,{withCredentials: true});
 
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);

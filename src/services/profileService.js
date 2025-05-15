@@ -1,7 +1,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const API_URL = "http://localhost:8000/profile";
+const API_URL = "https://b010-41-230-62-140.ngrok-free.app/profile";
 const Profileservice = {
   // CREATE
   addProfil: async (formData, role) => {

@@ -19,7 +19,7 @@ const apiService = {
   clientStats: {
     get: async (clientId) => {
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/client-stats/${clientId}/`);
+        const response = await axios.get(`http://127.0.0.1:8000/api/client-stats/${clientId}/`,{withCredentials: true});
         return response.data;
       } catch (error) {
         console.error("Error fetching client stats:", error);
@@ -35,7 +35,7 @@ const apiService = {
   clientRentals: {
     getActive: async (clientId) => {
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/client-rentals/${clientId}/active/`);
+        const response = await axios.get(`http://127.0.0.1:8000/api/client-rentals/${clientId}/active/`,{withCredentials: true});
         return response.data;
       } catch (error) {
         console.error("Error fetching active rentals:", error);
@@ -46,7 +46,7 @@ const apiService = {
   clientBookings: {
     getUpcoming: async (clientId) => {
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/client-bookings/${clientId}/upcoming/`);
+        const response = await axios.get(`http://127.0.0.1:8000/api/client-bookings/${clientId}/upcoming/`,{withCredentials: true});
         return response.data;
       } catch (error) {
         console.error("Error fetching upcoming bookings:", error);

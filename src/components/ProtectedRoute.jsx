@@ -2,15 +2,14 @@ import { Navigate, Outlet } from 'react-router-dom';
 import Cookies from 'js-cookie';
 
 const ProtectedRoute = ({ role }) => {
-  const user = JSON.parse(localStorage.getItem('user'));  // <-- Parse here
+  const token = Cookies.get('token');
+  const user = JSON.parse(localStorage.getItem('user'));
 
-  const userRole = user?.role;  // Safe access
-  const isAuthenticated = !!Cookies.get('token');
+  if (!token) return <Navigate to="/login" replace />;
 
-  console.log('User role:', userRole);
+  const userRole = user?.role;
 
-  if (!isAuthenticated) return <Navigate to="/login" />;
-  if (role && userRole !== role) return <Navigate to="/unauthorized" />;
+  if (role && userRole !== role) return <Navigate to="/unauthorized" replace />;
 
   return <Outlet />;
 };

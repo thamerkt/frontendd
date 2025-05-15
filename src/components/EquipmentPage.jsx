@@ -200,7 +200,7 @@ export default function ProductDetail() {
       
         const [productData, productImages] = await Promise.all([
           EquipmentService.fetchRentalById(productId),
-          axios.get(`http://localhost:8000/api/images/?stuff=${productId}`, {
+          axios.get(`https://b010-41-230-62-140.ngrok-free.app/api/images/?stuff=${productId}`, {
             withCredentials: true,
           }),
         ]);
@@ -226,7 +226,7 @@ export default function ProductDetail() {
         };
       
         const allProducts = await axios.get(
-          `http://localhost:8000/api/stuffs/?category=${productData.category}`,
+          `https://b010-41-230-62-140.ngrok-free.app/api/stuffs/?category=${productData.category}`,
           {
             withCredentials: true,
           }

@@ -19,6 +19,7 @@ const SidebarAdmin = () => {
     { name: "Bookings", icon: CalendarDays, path: "/admin/booking" },
     { name: "Products", icon: Box, path: "/admin/products" },
     { name: "History", icon: History, path: "/admin/history" },
+    { name: "Contracts", icon: History, path: "/admin/contracts" },
     { name: "Settings", icon: Settings, path: "/admin/settings" },
   ];
 

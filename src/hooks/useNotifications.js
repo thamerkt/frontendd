@@ -10,7 +10,7 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
-      const response = await fetch('http://localhost:8000/notifications/', {
+      const response = await fetch('https://b010-41-230-62-140.ngrok-free.app/notifications/', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
@@ -28,7 +28,7 @@ export const useNotifications = () => {
   // Mark a notification as read
   const markAsRead = useCallback(async (notificationId) => {
     try {
-      const response = await fetch(`http://localhost:8000/notifications/${notificationId}/read/`, {
+      const response = await fetch(`https://b010-41-230-62-140.ngrok-free.app/notifications/${notificationId}/read/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -52,7 +52,7 @@ export const useNotifications = () => {
   // Mark all notifications as read
   const markAllAsRead = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:8000/notifications/mark-all-read/', {
+      const response = await fetch('https://b010-41-230-62-140.ngrok-free.app/notifications/mark-all-read/', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

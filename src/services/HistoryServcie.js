@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8000/history/"; 
+const API_URL = "https://b010-41-230-62-140.ngrok-free.app/history/"; 
 
 
 
@@ -21,7 +21,7 @@ const HistoryService = {
     fetchHistoryByParam: (filters = {}) => {
         const queryParams = new URLSearchParams(filters).toString();
         const url = `${API_URL}historiques/${queryParams ? `?${queryParams}` : ""}`;
-        return axios.get(url)
+        return axios.get(url,{withCredentials: true})
         .then(response => response.data)
         .catch(handleError);
     },

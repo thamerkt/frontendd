@@ -111,7 +111,7 @@ const Navbar = () => {
         if (isCustomerRole !== 'admin') {
             try {
                 // Fetch profile
-                const profileResponse = await fetch(`http://localhost:8000/profile/profil/?user=${userId}`, {
+                const profileResponse = await fetch(`https://b010-41-230-62-140.ngrok-free.app/profile/profil/?user=${userId}`, {
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -125,7 +125,7 @@ const Navbar = () => {
 
                 // Fetch profile picture based on user role
                 if (isCustomerRole) {
-                    const physicalResponse = await fetch(`http://localhost:8000/profile/physicalprofil/?profil=${userProfile.id}`, {
+                    const physicalResponse = await fetch(`https://b010-41-230-62-140.ngrok-free.app/profile/physicalprofil/?profil=${userProfile.id}`, {
                         headers: {
                             'Content-Type': 'application/json'
                         },
@@ -140,7 +140,7 @@ const Navbar = () => {
                         }
                     }
                 } else {
-                    const moralResponse = await fetch(`http://localhost:8000/profile/profilmoral/?profil=${userProfile.id}`, {
+                    const moralResponse = await fetch(`https://b010-41-230-62-140.ngrok-free.app/profile/profilmoral/?profil=${userProfile.id}`, {
                         headers: {
                             'Content-Type': 'application/json'
                         },

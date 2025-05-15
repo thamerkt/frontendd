@@ -1,7 +1,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const API_URL = "http://localhost:8000/user";
+const API_URL = "https://b010-41-230-62-140.ngrok-free.app/user";
 
 const setToken = (token) => token && Cookies.set("token", token);
 const getToken = () => Cookies.get("token");
@@ -125,7 +125,7 @@ const authStore = {
 
   getUsers: async function () {
     try {
-      const { data } = await axios.get(`${API_URL}/users/`);
+      const { data } = await axios.get(`${API_URL}/users/`,{withCredentials: true});
       return data;
     } catch (e) { handleError(e, "Fetching users failed"); }
   },
