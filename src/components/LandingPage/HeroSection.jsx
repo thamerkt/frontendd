@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronLeft, ChevronRight, Search, ArrowRight, Star, MapPin, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import EquipmentService from "../../services/EquipmentService"; // Import your service
 
 export default function HeroSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -13,6 +14,9 @@ export default function HeroSection() {
   const [progress, setProgress] = useState(0);
   const [selectedCity, setSelectedCity] = useState('Tunis');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [categories, setCategories] = useState([]); // Initialize with default
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [categoriesError, setCategoriesError] = useState(null);
   const navigate = useNavigate();
   const intervalRef = useRef(null);
   const progressRef = useRef(null);
@@ -42,17 +46,6 @@ export default function HeroSection() {
     'Siliana': { lat: 36.0849, lng: 9.3708 },
     'Sfax': { lat: 34.7406, lng: 10.7603 }
   };
-
-  const categories = [
-    'All Categories',
-    'Fitness Gear',
-    'Party Supplies',
-    'Power Tools',
-    'Camping Equipment',
-    'Home Appliances',
-    'Wedding Decor',
-    'Electronics'
-  ];
 
   const popularSearches = [
     'Tents',
@@ -95,6 +88,44 @@ export default function HeroSection() {
       spacing: "mb-4"
     }
   ];
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setIsLoadingCategories(true);
+      setCategoriesError(null);
+      try {
+        const response = await EquipmentService.fetchCategories();
+  
+        // If API returns objects, map to names. Otherwise, use as is.
+        const fetchedCategories = Array.isArray(response)
+          ? response.map(cat => cat.name || cat)
+          : [];
+  
+        setCategories(fetchedCategories);
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+        setCategoriesError("Failed to load categories. Using default options.");
+  
+        // Fallback default categories
+        setCategories([
+          'All Categories',
+          'Fitness Gear',
+          'Party Supplies',
+          'Power Tools',
+          'Camping Equipment',
+          'Home Appliances',
+          'Wedding Decor',
+          'Electronics'
+        ]);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+  
+    fetchCategories();
+  }, []);
+  
 
   // Function to highlight specific keywords in titles
   const renderHighlightedTitle = (title, highlight) => {
@@ -374,18 +405,29 @@ export default function HeroSection() {
 
               {/* Category Selector - 20% width */}
               <div className="relative w-full md:w-1/5 border-r border-gray-200">
-                <select
-                  className="w-full pl-4 pr-8 py-4 text-gray-700 bg-white outline-none appearance-none text-sm font-medium"
-                  value={selectedCategory}
-                  onChange={handleCategoryChange}
-                  onFocus={pauseTimer}
-                  onBlur={resumeTimer}
-                >
-                  {categories.map((category) => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                {isLoadingCategories ? (
+                  <div className="w-full pl-4 pr-8 py-4 text-gray-700 bg-white text-sm">
+                    Loading categories...
+                  </div>
+                ) : (
+                  <>
+                    <select
+                      className="w-full pl-4 pr-8 py-4 text-gray-700 bg-white outline-none appearance-none text-sm font-medium"
+                      value={selectedCategory}
+                      onChange={handleCategoryChange}
+                      onFocus={pauseTimer}
+                      onBlur={resumeTimer}
+                    >
+                      {categories.map((category) => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  </>
+                )}
+                {categoriesError && (
+                  <p className="absolute -bottom-6 left-0 text-xs text-red-300">{categoriesError}</p>
+                )}
               </div>
 
               {/* Search Input - 50% width (larger) */}

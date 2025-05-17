@@ -7,27 +7,35 @@ const Profileservice = {
   addProfil: async (formData, role) => {
     try {
       const user_id = Cookies.get("keycloak_user_id");
-
+  
       if (!user_id) {
         throw new Error("User ID is missing");
       }
-
-      // 1. Create profile (no token sent)
+  
+      // 1. Create profile (with credentials if needed)
       const response = await axios.post(`${API_URL}/profil/`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
+        withCredentials: true,  // Include cookies
       });
-
-      // 2. Assign role (not implemented)
-      
-      return response
-      
+  
+      // 2. Assign role (fixed duplicate user_id)
+      const response2 = await axios.post(`https://b010-41-230-62-140.ngrok-free.app/user/assign/role/`, { role, user_id }, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,  // Include cookies if needed
+      });
+  
+      return { profile: response.data, roleAssignment: response2.data };
+  
     } catch (error) {
       console.error("Error adding profile:", error.response?.data || error.message);
       throw new Error(error.response?.data?.message || error.message || "Adding profile failed");
     }
   },
+  
 
   // READ (single profile for current user)
   fetchProfile: async () => {
@@ -83,6 +91,7 @@ const Profileservice = {
           "Authorization": `Bearer ${token}`,
         },
       });
+      
       return response.data;
     } catch (error) {
       console.error("Error updating profile:", error.response?.data || error.message);

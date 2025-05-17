@@ -5,12 +5,13 @@ import EquipmentCategories from "./categorie";
 import EquipmentService from "../services/EquipmentService";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiSearch } from "react-icons/fi";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import TrackingService from '../services/TrackingService';
 import { useDebounce } from 'use-debounce';
 import Fuse from 'fuse.js';
 
 const ShopGrid = () => {
+  const location = useLocation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -31,6 +32,26 @@ const ShopGrid = () => {
   const [tempSelectedLocations, setTempSelectedLocations] = useState([]);
   const [tempPriceRange, setTempPriceRange] = useState([0, 1000]);
   const navigate = useNavigate();
+
+  // Initialize from URL query parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const search = searchParams.get('search');
+    const category = searchParams.get('category');
+    
+    if (search) {
+      setSearchQuery(search);
+    }
+    
+    if (category) {
+      // Handle category selection from URL
+      const mainCategory = decodeURIComponent(category);
+      setSelectedEquipment(prev => ({
+        ...prev,
+        [mainCategory]: {} // Select main category without subcategories
+      }));
+    }
+  }, [location.search]);
 
   // Debounce search query (300ms delay)
   const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
@@ -145,7 +166,19 @@ const ShopGrid = () => {
     setSelectedEquipment(prev => {
       const newSelection = { ...prev };
       
+      if (!subCat && !item) {
+        // Toggle main category selection
+        if (newSelection[mainCat]) {
+          delete newSelection[mainCat];
+        } else {
+          newSelection[mainCat] = {};
+        }
+        return newSelection;
+      }
+      
       if (!newSelection[mainCat]) newSelection[mainCat] = {};
+      if (!subCat) return newSelection; // Just select main category
+      
       if (!newSelection[mainCat][subCat]) newSelection[mainCat][subCat] = [];
       
       const index = newSelection[mainCat][subCat].indexOf(item);
@@ -166,6 +199,9 @@ const ShopGrid = () => {
   }, []);
 
   const isEquipmentSelected = useCallback((mainCat, subCat, item) => {
+    if (!subCat && !item) {
+      return !!selectedEquipment[mainCat];
+    }
     return selectedEquipment[mainCat]?.[subCat]?.includes(item) || false;
   }, [selectedEquipment]);
 
@@ -249,6 +285,12 @@ const ShopGrid = () => {
       
       if (Object.keys(selectedEquipment).length > 0) {
         const categoryMatch = Object.entries(selectedEquipment).some(([mainCat, subCats]) => {
+          // If main category is selected without subcategories, match any product in this category
+          if (Object.keys(subCats).length === 0) {
+            return product.category?.name === mainCat;
+          }
+          
+          // Otherwise match specific subcategories and items
           return Object.entries(subCats).some(([subCat, items]) => {
             return items.some(item => 
               product.category?.name === mainCat && 
@@ -397,6 +439,7 @@ const ShopGrid = () => {
                       selectedEquipment={selectedEquipment}
                       onSelectEquipment={handleEquipmentSelect}
                       hoverSubcategories={true}
+                      allowMainCategorySelection={true}
                     />
                     <div className="flex justify-end mt-4">
                       <button

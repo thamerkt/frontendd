@@ -286,7 +286,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
   
     try {
       if (isRegister) {
-        await authStore.signup(formData.email, formData.password, formData.role);
+        await authStore.signup(formData.email, formData.password, formData.role|| 'customer');
         setFormData({ email: "", password: "", confirmPassword: "", role: "customer" });
         toast.success("Registration successful! Please check your email for verification.", );
         sessionStorage.setItem('progress', JSON.stringify({ "progress": "step1" }));

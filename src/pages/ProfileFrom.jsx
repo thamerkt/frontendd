@@ -177,6 +177,7 @@ const ProfileForm = () => {
       setIsSubmitting(false);
       return;
     }
+    console.log(role);
 
     try {
       // Create the structured data object
