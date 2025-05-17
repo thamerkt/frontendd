@@ -71,7 +71,7 @@ export default function HeroSection() {
       image: "/assets/ekrinitaw.png",
       title: "Rent Premium Equipment & Save Up To 70%",
       highlight: "Save Up To 70%",
-      badge: "Hot Deals",
+     
       ctaPrimary: "Shop Now",
       ctaSecondary: "Earn as Host",
       spacing: "mb-4"
@@ -80,7 +80,7 @@ export default function HeroSection() {
       image: "/assets/diliv3.png",
       title: "Fast & Easy Rentals - Delivered to Your Doorstep",
       highlight: "Delivered to Your Doorstep",
-      badge: "Limited Offer",
+    
       ctaPrimary: "Browse Items",
       ctaSecondary: "Learn More",
       spacing: "mb-4"
@@ -89,7 +89,7 @@ export default function HeroSection() {
       image: "/assets/exstuff2.png",
       title: "Exclusive Deals on Top-Rated Equipment",
       highlight: "Exclusive Deals",
-      badge: "New Arrivals",
+     
       ctaPrimary: "Discover More",
       ctaSecondary: "Special Discount",
       spacing: "mb-4"
@@ -333,7 +333,7 @@ export default function HeroSection() {
       <div className="absolute inset-0 bg-black/30 z-0"></div>
 
       {/* Search & Content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center px-4 z-10 text-white">
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-4 z-10 text-white mb-4">
         <div className={`text-center w-full max-w-4xl ${slides[currentIndex].spacing}`}>
           {slides[currentIndex].badge && (
             <div className="inline-block bg-teal-600 text-xs font-bold px-3 py-1 rounded-full mb-6 uppercase tracking-wider">
@@ -438,8 +438,8 @@ export default function HeroSection() {
             ))}
           </div>
 
-          {/* CTA buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          {/* CTA buttons - Pushed more to bottom with mt-8 */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
             <button 
               className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-lg flex items-center justify-center gap-2 font-semibold transition-colors duration-200 shadow-lg"
               onClick={() => navigate('/shopgrid')}

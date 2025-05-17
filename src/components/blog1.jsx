@@ -31,7 +31,7 @@ const BlogPost1 = () => {
           {/* Featured Image */}
           <div className="relative h-96 w-full">
             <img
-              src="/assets/ekrini-hero.jpg"
+              src="/assets/ekrini.png"
               alt="Ekrini.tn Platform Showcase"
               className="w-full h-full object-cover"
               loading="lazy"
