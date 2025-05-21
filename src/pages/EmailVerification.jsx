@@ -96,7 +96,7 @@ const EmailVerification = () => {
         verified: true,
       });
       
-      // Ensure navigation happens after state is updated
+      sessionStorage.setItem('progress', JSON.stringify({ "progress": "step2" }));
       setTimeout(() => {
         navigate("/register/profil", { replace: true });
       }, 1500);

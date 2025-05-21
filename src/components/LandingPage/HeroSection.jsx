@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronLeft, ChevronRight, Search, ArrowRight, Star, MapPin, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import EquipmentService from "../../services/EquipmentService";
 
 export default function HeroSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -13,6 +14,9 @@ export default function HeroSection() {
   const [progress, setProgress] = useState(0);
   const [selectedCity, setSelectedCity] = useState('Tunis');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [categories, setCategories] = useState([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [categoriesError, setCategoriesError] = useState(null);
   const navigate = useNavigate();
   const intervalRef = useRef(null);
   const progressRef = useRef(null);
@@ -43,17 +47,6 @@ export default function HeroSection() {
     'Sfax': { lat: 34.7406, lng: 10.7603 }
   };
 
-  const categories = [
-    'All Categories',
-    'Fitness Gear',
-    'Party Supplies',
-    'Power Tools',
-    'Camping Equipment',
-    'Home Appliances',
-    'Wedding Decor',
-    'Electronics'
-  ];
-
   const popularSearches = [
     'Tents',
     'Dumbbells',
@@ -65,43 +58,66 @@ export default function HeroSection() {
     'Projectors'
   ];
 
-  // Optimized slides content with Jumia-inspired messaging
   const slides = [
     {
-      image: "/assets/ekrinitaw.png",
+      image: "/assets/bannnerr.png",
       title: "Rent Premium Equipment & Save Up To 70%",
       highlight: "Save Up To 70%",
-     
       ctaPrimary: "Shop Now",
       ctaSecondary: "Earn as Host",
       spacing: "mb-4"
     },
     {
-      image: "/assets/diliv3.png",
+      image: "/assets/del.png",
       title: "Fast & Easy Rentals - Delivered to Your Doorstep",
       highlight: "Delivered to Your Doorstep",
-    
       ctaPrimary: "Browse Items",
       ctaSecondary: "Learn More",
       spacing: "mb-4"
     },
     {
-      image: "/assets/exstuff2.png",
+      image: "/assets/exclusive.png",
       title: "Exclusive Deals on Top-Rated Equipment",
       highlight: "Exclusive Deals",
-     
       ctaPrimary: "Discover More",
       ctaSecondary: "Special Discount",
       spacing: "mb-4"
     }
   ];
 
-  // Function to highlight specific keywords in titles
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setIsLoadingCategories(true);
+      setCategoriesError(null);
+      try {
+        const response = await EquipmentService.fetchCategories();
+        const fetchedCategories = Array.isArray(response)
+          ? response.map(cat => cat.name || cat)
+          : [];
+        setCategories(fetchedCategories);
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+        setCategoriesError("Failed to load categories. Using default options.");
+        setCategories([
+          'All Categories',
+          'Fitness Gear',
+          'Party Supplies',
+          'Power Tools',
+          'Camping Equipment',
+          'Home Appliances',
+          'Wedding Decor',
+          'Electronics'
+        ]);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   const renderHighlightedTitle = (title, highlight) => {
     if (!highlight) return title;
-    
     const parts = title.split(new RegExp(`(${highlight})`, 'gi'));
-    
     return (
       <span>
         {parts.map((part, index) => {
@@ -131,7 +147,6 @@ export default function HeroSection() {
     );
   };
 
-  // Carousel controls
   const goToPrevious = useCallback(() => {
     setDirection(-1);
     setCurrentIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
@@ -181,7 +196,6 @@ export default function HeroSection() {
     };
   }, [startTimer]);
 
-  // Animation variants
   const slideVariants = {
     enter: (direction) => ({
       opacity: 0,
@@ -202,7 +216,6 @@ export default function HeroSection() {
     })
   };
 
-  // Search functionality
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) {
@@ -274,7 +287,6 @@ export default function HeroSection() {
         nearestCity = city;
       }
     }
-    
     return nearestCity;
   };
 
@@ -309,7 +321,6 @@ export default function HeroSection() {
 
   return (
     <div className="relative w-full h-[85vh] max-h-[700px] overflow-hidden">
-      {/* Background slides */}
       <AnimatePresence custom={direction} initial={false}>
         <motion.div
           key={currentIndex}
@@ -329,12 +340,10 @@ export default function HeroSection() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Dark overlay for better text visibility */}
       <div className="absolute inset-0 bg-black/30 z-0"></div>
 
-      {/* Search & Content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center px-4 z-10 text-white mb-4">
-        <div className={`text-center w-full max-w-4xl ${slides[currentIndex].spacing}`}>
+      <div className="absolute inset-0 flex flex-col items-center justify-between px-4 z-10 text-white pt-32 pb-12">
+        <div className="w-full max-w-4xl text-center mt-4">
           {slides[currentIndex].badge && (
             <div className="inline-block bg-teal-600 text-xs font-bold px-3 py-1 rounded-full mb-6 uppercase tracking-wider">
               {slides[currentIndex].badge}
@@ -344,15 +353,13 @@ export default function HeroSection() {
             {renderHighlightedTitle(slides[currentIndex].title, slides[currentIndex].highlight)}
           </h1>
 
-          {/* Modern Search Bar - Updated with larger search input */}
           <form 
             onSubmit={handleSearch} 
-            className="mb-8 w-full bg-white rounded-xl shadow-2xl overflow-hidden"
+            className="mb-4 w-full bg-white rounded-xl shadow-2xl overflow-hidden"
             onMouseEnter={pauseTimer}
             onMouseLeave={resumeTimer}
           >
             <div className="flex flex-col md:flex-row items-stretch">
-              {/* Location Selector - 20% width */}
               <div className="relative w-full md:w-1/5 border-r border-gray-200">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                   <MapPin className="w-5 h-5 text-gray-400" />
@@ -372,23 +379,32 @@ export default function HeroSection() {
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               </div>
 
-              {/* Category Selector - 20% width */}
               <div className="relative w-full md:w-1/5 border-r border-gray-200">
-                <select
-                  className="w-full pl-4 pr-8 py-4 text-gray-700 bg-white outline-none appearance-none text-sm font-medium"
-                  value={selectedCategory}
-                  onChange={handleCategoryChange}
-                  onFocus={pauseTimer}
-                  onBlur={resumeTimer}
-                >
-                  {categories.map((category) => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                {isLoadingCategories ? (
+                  <div className="w-full pl-4 pr-8 py-4 text-gray-700 bg-white text-sm">
+                    Loading categories...
+                  </div>
+                ) : (
+                  <>
+                    <select
+                      className="w-full pl-4 pr-8 py-4 text-gray-700 bg-white outline-none appearance-none text-sm font-medium"
+                      value={selectedCategory}
+                      onChange={handleCategoryChange}
+                      onFocus={pauseTimer}
+                      onBlur={resumeTimer}
+                    >
+                      {categories.map((category) => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  </>
+                )}
+                {categoriesError && (
+                  <p className="absolute -bottom-6 left-0 text-xs text-red-300">{categoriesError}</p>
+                )}
               </div>
 
-              {/* Search Input - 50% width (larger) */}
               <div className="w-full md:w-3/5 min-w-[200px]">
                 <input
                   type="text"
@@ -402,7 +418,6 @@ export default function HeroSection() {
                 />
               </div>
 
-              {/* Search Button - Only visible on md screens and up */}
               <button
                 type="submit"
                 disabled={isSearching}
@@ -413,7 +428,6 @@ export default function HeroSection() {
               </button>
             </div>
 
-            {/* Mobile Search Button - Visible only on small screens */}
             <button
               type="submit"
               disabled={isSearching}
@@ -424,8 +438,7 @@ export default function HeroSection() {
             </button>
           </form>
 
-          {/* Popular searches */}
-          <div className="flex flex-wrap justify-center gap-3 text-sm mb-10">
+          <div className="flex flex-wrap justify-center gap-3 text-sm mb-2">
             <span className="text-white/80">Trending:</span>
             {popularSearches.map((item) => (
               <button
@@ -437,9 +450,10 @@ export default function HeroSection() {
               </button>
             ))}
           </div>
+        </div>
 
-          {/* CTA buttons - Pushed more to bottom with mt-8 */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+        <div className="w-full max-w-4xl text-center mb-16">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
               className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-lg flex items-center justify-center gap-2 font-semibold transition-colors duration-200 shadow-lg"
               onClick={() => navigate('/shopgrid')}
@@ -458,7 +472,6 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* Prev/Next buttons */}
       <button
         className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/10 hover:bg-white/20 backdrop-blur-md p-3 rounded-full transition-colors duration-200"
         onClick={goToPrevious}
@@ -474,7 +487,6 @@ export default function HeroSection() {
         <ChevronRight className="text-white w-6 h-6" />
       </button>
 
-      {/* Progress bar */}
       <div className="absolute bottom-0 left-0 w-full h-1.5 bg-white/10">
         <div
           className="h-full bg-teal-400 transition-all duration-100"
@@ -482,7 +494,6 @@ export default function HeroSection() {
         />
       </div>
 
-      {/* Navigation dots */}
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex justify-center gap-2 z-20">
         {slides.map((_, idx) => (
           <button

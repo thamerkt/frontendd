@@ -56,8 +56,8 @@ export default function CategoriesSection() {
   
   const fetchip = useCallback(async () => {
     try {
-      const response = await axios.get("https://b27a-165-51-206-202.ngrok-free.app/ocr/getipp/", {
-        withCredentials: true,
+      const response = await axios.get("https://f7d3-197-27-48-225.ngrok-free.app/ocr/getipp/", {
+        withCredentials: true, // Include credentials like cookies
       });
       setIP(response.data.ip);
     } catch (error) {

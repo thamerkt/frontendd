@@ -56,11 +56,11 @@ const REQUIRED_REPORTS = [
 const apiService = {
   reports: {
     getByUser: async (username) => {
-      const response = await axios.get(`http://127.0.0.1:8000/api/rapports/?user=${username}`);
+      const response = await axios.get(`http://127.0.0.1:8000/reports/rapports/?user=${username}`);
       return response.data;
     },
     create: async (reportData) => {
-      const response = await axios.post('http://127.0.0.1:8000/api/rapports/', reportData, {
+      const response = await axios.post('http://127.0.0.1:8000/reports/rapports/', reportData, {
         headers: { 'Content-Type': 'application/json' }
       });
       return response.data;
@@ -68,11 +68,11 @@ const apiService = {
   },
   reportData: {
     getByReport: async (reportId) => {
-      const response = await axios.get(`http://127.0.0.1:8000/api/rapport-data/?rapport=${reportId}`);
+      const response = await axios.get(`http://127.0.0.1:8000/reports/rapport-data/?rapport=${reportId}`);
       return response.data;
     },
     create: async (metricData) => {
-      const response = await axios.post('http://127.0.0.1:8000/api/rapport-data/', metricData);
+      const response = await axios.post('http://127.0.0.1:8000/reports/rapport-data/', metricData);
       return response.data;
     }
   }

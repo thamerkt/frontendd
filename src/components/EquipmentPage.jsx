@@ -200,7 +200,7 @@ export default function ProductDetail() {
       
         const [productData, productImages] = await Promise.all([
           EquipmentService.fetchRentalById(productId),
-          axios.get(`https://d537-196-239-28-180.ngrok-free.app/api/images/?stuff=${productId}`, {
+          axios.get(`https://f7d3-197-27-48-225.ngrok-free.app/api/images/?stuff=${productId}`, {
             withCredentials: true,
           }),
         ]);
@@ -226,7 +226,7 @@ export default function ProductDetail() {
         };
       
         const allProducts = await axios.get(
-          `https://d537-196-239-28-180.ngrok-free.app/api/stuffs/?category=${productData.category}`,
+          `https://f7d3-197-27-48-225.ngrok-free.app/api/stuffs/?category=${productData.category}`,
           {
             withCredentials: true,
           }
@@ -912,6 +912,8 @@ export default function ProductDetail() {
   );
 };
 
+
+
 const CalendarSidebar = ({ 
   product, 
   showForm, 
@@ -924,23 +926,28 @@ const CalendarSidebar = ({
   const [specialRequests, setSpecialRequests] = useState('');
   const [view, setView] = useState('dayGridMonth');
   const calendarRef = useRef(null);
+  const sidebarRef = useRef(null);
   const [events, setEvents] = useState(existingEvents);
+  const [isResizing, setIsResizing] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState('30%');
 
+  // Calculate duration in days
   const calculateDuration = () => {
-    if (selectedDates.length === 2) {
-      return differenceInDays(
-        parseISO(selectedDates[1]), 
-        parseISO(selectedDates[0])
-      ) + 1;
+    if (selectedDates.length === 2 && selectedDates[0] && selectedDates[1]) {
+      const start = new Date(selectedDates[0]);
+      const end = new Date(selectedDates[1]);
+      return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
     }
     return 0;
   };
 
-  const calculateTotalPrice = () => {
+  // Calculate total price
+  const calculateTotalPrice = useMemo(() => {
     const duration = calculateDuration();
     return (duration * product.price_per_day * quantity).toFixed(2);
-  };
+  }, [selectedDates, quantity, product.price_per_day]);
 
+  // Handle date range selection from calendar drag
   const handleDateSelect = (selectInfo) => {
     const { startStr, endStr } = selectInfo;
     const endDate = endStr ? format(addDays(parseISO(endStr), -1), 'yyyy-MM-dd') : startStr;
@@ -950,13 +957,28 @@ const CalendarSidebar = ({
     if (view === 'timeGridDay') {
       calendarRef.current.getApi().changeView('timeGridDay', startStr);
     }
+    
+    // Unselect after setting dates
+    calendarRef.current.getApi().unselect();
   };
 
+  // Handle manual date input changes
+  const handleStartDateChange = (e) => {
+    setSelectedDates([e.target.value, selectedDates[1] || '']);
+  };
+
+  const handleEndDateChange = (e) => {
+    if (selectedDates[0]) {
+      setSelectedDates([selectedDates[0], e.target.value]);
+    }
+  };
+
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (selectedDates.length !== 2) {
-      toast.error('Please select start and end dates');
+    if (selectedDates.length !== 2 || !selectedDates[0] || !selectedDates[1]) {
+      toast.error('Please select both start and end dates');
       return;
     }
 
@@ -990,7 +1012,7 @@ const CalendarSidebar = ({
           productId: product.id,
           quantity,
           specialRequests,
-          totalPrice: calculateTotalPrice(),
+          totalPrice: calculateTotalPrice,
           rentalRequestId: response.data.id
         },
         color: '#0d9488',
@@ -1008,10 +1030,38 @@ const CalendarSidebar = ({
     }
   };
 
+  // Change calendar view
   const changeView = (newView) => {
     setView(newView);
     calendarRef.current.getApi().changeView(newView);
   };
+
+  // Handle sidebar resize
+  const startResizing = useCallback(() => {
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = useCallback((mouseMoveEvent) => {
+    if (isResizing && sidebarRef.current) {
+      const newWidth = window.innerWidth - mouseMoveEvent.clientX;
+      if (newWidth > 300 && newWidth < window.innerWidth * 0.7) {
+        setSidebarWidth(`${newWidth}px`);
+      }
+    }
+  }, [isResizing]);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', resize);
+    window.addEventListener('mouseup', stopResizing);
+    return () => {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [resize, stopResizing]);
 
   return (
     <AnimatePresence>
@@ -1028,12 +1078,20 @@ const CalendarSidebar = ({
           />
 
           <motion.div
-            className="absolute right-0 top-0 h-full w-full sm:w-1/2 lg:w-1/3 xl:w-1/4 bg-white shadow-xl flex flex-col"
+            ref={sidebarRef}
+            className="absolute right-0 top-0 h-full bg-white shadow-xl flex flex-col"
+            style={{ width: sidebarWidth }}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
+            {/* Resize handle */}
+            <div 
+              className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-teal-100 active:bg-teal-200"
+              onMouseDown={startResizing}
+            />
+
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-teal-600 to-teal-700 text-white">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
@@ -1088,17 +1146,18 @@ const CalendarSidebar = ({
                   plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
                   initialView={view}
                   selectable={true}
+                  selectMirror={true}
                   select={handleDateSelect}
                   events={events}
                   headerToolbar={false}
                   height={300}
-                  selectMirror={true}
                   dayMaxEvents={true}
                   weekends={true}
                   nowIndicator={true}
                   editable={true}
                   eventResizableFromStart={true}
                   selectOverlap={false}
+                  selectLongPressDelay={100}
                   selectConstraint={{
                     start: new Date().toISOString().split('T')[0],
                     end: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
@@ -1112,13 +1171,9 @@ const CalendarSidebar = ({
                     <label className="block text-sm font-medium text-gray-700">Start Date</label>
                     <div className="relative">
                       <input
-                        type="datetime-local"
-                        value={selectedDates[0] ? format(parseISO(selectedDates[0]), "yyyy-MM-dd'T'HH:mm") : ''}
-                        onChange={(e) => {
-                          const newDates = [...selectedDates];
-                          newDates[0] = e.target.value;
-                          setSelectedDates(newDates);
-                        }}
+                        type="date"
+                        value={selectedDates[0] || ''}
+                        onChange={handleStartDateChange}
                         className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
                         required
                       />
@@ -1129,13 +1184,9 @@ const CalendarSidebar = ({
                     <label className="block text-sm font-medium text-gray-700">End Date</label>
                     <div className="relative">
                       <input
-                        type="datetime-local"
-                        value={selectedDates[1] ? format(parseISO(selectedDates[0]), "yyyy-MM-dd'T'HH:mm") : ''}
-                        onChange={(e) => {
-                          const newDates = [...selectedDates];
-                          newDates[1] = e.target.value;
-                          setSelectedDates(newDates);
-                        }}
+                        type="date"
+                        value={selectedDates[1] || ''}
+                        onChange={handleEndDateChange}
                         min={selectedDates[0] || ''}
                         className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
                         required
@@ -1145,7 +1196,7 @@ const CalendarSidebar = ({
                   </div>
                 </div>
 
-                {selectedDates.length === 2 && (
+                {selectedDates.length === 2 && selectedDates[0] && selectedDates[1] && (
                   <div className="bg-teal-50 p-4 rounded-lg border border-teal-100">
                     <h3 className="font-medium text-teal-800 mb-2">Rental Summary</h3>
                     <div className="space-y-2 text-sm">
@@ -1163,7 +1214,7 @@ const CalendarSidebar = ({
                       </div>
                       <div className="border-t border-teal-200 my-2 pt-2 flex justify-between font-semibold text-teal-700">
                         <span>Total:</span>
-                        <span>${calculateTotalPrice()}</span>
+                        <span>${calculateTotalPrice}</span>
                       </div>
                     </div>
                   </div>
@@ -1220,13 +1271,13 @@ const CalendarSidebar = ({
                 </motion.button>
                 <motion.button
                   onClick={handleSubmit}
-                  disabled={selectedDates.length !== 2}
+                  disabled={selectedDates.length !== 2 || !selectedDates[0] || !selectedDates[1]}
                   className={`flex-1 py-3 px-4 text-sm font-medium text-white rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                    selectedDates.length === 2 
+                    selectedDates.length === 2 && selectedDates[0] && selectedDates[1]
                       ? 'bg-teal-600 hover:bg-teal-700' 
                       : 'bg-gray-400 cursor-not-allowed'
                   }`}
-                  whileHover={{ y: selectedDates.length === 2 ? -1 : 0 }}
+                  whileHover={{ y: selectedDates.length === 2 && selectedDates[0] && selectedDates[1] ? -1 : 0 }}
                   whileTap={{ scale: 0.98 }}
                   type="button"
                 >

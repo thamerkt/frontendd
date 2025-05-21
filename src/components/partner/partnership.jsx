@@ -15,14 +15,14 @@ const COLORS = ['#0d9488', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899', '#10b981'
 
 const apiService = {
   reports: {
-    getByUser: async (username) => (await axios.get(`http://127.0.0.1:8000/api/rapports/?user=${username}`)).data,
-    create: async (reportData) => (await axios.post('http://127.0.0.1:8000/api/rapports/', reportData, {
+    getByUser: async (username) => (await axios.get(`http://127.0.0.1:8000/reports/rapports/?user=${username}`)).data,
+    create: async (reportData) => (await axios.post('http://127.0.0.1:8000/reports/rapports/', reportData, {
       headers: { 'Content-Type': 'application/json' }
     })).data
   },
   reportData: {
-    getByReport: async (reportId) => (await axios.get(`http://127.0.0.1:8000/api/rapport-data/?rapport=${reportId}`)).data,
-    create: async (metricData) => (await axios.post('http://127.0.0.1:8000/api/rapport-data/', metricData)).data
+    getByReport: async (reportId) => (await axios.get(`http://127.0.0.1:8000/reports/rapport-data/?rapport=${reportId}`)).data,
+    create: async (metricData) => (await axios.post('http://127.0.0.1:8000/reports/rapport-data/', metricData)).data
   }
 };
 

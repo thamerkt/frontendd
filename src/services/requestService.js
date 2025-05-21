@@ -1,6 +1,6 @@
 import Cookies from "js-cookie";
 
-const API_URL = "https://d537-196-239-28-180.ngrok-free.app/rental"; // base path updated
+const API_URL = "https://f7d3-197-27-48-225.ngrok-free.app/rental"; // base path updated
 
 const getHeaders = (isJson = false) => {
   const headers = {

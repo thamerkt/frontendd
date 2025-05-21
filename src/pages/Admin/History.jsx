@@ -3,6 +3,8 @@ import { FiSearch, FiFilter, FiDownload, FiTrash2, FiEye, FiMoreVertical } from 
 import { motion, AnimatePresence } from "framer-motion";
 import { SelectInput } from "../../Customcss/custom";
 import HistoryService from "../../services/HistoryServcie";
+import { useLocation } from "react-router-dom";
+import * as XLSX from 'xlsx';
 
 export default function History() {
     const [historyData, setHistoryData] = useState([]);
@@ -14,6 +16,7 @@ export default function History() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const moreRef = useRef(null);
+    const location = useLocation();
 
     const filterOptions = [
         { value: 'statut', label: 'Status' },
@@ -48,7 +51,20 @@ export default function History() {
         const fetchData = async () => {
             try {
                 setIsLoading(true);
-                const data = await HistoryService.fetchHistory();
+                let data;
+                
+                // Determine which fetch method to use based on the URL path
+                if (location.pathname.startsWith('/admin')) {
+                    data = await HistoryService.fetchHistoryByParam({ bailleur: 201 });
+                } else if (location.pathname.startsWith('/owner')) {
+                    data = await HistoryService.fetchHistoryByParam();
+                } else if (location.pathname.startsWith('/client')) {
+                    data = await HistoryService.fetchHistoryByParam({ client: 301 });
+                } else {
+                    // Default to regular fetch if path doesn't match
+                    data = await HistoryService.fetchHistory();
+                }
+                
                 setHistoryData(data || []);
                 setFilteredData(data || []);
                 setError(null);
@@ -63,7 +79,7 @@ export default function History() {
         };
 
         fetchData();
-    }, []);
+    }, [location.pathname]); // Add location.pathname as dependency
 
     useEffect(() => {
         const applyFilters = () => {
@@ -119,7 +135,25 @@ export default function History() {
     };
 
     const exportToExcel = () => {
-        alert("Would export data to Excel");
+        // Prepare data for export
+        const dataToExport = filteredData.map(item => ({
+            Period: item.date_debut || 'N/A',
+            Client: item.client || 'N/A',
+            Equipment: item.equipment || 'N/A',
+            Bailleur: item.bailleur_nom || 'N/A',
+            Status: item.statut || 'N/A',
+            'Total Cost': item.cout_total || 'N/A'
+        }));
+
+        // Create worksheet
+        const ws = XLSX.utils.json_to_sheet(dataToExport);
+        
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "History");
+        
+        // Generate Excel file and trigger download
+        XLSX.writeFile(wb, `History_Export_${new Date().toISOString().slice(0,10)}.xlsx`);
     };
 
     if (isLoading) {
@@ -140,7 +174,7 @@ export default function History() {
                     <p className="text-lg font-medium">{error}</p>
                     <button 
                         onClick={() => window.location.reload()}
-                        className="mt-4 px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600"
+                        className="mt-4 px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600 transition-colors"
                     >
                         Retry
                     </button>
@@ -158,7 +192,7 @@ export default function History() {
                 </div>
                 
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                    <div className="relative flex items-center border rounded-lg px-3 py-2 bg-white shadow-sm">
+                    <div className="relative flex items-center border rounded-lg px-3 py-2 bg-white shadow-sm focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-transparent">
                         <FiSearch className="text-gray-400 mr-2" />
                         <input
                             type="text"
@@ -192,7 +226,7 @@ export default function History() {
                 </div>
             </div>
 
-            <div className="bg-white p-5 rounded-xl shadow-sm">
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -227,7 +261,7 @@ export default function History() {
                             {filteredData && filteredData.length > 0 ? (
                                 filteredData.map((item) => (
                                     item && (
-                                    <tr key={item.id} className="hover:bg-gray-50">
+                                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <input
                                                 type="checkbox"
@@ -265,7 +299,7 @@ export default function History() {
                                                         e.stopPropagation();
                                                         setMoreVisible(moreVisible === item.id ? null : item.id);
                                                     }}
-                                                    className="text-gray-400 hover:text-gray-600"
+                                                    className="text-gray-400 hover:text-gray-600 transition-colors"
                                                 >
                                                     <FiMoreVertical />
                                                 </button>
@@ -276,12 +310,13 @@ export default function History() {
                                                             initial={{ opacity: 0, scale: 0.95 }}
                                                             animate={{ opacity: 1, scale: 1 }}
                                                             exit={{ opacity: 0, scale: 0.95 }}
+                                                            transition={{ duration: 0.1 }}
                                                             className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10"
                                                             onClick={(e) => e.stopPropagation()}
                                                         >
                                                             <div className="py-1">
                                                                 <button
-                                                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                                                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left transition-colors"
                                                                     onClick={() => {
                                                                         alert(`View details for ${item.id}`);
                                                                         setMoreVisible(null);
@@ -290,7 +325,7 @@ export default function History() {
                                                                     <FiEye className="mr-2" /> View Details
                                                                 </button>
                                                                 <button
-                                                                    className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+                                                                    className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left transition-colors"
                                                                     onClick={() => {
                                                                         alert(`Delete item ${item.id}`);
                                                                         setMoreVisible(null);
@@ -319,10 +354,13 @@ export default function History() {
                 </div>
                 
                 {filteredData && filteredData.length > 0 && (
-                    <div className="mt-4 flex justify-end">
+                    <div className="mt-4 flex justify-between items-center">
+                        <div className="text-sm text-gray-500">
+                            Showing {filteredData.length} of {historyData.length} records
+                        </div>
                         <button
                             onClick={exportToExcel}
-                            className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-500 hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                            className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-500 hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors"
                         >
                             <FiDownload className="mr-2" />
                             Export to Excel

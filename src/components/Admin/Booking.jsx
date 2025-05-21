@@ -1,54 +1,91 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
 import { motion } from "framer-motion";
-import { FiPlus, FiChevronLeft, FiChevronRight, FiCalendar } from "react-icons/fi";
+import { FiPlus, FiChevronLeft, FiChevronRight, FiCalendar, FiCheckCircle, FiClock, FiAlertCircle } from "react-icons/fi";
+import { useLocation } from "react-router-dom";
 
 const BookingComponent = () => {
   const calendarRef = useRef(null);
   const [currentView, setCurrentView] = useState('dayGridMonth');
+  const [events, setEvents] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    confirmed: 0,
+    pending: 0
+  });
+  const location = useLocation();
 
-  const events = [
-    { 
-      title: 'Camera Rental', 
-      start: new Date(),
-      end: new Date(new Date().setDate(new Date().getDate() + 2)),
-      color: '#2EA099',
-      textColor: '#ffffff',
-      extendedProps: {
-        customer: 'John Smith',
-        type: 'rental',
-        status: 'confirmed'
+
+
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      let apiUrl;
+      if (location.pathname.startsWith('/admin')) {
+        apiUrl = 'https://f7d3-197-27-48-225.ngrok-free.app/rental/rental_requests/?rental=2';
+      } else {
+        apiUrl = 'https://f7d3-197-27-48-225.ngrok-free.app/rental/rental_requests/?client=10';
       }
-    },
-    { 
-      title: 'Equipment Return', 
-      start: new Date(new Date().setDate(new Date().getDate() + 5)),
-      end: new Date(new Date().setDate(new Date().getDate() + 5)),
-      color: '#EF4444',
-      textColor: '#ffffff',
-      extendedProps: {
-        customer: 'Sarah Johnson',
-        type: 'return',
-        status: 'completed'
+
+      const response = await fetch(apiUrl, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
-    },
-    { 
-      title: 'Maintenance', 
-      start: new Date(new Date().setDate(new Date().getDate() + 10)),
-      end: new Date(new Date().setDate(new Date().getDate() + 11)),
-      color: '#F59E0B',
-      textColor: '#ffffff',
-      extendedProps: {
-        customer: 'Mike Williams',
-        type: 'maintenance',
-        status: 'scheduled'
-      }
+
+      const data = await response.json();
+
+      const formattedEvents = data.map(item => ({
+        id: item.id.toString(),
+        title: `Equipment #${item.equipment}`,
+        start: item.start_date,
+        end: item.end_date,
+        color: getStatusColor(item.status),
+        textColor: '#ffffff',
+        extendedProps: {
+          client: item.client,
+          status: item.status,
+          equipment: item.equipment
+        }
+      }));
+
+      const confirmedCount = data.filter(item => item.status === 'confirmed').length;
+      const pendingCount = data.filter(item => item.status === 'pending').length;
+
+      setStats({
+        total: data.length,
+        confirmed: confirmedCount,
+        pending: pendingCount
+      });
+
+      setEvents(formattedEvents);
+    } catch (error) {
+      console.error('Error fetching data:', error);
     }
-  ];
+  };
+
+  fetchData();
+}, [location.pathname]);
+ // Add pathname as dependency to refetch if it changes
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'confirmed':
+        return '#2EA099'; // Teal
+      case 'pending':
+        return '#F59E0B'; // Amber
+      case 'cancelled':
+        return '#EF4444'; // Red
+      default:
+        return '#6B7280'; // Gray
+    }
+  };
 
   const handleEventClick = (info) => {
     info.jsEvent.preventDefault();
@@ -81,7 +118,7 @@ const BookingComponent = () => {
   };
 
   return (
-    <div className="ml-64 p-6"> {/* Added ml-64 to account for sidebar width */}
+    <div className="ml-64 p-6">
       <motion.div 
         className="bg-white rounded-xl shadow-lg border border-gray-100"
         initial={{ opacity: 0, y: 20 }}
@@ -111,6 +148,37 @@ const BookingComponent = () => {
                 <FiPlus className="text-sm" />
                 <span>New Booking</span>
               </motion.button>
+            </div>
+          </div>
+        </div>
+
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border-b border-gray-100">
+          <div className="bg-gray-50 rounded-lg p-4 flex items-center">
+            <div className="bg-teal-100 p-3 rounded-full mr-4">
+              <FiCalendar className="text-teal-600 text-xl" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Total Bookings</p>
+              <p className="text-2xl font-semibold text-gray-800">{stats.total}</p>
+            </div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 flex items-center">
+            <div className="bg-green-100 p-3 rounded-full mr-4">
+              <FiCheckCircle className="text-green-600 text-xl" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Confirmed</p>
+              <p className="text-2xl font-semibold text-gray-800">{stats.confirmed}</p>
+            </div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 flex items-center">
+            <div className="bg-amber-100 p-3 rounded-full mr-4">
+              <FiClock className="text-amber-600 text-xl" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Pending</p>
+              <p className="text-2xl font-semibold text-gray-800">{stats.pending}</p>
             </div>
           </div>
         </div>
@@ -181,14 +249,12 @@ const BookingComponent = () => {
                       </div>
                     )}
                   </div>
-                  {eventInfo.event.extendedProps.status === 'confirmed' && (
-                    <span className="text-[8px] uppercase tracking-wide bg-white bg-opacity-20 px-1 py-0.5 rounded">
-                      Confirmed
-                    </span>
-                  )}
+                  <span className="text-[8px] uppercase tracking-wide bg-white bg-opacity-20 px-1 py-0.5 rounded">
+                    {eventInfo.event.extendedProps.status}
+                  </span>
                 </div>
                 <div className="text-[10px] opacity-90 truncate">
-                  {eventInfo.event.extendedProps.customer}
+                  Client: {eventInfo.event.extendedProps.client.substring(0, 6)}...
                 </div>
               </motion.div>
             )}

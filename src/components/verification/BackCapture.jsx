@@ -191,7 +191,7 @@ const BackCapture = ({
 
         let response;
         try {
-          response = await axios.post(`https://d537-196-239-28-180.ngrok-free.app/ocr/document/`, formData, {
+          response = await axios.post(`https://f7d3-197-27-48-225.ngrok-free.app/ocr/document/`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
           });
         } catch (err) {

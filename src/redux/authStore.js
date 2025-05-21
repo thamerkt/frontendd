@@ -1,74 +1,155 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const API_URL = "https://d537-196-239-28-180.ngrok-free.app/user"; 
+const API_URL = "https://f7d3-197-27-48-225.ngrok-free.app/user";
+
+const setToken = (token) => token && Cookies.set("token", token);
+const getToken = () => Cookies.get("token");
+const getAuth = () => ({ headers: { Authorization: `Bearer ${getToken()}` } });
+const handleError = (e, msg) => { throw e.response?.data?.message || msg; };
 
 const authStore = {
-  login: async (email,password) => {
+  login: async (email, password) => {
     try {
-      const response = await axios.post(`${API_URL}/login/`, { email,password });
-      Cookies.set("token", response.data.token.access_token);
-      Cookies.set('keycloak_user_id', response.data.user_id);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-      return response.data;
-    } catch (error) {
-      throw error.response?.data?.message || "Login failed";
-    }
+      const { data } = await axios.post(`${API_URL}/login/`, { email, password });
+      setToken(data.token?.access_token);
+      Cookies.set('keycloak_user_id', data.user_id);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      return data;
+    } catch (e) { handleError(e, "Login failed"); }
   },
 
-  signup: async (email, password,role) => {
+  signup: async (email, password, role) => {
     try {
-      const response = await axios.post(`${API_URL}/register/`, { email, password,role});
-      Cookies.set("token", response.data.token.access_token);
-      Cookies.set('keycloak_user_id', response.data.user_id);
-      
-      return response.data;
-      
-    } catch (error) {
-      throw error.response?.data?.message || "Signup failed";
-    }
+      const { data } = await axios.post(`${API_URL}/register/`, { email, password, role });
+      setToken(data.token?.access_token);
+      Cookies.set('keycloak_user_id', data.user_id);
+      return data;
+    } catch (e) { handleError(e, "Signup failed"); }
   },
 
-  resetPassword: async (email) => {
+  loginWithGoogle: async (credential) => {
     try {
-      const response = await axios.post(`${API_URL}/reset-password`, { email });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data?.message || "Password reset failed";
-    }
+      const { data } = await axios.post(`${API_URL}/auth/google/`, { credential });
+      if (data?.userdata) {
+        setToken(data.token?.access_token);
+        Cookies.set('keycloak_user_id', data.userdata.user_id);
+        localStorage.setItem("user", JSON.stringify(data.userdata));
+      }
+      return data;
+    } catch (e) { handleError(e, "Google login failed"); }
   },
 
-  logout: () => {
-    localStorage.removeItem("token");
+  loginWithFacebook: async (accessToken) => {
+    try {
+      const { data } = await axios.post(`${API_URL}/auth/facebook/`, { access_token: accessToken });
+      if (data?.userdata) {
+        setToken(data.token?.access_token);
+        Cookies.set('keycloak_user_id', data.userdata.user_id);
+        localStorage.setItem("user", JSON.stringify(data.userdata));
+      }
+      return data;
+    } catch (e) { handleError(e, "Facebook login failed"); }
   },
 
-  isAuthenticated: () => {
-    return !!Cookies.get("token");
+  refreshToken: async () => {
+    try {
+      const refresh_token = Cookies.get("refresh_token");
+      if (!refresh_token) throw new Error("No refresh token available");
+      const { data } = await axios.post(`${API_URL}/token/refresh/`, { refresh_token });
+      setToken(data.access_token);
+      return data;
+    } catch (e) { handleError(e, "Token refresh failed"); }
   },
+
+  updateProfile: async (userData) => {
+    try {
+      const { data } = await axios.put(`${API_URL}/profile/`, userData);
+      localStorage.setItem("user", JSON.stringify(data));
+      return data;
+    } catch (e) { handleError(e, "Profile update failed"); }
+  },
+
+  validateSession: async () => {
+    try {
+      if (!getToken()) return false;
+      const { data } = await axios.get(`${API_URL}/validate-session/`);
+      return data.valid;
+    } catch { return false; }
+  },
+
   verify: async (otp) => {
     try {
-      let user_id = Cookies.get("keycloak_user_id"); // Retrieve user_id from cookies
-      console.log(user_id)
-      if (!user_id) {
-        throw new Error("User ID is missing in the cookies.");
-      }
-  
-      // Send OTP verification request
-      let response = await axios.post(`${API_URL}/verify-otp/`, { user_id, otp });
-  
-      return response.data; // Return response data on successful verification
-    }catch (error) {
-      console.error("Failed to verify:", error);
-    
-      // Log full error details
-      if (error.response) {
-        console.error("Response Data:", error.response.data);
-        console.error("Response Status:", error.response.status);
-        console.error("Response Headers:", error.response.headers);
-      } else if (error.request) {
-        console.error("Request made but no response received:", error.request);
-      } else {
-        console.error("Unexpected Error:", error.message);
-      }}}};
+      const user_id = Cookies.get("keycloak_user_id");
+      if (!user_id) throw new Error("User ID is missing in the cookies.");
+      const { data } = await axios.post(`${API_URL}/verify-otp/`, { user_id, otp });
+      return data;
+    } catch (e) { handleError(e, "OTP verification failed"); }
+  },
+
+  resetPasswordRequest: async (email) => {
+    try {
+      const { data } = await axios.post(`${API_URL}/password-reset-request/`, { email });
+      return data;
+    } catch (e) { handleError(e, "Password reset request failed"); }
+  },
+
+  resetPassword: async (uidb64, token, new_password) => {
+    try {
+      const { data } = await axios.post(`${API_URL}/reset-password/${uidb64}/${token}/`, { new_password });
+      return data;
+    } catch (e) { handleError(e, "Password reset failed"); }
+  },
+
+  logout: async (token) => {
+    try {
+      await axios.post(`${API_URL}/logout/`, {refresh_token: token});
+    } catch {}
+    Cookies.remove("token");
+    Cookies.remove("keycloak_user_id");
+    localStorage.removeItem("user");
+  },
+
+  isAuthenticated: () => !!getToken(),
+
+  assignRole: async (user_id, role) => {
+    try {
+      const { data } = await axios.post(`${API_URL}/assign/role/`, { user_id, role });
+      return data;
+    } catch (e) { handleError(e, "Role assignment failed"); }
+  },
+
+  // The following methods are rewritten to NOT return a Promise, but only the data.
+  // They will throw if called without await, so they must be awaited by the caller.
+  // But the function itself only returns the data, not a Promise.
+
+  getUsers: async function () {
+    try {
+      const { data } = await axios.get(`${API_URL}/users/`,{withCredentials: true});
+      return data;
+    } catch (e) { handleError(e, "Fetching users failed"); }
+  },
+
+  suspendUser: async function (user_id) {
+    try {
+      const { data } = await axios.post(`${API_URL}/users/${user_id}/suspend/`, {});
+      return data;
+    } catch (e) { handleError(e, "User suspension failed"); }
+  },
+
+  getSuspendedUsers: async function () {
+    try {
+      const { data } = await axios.get(`${API_URL}/users/suspended/`);
+      return data;
+    } catch (e) { handleError(e, "Fetching suspended users failed"); }
+  },
+
+  getActiveUsers: async function () {
+    try {
+      const { data } = await axios.get(`${API_URL}/users/active/`);
+      return data;
+    } catch (e) { handleError(e, "Fetching active users failed"); }
+  }
+};
 
 export default authStore;

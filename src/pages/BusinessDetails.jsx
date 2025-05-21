@@ -118,7 +118,7 @@ const BusinessDetail = () => {
   
     try {
       const response = await axios.post(
-        'https://d537-196-239-28-180.ngrok-free.app/ocr/verification/company/',
+        'https://f7d3-197-27-48-225.ngrok-free.app/ocr/verification/company/',
         company,
       );
   
@@ -126,6 +126,7 @@ const BusinessDetail = () => {
         await Profilmoralservice.addProfilemoral(formDataToSend);
   
         toast.success("Business profile submitted successfully!");
+        sessionStorage.setItem('progress', JSON.stringify({ "progress": "step4" }));
         setTimeout(() => navigate("/register/identity-verification"), 2000);
       } else {
         toast.error(

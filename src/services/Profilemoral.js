@@ -1,7 +1,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const API_URL = "https://d537-196-239-28-180.ngrok-free.app/profile"; // Remplace par l'URL correcte de ton API
+const API_URL = "https://f7d3-197-27-48-225.ngrok-free.app/profile"; // Remplace par l'URL correcte de ton API
 
 const Profilmoralservice = {
   addProfilemoral: async (formData) => {

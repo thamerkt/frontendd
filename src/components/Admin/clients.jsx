@@ -8,23 +8,24 @@ import axios from 'axios';
 const apiService = {
   reports: {
     getByUser: async (username) => {
-      const response = await axios.get(`http://127.0.0.1:8002/api/rapports/?user=${username}`);
+      const response = await axios.get(`https://f7d3-197-27-48-225.ngrok-free.app/reports/rapports/?user=${username}`,{withCredentials: true});
       return response.data;
     },
     create: async (reportData) => {
-      const response = await axios.post('http://127.0.0.1:8002/api/rapports/', reportData, {
-        headers: { 'Content-Type': 'application/json' }
+      const response = await axios.post('https://f7d3-197-27-48-225.ngrok-free.app/reports/rapports/', reportData, {
+        headers: { 'Content-Type': 'application/json' },
+        withCredentials: true
       });
       return response.data;
     }
   },
   reportData: {
     getByReport: async (reportId) => {
-      const response = await axios.get(`http://127.0.0.1:8002/api/rapport-data/?rapport=${reportId}`);
+      const response = await axios.get(`https://f7d3-197-27-48-225.ngrok-free.app/reports/rapport-data/?rapport=${reportId}`,{withCredentials: true});
       return response.data;
     },
     create: async (metricData) => {
-      const response = await axios.post('http://127.0.0.1:8002/api/rapport-data/', metricData);
+      const response = await axios.post('https://f7d3-197-27-48-225.ngrok-free.app/reports/rapport-data/', metricData,{withCredentials: true});
       return response.data;
     }
   }

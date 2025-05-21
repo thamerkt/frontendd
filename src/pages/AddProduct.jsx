@@ -34,7 +34,7 @@ const AddProductForm = () => {
     // Fetch categories
     const fetchCategories = async () => {
       try {
-        const response = await axios.get('https://d537-196-239-28-180.ngrok-free.app/api/categories/', {
+        const response = await axios.get('https://f7d3-197-27-48-225.ngrok-free.app/api/categories/', {
           headers: {
             'Content-Type': 'application/json',
             
@@ -58,7 +58,7 @@ const AddProductForm = () => {
   const fetchSubCategories = async (categoryId) => {
     try {
       setLoadingSubCategories(true);
-      const response = await axios.get(`https://d537-196-239-28-180.ngrok-free.app/api/subcatgeory/`, {
+      const response = await axios.get(`https://f7d3-197-27-48-225.ngrok-free.app/api/subcatgeory/`, {
         headers: {
           'Content-Type': 'application/json',
           
@@ -95,7 +95,7 @@ const AddProductForm = () => {
   };
 
   const handleImageDelete = async (imageId, imageUrl) => {
-    await fetch(`https://d537-196-239-28-180.ngrok-free.app/api/images/${imageId}`, {
+    await fetch(`https://f7d3-197-27-48-225.ngrok-free.app/api/images/${imageId}`, {
       method: 'DELETE'
     });
   };
@@ -261,7 +261,7 @@ const AddProductForm = () => {
         }
 
         const managementRes = await axios.post(
-          'https://d537-196-239-28-180.ngrok-free.app/api/stuffmanagment/',
+          'https://f7d3-197-27-48-225.ngrok-free.app/api/stuffmanagment/',
           managementFormData,
           {
             headers: {
@@ -302,7 +302,7 @@ const AddProductForm = () => {
         stuffFormData.append('stuff_management', stuffManagementId);
         stuffFormData.append('user', productData.user);
 
-        const stuffRes = await axios.post('https://d537-196-239-28-180.ngrok-free.app/api/stuffs/', stuffFormData, {
+        const stuffRes = await axios.post('https://f7d3-197-27-48-225.ngrok-free.app/api/stuffs/', stuffFormData, {
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${Cookies.get('access_token')}`
@@ -323,7 +323,7 @@ const AddProductForm = () => {
         imgFormData.append('position', Number.isInteger(img.position) ? img.position : i);
 
         try {
-          await axios.post('https://d537-196-239-28-180.ngrok-free.app/api/images/', imgFormData, {
+          await axios.post('https://f7d3-197-27-48-225.ngrok-free.app/api/images/', imgFormData, {
             headers: { 
               'Content-Type': 'multipart/form-data',
               'Authorization': `Bearer ${Cookies.get('access_token')}`
@@ -345,7 +345,7 @@ const AddProductForm = () => {
             imgFormData.append('position', 0);
 
             try {
-              await axios.post('https://d537-196-239-28-180.ngrok-free.app/api/images/', imgFormData, {
+              await axios.post('https://f7d3-197-27-48-225.ngrok-free.app/api/images/', imgFormData, {
                 headers: { 
                   'Content-Type': 'multipart/form-data',
                   'Authorization': `Bearer ${Cookies.get('access_token')}`

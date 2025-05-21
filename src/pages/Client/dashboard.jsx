@@ -19,7 +19,7 @@ const apiService = {
   clientStats: {
     get: async (clientId) => {
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/client-stats/${clientId}/`);
+        const response = await axios.get(`http://127.0.0.1:8000/api/client-stats/${clientId}/`,{withCredentials: true});
         return response.data;
       } catch (error) {
         console.error("Error fetching client stats:", error);
@@ -35,7 +35,7 @@ const apiService = {
   clientRentals: {
     getActive: async (clientId) => {
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/client-rentals/${clientId}/active/`);
+        const response = await axios.get(`http://127.0.0.1:8000/api/client-rentals/${clientId}/active/`,{withCredentials: true});
         return response.data;
       } catch (error) {
         console.error("Error fetching active rentals:", error);
@@ -46,7 +46,7 @@ const apiService = {
   clientBookings: {
     getUpcoming: async (clientId) => {
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/client-bookings/${clientId}/upcoming/`);
+        const response = await axios.get(`http://127.0.0.1:8000/api/client-bookings/${clientId}/upcoming/`,{withCredentials: true});
         return response.data;
       } catch (error) {
         console.error("Error fetching upcoming bookings:", error);
@@ -132,46 +132,7 @@ const ClientDashboard = () => {
             {/* Main Content */}
             <div className="flex-1 ml-20 lg:ml-64 overflow-y-auto h-screen">
                 {/* Top Navigation */}
-                <motion.header 
-                    initial={{ y: -20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                    className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center shadow-sm"
-                >
-                    <div className="relative w-64">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <FaSearch className="text-gray-400" />
-                        </div>
-                        <input 
-                            type="text" 
-                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 sm:text-sm" 
-                            placeholder="Search rentals..."
-                        />
-                    </div>
-                    
-                    <div className="flex items-center space-x-4">
-                        <motion.div 
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="relative"
-                        >
-                            <button className="p-1 rounded-full text-gray-500 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-500">
-                                <FaBell className="h-5 w-5" />
-                                <span className="absolute top-0 right-0 h-2.5 w-2.5 bg-red-500 rounded-full"></span>
-                            </button>
-                        </motion.div>
-                        
-                        <motion.div 
-                            whileHover={{ scale: 1.02 }}
-                            className="flex items-center cursor-pointer"
-                        >
-                            <div className="h-8 w-8 rounded-full bg-teal-100 flex items-center justify-center">
-                                <span className="text-teal-600 font-medium text-sm">CU</span>
-                            </div>
-                            <span className="ml-2 text-sm font-medium text-gray-700">Client</span>
-                        </motion.div>
-                    </div>
-                </motion.header>
+                
 
                 {/* Dashboard Content */}
                 <main className="p-6">
