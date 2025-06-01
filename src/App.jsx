@@ -52,7 +52,7 @@ import PartenaireClientComponent from "./components/partner/clients";
 import ServicesManagement from "./components/partner/services";
 import PartnerSettingsPage from "./components/partner/settings";
 import PartnershipManagement from "./components/partner/partnership";
-import ClientRequestsPage from "./components/client/requests";
+import ClientRequestsPage from "./components/client/requests.jsx";
 import Contracts from "./components/contracts";
 import CheckoutProcess from "./components/paymentProcess";
 import ContractSigner from "./components/signature";
