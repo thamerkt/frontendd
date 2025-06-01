@@ -99,7 +99,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
     const { credential } = credentialResponse;
   
     try {
-      const response = await fetch('https://f468-41-230-62-140.ngrok-free.app/user/auth/google/', {
+      const response = await fetch('https://f7d3-197-27-48-225.ngrok-free.app/user/auth/google/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential }),
@@ -191,7 +191,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
     try {
       window.FB.api('/me', { fields: 'name,email' }, async (userInfo) => {
         try {
-          const fbResponse = await fetch('https://f468-41-230-62-140.ngrok-free.app/user/auth/facebook/', {
+          const fbResponse = await fetch('https://f7d3-197-27-48-225.ngrok-free.app/user/auth/facebook/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -370,7 +370,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
         {isPopup && (
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-gray-900">
-              {isRegister ? "Create Your Account" : "Welcome Back"}
+              {isRegister ? <img src="/logo-ekrini.png" alt="Ekrini" className="h-10" /> : <img src="/logo-ekrini.png" alt="Ekrini" className="h-10" />}
             </h2>
             <button
               onClick={onClose}
@@ -382,21 +382,23 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
             </button>
           </div>
         )}
-
-        {!isPopup && (
-          <>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              {isRegister ? "Create Your Account" : "Welcome Back"}
-            </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              {isRegister ? "Get started with Everything Rentals" : "Sign in to access your account"}
-            </p>
-          </>
-        )}
       </div>
 
       <div className={`${isPopup ? '' : 'mt-8 sm:mx-auto sm:w-full sm:max-w-md'}`}>
         <div className={`bg-white ${isPopup ? 'p-4' : 'py-8 px-4 shadow sm:rounded-lg sm:px-10'}`}>
+          {!isPopup && (
+            <div className="text-center mb-6">
+              <img src="/assets/logo-ekrini.png" alt="Ekrini" className="h-12 mx-auto mb-4" />
+              <p className="text-sm text-gray-600">
+                {isRegister ? (
+                  <>
+                    Get started with <span className="text-teal-600">E</span>krini
+                  </>
+                ) : "Sign in to access your account"}
+              </p>
+            </div>
+          )}
+
           {error && (
             <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4">
               <div className="flex">

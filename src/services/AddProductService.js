@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const API_BASE_URL = "https://5b22-197-29-209-95.ngrok-free.https://d537-196-239-28-180.ngrok-free.app/api";
+const API_BASE_URL = "https://5b22-197-29-209-95.ngrok-free.https://f7d3-197-27-48-225.ngrok-free.app/api";
 
 const getAuthHeaders = (isFormData = true) => {
   const token = Cookies.get("token");

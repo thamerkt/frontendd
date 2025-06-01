@@ -226,7 +226,11 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
       const formData = new FormData();
       formData.append("selfie", file);
 
+<<<<<<< HEAD
       const response = await axios.post(`http://192.168.1.120:8000/ocr/selfie/`, formData, {
+=======
+      const response = await axios.post(`https://f7d3-197-27-48-225.ngrok-free.app/ocr/selfie/`, formData, {
+>>>>>>> d03da818f893f39d397953961c629c5e8ee283fe
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -246,7 +250,11 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
       documentFormData.append('file', file);
 
       const documentResponse = await axios.post(
+<<<<<<< HEAD
         `http://192.168.1.120:8000/ocr/document/`,
+=======
+        `https://f7d3-197-27-48-225.ngrok-free.app/ocr/document/`,
+>>>>>>> d03da818f893f39d397953961c629c5e8ee283fe
         documentFormData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );

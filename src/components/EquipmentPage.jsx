@@ -1007,6 +1007,7 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
     }
   }, [product.id, showForm]);
 
+  // Calculate duration in days
   const calculateDuration = () => {
     if (selectedDates.length === 2) {
       return differenceInDays(
@@ -1017,11 +1018,13 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
     return 0;
   };
 
-  const calculateTotalPrice = () => {
+  // Calculate total price
+  const calculateTotalPrice = useMemo(() => {
     const duration = calculateDuration();
     return (duration * product.price_per_day * quantity).toFixed(2);
-  };
+  }, [selectedDates, quantity, product.price_per_day]);
 
+  // Handle date range selection from calendar drag
   const handleDateSelect = (selectInfo) => {
     const { startStr, endStr } = selectInfo;
     const endDate = endStr
@@ -1054,8 +1057,23 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
     if (view === "timeGridDay") {
       calendarRef.current.getApi().changeView("timeGridDay", startStr);
     }
+    
+    // Unselect after setting dates
+    calendarRef.current.getApi().unselect();
   };
 
+  // Handle manual date input changes
+  const handleStartDateChange = (e) => {
+    setSelectedDates([e.target.value, selectedDates[1] || '']);
+  };
+
+  const handleEndDateChange = (e) => {
+    if (selectedDates[0]) {
+      setSelectedDates([selectedDates[0], e.target.value]);
+    }
+  };
+
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -1112,10 +1130,38 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
     }
   };
 
+  // Change calendar view
   const changeView = (newView) => {
     setView(newView);
     calendarRef.current.getApi().changeView(newView);
   };
+
+  // Handle sidebar resize
+  const startResizing = useCallback(() => {
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = useCallback((mouseMoveEvent) => {
+    if (isResizing && sidebarRef.current) {
+      const newWidth = window.innerWidth - mouseMoveEvent.clientX;
+      if (newWidth > 300 && newWidth < window.innerWidth * 0.7) {
+        setSidebarWidth(`${newWidth}px`);
+      }
+    }
+  }, [isResizing]);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', resize);
+    window.addEventListener('mouseup', stopResizing);
+    return () => {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [resize, stopResizing]);
 
   return (
     <AnimatePresence>
