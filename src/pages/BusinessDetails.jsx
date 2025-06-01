@@ -118,9 +118,10 @@ const BusinessDetail = () => {
   
     try {
       const response = await axios.post(
-        'https://b010-41-230-62-140.ngrok-free.app/ocr/verification/company/',
+        'http://localhost:8000/ocr/verification/company/',
         company,
       );
+      console.log(response)
   
       if ((response.data && response.data.success === true) || (response.success === true)) {
         await Profilmoralservice.addProfilemoral(formDataToSend);

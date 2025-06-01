@@ -14,18 +14,11 @@ import { FiX } from "react-icons/fi";
 import useProgressGuard from "../components/utils/ProcessGuard"
 import { progress } from "framer-motion";
 
-
-
-
 const ProfileForm = () => {
-  
   const [role, setRole] = useState('customer');
   const navigate = useNavigate();
   const [newProgress, setNewProgress] = useState({});
-  const [Progress, setProgress] = useState({})
-  
-  
-  //useProgressGuard(1, 2); 
+  const [Progress, setProgress] = useState({});
   
   // Form state management
   const [formData, setFormData] = useState({
@@ -40,7 +33,7 @@ const ProfileForm = () => {
       postal_code: ""
     },
     phone: "",
-    user: Cookies.get('keycloak_user_id'),
+    user_id: Cookies.get('keycloak_user_id'),
     countryCode: 'us',
   });
 
@@ -55,7 +48,6 @@ const ProfileForm = () => {
   const [selectedCountry, setSelectedCountry] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
- 
 
   // Constants
   const GENDER_OPTIONS = [
@@ -68,26 +60,32 @@ const ProfileForm = () => {
 
   // Effects
   useEffect(() => {
+    const storedRole = localStorage.getItem("role");
+    if (storedRole === "customer") {
+      setSelectedProfile("physical");
+      setRole("equipment_manager_individual");
+      setNewProgress({
+        phase: "Personal details",
+        step: 3,
+        totalSteps: 3
+      });
+    }
+  }, []);
 
-    
-    
-   
-  
-    
-      if (selectedCountry) {
-        const countryStates = State.getStatesOfCountry(selectedCountry);
-        setStates(countryStates);
-        setFormData(prev => ({
-          ...prev,
-          address: {
-            ...prev.address,
-            state: countryStates.length ? countryStates[0].name : ""
-          },
-        }));
-      } else {
-        setStates([]);
-      }
-    
+  useEffect(() => {
+    if (selectedCountry) {
+      const countryStates = State.getStatesOfCountry(selectedCountry);
+      setStates(countryStates);
+      setFormData(prev => ({
+        ...prev,
+        address: {
+          ...prev.address,
+          state: countryStates.length ? countryStates[0].name : ""
+        },
+      }));
+    } else {
+      setStates([]);
+    }
   }, [selectedCountry]);
 
   // Handlers
@@ -192,7 +190,7 @@ const ProfileForm = () => {
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone: formData.phone,
-        user: formData.user
+        user_id: formData.user_id
       };
   
       // For physical profile, add additional fields
@@ -208,7 +206,7 @@ const ProfileForm = () => {
       formDataToSend.append('first_name', requestData.first_name);
       formDataToSend.append('last_name', requestData.last_name);
       formDataToSend.append('phone', requestData.phone);
-      formDataToSend.append('user', requestData.user);
+      formDataToSend.append('user_id', requestData.user_id);
   
       // Append address fields individually
       formDataToSend.append('address[street]', requestData.address.street);
@@ -232,11 +230,12 @@ const ProfileForm = () => {
   
       // Submit data
       const response = await Profileservice.addProfil(formDataToSend, role);
-      Cookies.set('id', response.id);
+      Cookies.set('id', response.profile?.id);
       localStorage.setItem("role", role);
+     
   
       if (selectedProfile === "physical") {
-        formDataToSend.append('profil', response.id);
+        formDataToSend.append('profil', response.profile?.id);
         await Profileservice.addPhysicalProfile(formDataToSend);
         setTimeout(() => {
           navigate("/register/identity-verification");
@@ -246,8 +245,11 @@ const ProfileForm = () => {
           navigate("/register/business-details");
         }, 3000);
       }
-  
-      sessionStorage.setItem('progress', JSON.stringify({ "progress": "step3" }));
+      if(role !== "equipment_manager_company"){
+        sessionStorage.setItem('progress', JSON.stringify({ "progress": "step4" }));
+      } else {
+        sessionStorage.setItem('progress', JSON.stringify({ "progress": "step3" }));
+      }
       toast.success('Profile created successfully!');
   
     } catch (error) {
@@ -305,52 +307,54 @@ const ProfileForm = () => {
           <p className="text-xs text-gray-400 mt-1">JPEG/PNG, max 2MB</p>
         </div>
 
-        {/* Profile Type - More compact */}
-        <div>
-          <h2 className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">Profile type</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedProfile("physical");
-                setRole("equipment_manager_individual");
-                setNewProgress({
-                  phase: "Personal details",
-                  step: 3,
-                  totalSteps: 3
-                });
-              }}
-              className={`p-3 border rounded-lg transition-all text-left ${
-                selectedProfile === "physical"
-                  ? "border-teal-500 bg-teal-50"
-                  : "border-gray-200 hover:border-teal-300"
-              }`}
-            >
-              <h3 className="text-sm font-medium">Personal</h3>
-              <p className="text-xs text-gray-500 mt-1">Individual users</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedProfile("moral");
-                setRole("equipment_manager_company");
-                setNewProgress({
-                  phase: "Personal details",
-                  step: 3,
-                  totalSteps: 4
-                });
-              }}
-              className={`p-3 border rounded-lg transition-all text-left ${
-                selectedProfile === "moral"
-                  ? "border-teal-500 bg-teal-50"
-                  : "border-gray-200 hover:border-teal-300"
-              }`}
-            >
-              <h3 className="text-sm font-medium">Business</h3>
-              <p className="text-xs text-gray-500 mt-1">Companies</p>
-            </button>
+        {/* Profile Type - Only show if role is not customer */}
+        {localStorage.getItem("role") !== "customer" && (
+          <div>
+            <h2 className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">Profile type</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProfile("physical");
+                  setRole("equipment_manager_individual");
+                  setNewProgress({
+                    phase: "Personal details",
+                    step: 3,
+                    totalSteps: 3
+                  });
+                }}
+                className={`p-3 border rounded-lg transition-all text-left ${
+                  selectedProfile === "physical"
+                    ? "border-teal-500 bg-teal-50"
+                    : "border-gray-200 hover:border-teal-300"
+                }`}
+              >
+                <h3 className="text-sm font-medium">Personal</h3>
+                <p className="text-xs text-gray-500 mt-1">Individual users</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProfile("moral");
+                  setRole("equipment_manager_company");
+                  setNewProgress({
+                    phase: "Personal details",
+                    step: 3,
+                    totalSteps: 4
+                  });
+                }}
+                className={`p-3 border rounded-lg transition-all text-left ${
+                  selectedProfile === "moral"
+                    ? "border-teal-500 bg-teal-50"
+                    : "border-gray-200 hover:border-teal-300"
+                }`}
+              >
+                <h3 className="text-sm font-medium">Business</h3>
+                <p className="text-xs text-gray-500 mt-1">Companies</p>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Personal Information - More compact */}
         <div className="space-y-4">
@@ -524,7 +528,6 @@ const ProfileForm = () => {
       </form>
     </div>
   );
-
 };
 
 export default ProfileForm;

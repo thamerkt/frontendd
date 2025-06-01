@@ -13,11 +13,11 @@ import axios from 'axios';
 const apiService = {
   reports: {
     getByUser: async (username) => {
-      const response = await axios.get(`https://b010-41-230-62-140.ngrok-free.app/reports/rapports/?user=${username}`,{withCredentials: true});
+      const response = await axios.get(`http://localhost:8000/reports/rapports/?user=${username}`,{withCredentials: true});
       return response.data;
     },
     create: async (reportData) => {
-      const response = await axios.post('https://b010-41-230-62-140.ngrok-free.app/reports/rapports/', reportData, {
+      const response = await axios.post('http://localhost:8000/reports/rapports/', reportData, {
         headers: { 'Content-Type': 'application/json' },
         withCredentials: true
       });
@@ -26,11 +26,11 @@ const apiService = {
   },
   reportData: {
     getByReport: async (reportId) => {
-      const response = await axios.get(`https://b010-41-230-62-140.ngrok-free.app/reports/rapport-data/?rapport=${reportId}`,{withCredentials: true});
+      const response = await axios.get(`http://localhost:8000/reports/rapport-data/?rapport=${reportId}`,{withCredentials: true});
       return response.data;
     },
     create: async (metricData) => {
-      const response = await axios.post('https://b010-41-230-62-140.ngrok-free.app/reports/rapport-data/', metricData,{withCredentials: true});
+      const response = await axios.post('http://localhost:8000/reports/rapport-data/', metricData,{withCredentials: true});
       return response.data;
     }
   }

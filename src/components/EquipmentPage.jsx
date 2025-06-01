@@ -12,6 +12,17 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { useParams } from 'react-router-dom';
 import TrackingService from "../services/TrackingService";
 import axios from "axios";
+import { differenceInDays, parseISO, addDays, format } from 'date-fns';
+import useWebSocket from "react-use-websocket";
+import { 
+  FiMessageSquare, 
+  FiSend, 
+  FiPaperclip, 
+  FiSmile,
+  FiChevronLeft
+} from "react-icons/fi";
+import { IoCheckmarkDone } from "react-icons/io5";
+
 import { 
   FaCreditCard, 
   FaMapMarkerAlt, 
@@ -83,7 +94,7 @@ export default function ProductDetail() {
     let url = mainImage?.url || productImages[0]?.url || null;
   
     if (url) {
-      url = url.replace('host.docker.internal', '192.168.1.15');
+      url = url.replace('host.docker.internal', '192.168.1.120');
     }
   
     return url;
@@ -200,20 +211,23 @@ export default function ProductDetail() {
       
         const [productData, productImages] = await Promise.all([
           EquipmentService.fetchRentalById(productId),
-          axios.get(`https://b010-41-230-62-140.ngrok-free.app/api/images/?stuff=${productId}`, {
+          axios.get(`http://localhost:8000/api/images/?stuff=${productId}`, {
             withCredentials: true,
           }),
         ]);
 
         const processedImages = productImages.data.map(image => {
-          if (image.url && image.url.includes('host.docker.internal')) {
+          if (image.url) {
+            const newUrl = image.url.replace('localhost', 'localhost:8000');
             return {
               ...image,
-              url: image.url.replace('host.docker.internal', '192.168.1.15')
+              url: newUrl
             };
           }
           return image;
         });
+        
+        
       
         const processedProductData = {
           ...productData,
@@ -226,28 +240,36 @@ export default function ProductDetail() {
         };
       
         const allProducts = await axios.get(
-          `https://b010-41-230-62-140.ngrok-free.app/api/stuffs/?category=${productData.category}`,
+          `http://localhost:8000/api/stuffs/?category=${productData.category}`,
           {
             withCredentials: true,
           }
         );
       
         const processedRelatedProducts = allProducts.data.map(product => {
+          let updatedImage = product.image;
+          if (updatedImage) {
+            if (updatedImage.includes('host.docker.internal')) {
+              updatedImage = updatedImage.replace('host.docker.internal', 'localhost:8000');
+            } else if (/^https:\/\/[^/]+\.ngrok-free\.app/.test(updatedImage)) {
+              updatedImage = updatedImage.replace(/^https:\/\/[^/]+\.ngrok-free\.app/, 'http://localhost:8000');
+            }
+          }
+        
+          let updatedDescription = product.detailed_description;
+          if (updatedDescription) {
+            updatedDescription = updatedDescription
+              .replace(/host\.docker\.internal/g, 'localhost:8000')
+              .replace(/https:\/\/[^/]+\.ngrok-free\.app/g, 'http://localhost:8000');
+          }
+        
           return {
             ...product,
-            ...(product.image && { 
-              image: product.image.includes('host.docker.internal') 
-                ? product.image.replace('host.docker.internal', '192.168.1.15')
-                : product.image
-            }),
-            ...(product.detailed_description && {
-              detailed_description: product.detailed_description.replace(
-                /host\.docker\.internal/g,
-                '192.168.1.15'
-              )
-            })
+            ...(updatedImage && { image: updatedImage }),
+            ...(updatedDescription && { detailed_description: updatedDescription })
           };
         });
+        
       
         setProduct(processedProductData);
         setImages(processedImages);
@@ -912,24 +934,83 @@ export default function ProductDetail() {
   );
 };
 
-const CalendarSidebar = ({ 
-  product, 
-  showForm, 
-  setShowForm, 
-  onEventCreated,
-  existingEvents = []
-}) => {
+
+
+
+
+
+
+import ChatComponent from './Messanger'
+
+const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => {
   const [selectedDates, setSelectedDates] = useState([]);
   const [quantity, setQuantity] = useState(1);
-  const [specialRequests, setSpecialRequests] = useState('');
-  const [view, setView] = useState('dayGridMonth');
+  const [view, setView] = useState("dayGridMonth");
   const calendarRef = useRef(null);
-  const [events, setEvents] = useState(existingEvents);
+  const [events, setEvents] = useState([]);
+  const [activeSidebarTab, setActiveSidebarTab] = useState("calendar");
+
+  // Fetch rental requests when component mounts or product changes
+  useEffect(() => {
+    const fetchRentalRequests = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:8000/rental/rental_requests/?equipment_id=${product.id}`,
+          {
+            withCredentials: true,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const mappedEvents = response.data.map((request) => {
+          let color, title;
+          switch (request.status) {
+            case "confirmed":
+              color = "#ef4444";
+              title = `Booked (${request.quantity}x)`;
+              break;
+            case "pending":
+              color = "#f59e0b";
+              title = `Pending (${request.quantity}x)`;
+              break;
+            default:
+              color = "#d1d5db";
+              title = `Request (${request.quantity}x)`;
+          }
+
+          return {
+            id: request.id.toString(),
+            title: title,
+            start: request.start_date,
+            end: request.end_date,
+            color: color,
+            textColor: "#ffffff",
+            extendedProps: {
+              status: request.status,
+              quantity: request.quantity,
+            },
+            overlap: request.status !== "confirmed",
+          };
+        });
+
+        setEvents(mappedEvents);
+      } catch (error) {
+        console.error("Error fetching rental requests:", error);
+        toast.error("Failed to load rental schedule");
+      }
+    };
+
+    if (product?.id && showForm) {
+      fetchRentalRequests();
+    }
+  }, [product.id, showForm]);
 
   const calculateDuration = () => {
     if (selectedDates.length === 2) {
       return differenceInDays(
-        parseISO(selectedDates[1]), 
+        parseISO(selectedDates[1]),
         parseISO(selectedDates[0])
       ) + 1;
     }
@@ -943,39 +1024,64 @@ const CalendarSidebar = ({
 
   const handleDateSelect = (selectInfo) => {
     const { startStr, endStr } = selectInfo;
-    const endDate = endStr ? format(addDays(parseISO(endStr), -1), 'yyyy-MM-dd') : startStr;
-    
+    const endDate = endStr
+      ? format(addDays(parseISO(endStr), -1), "yyyy-MM-dd")
+      : startStr;
+
+    const hasConflict = events.some((event) => {
+      if (event.extendedProps?.status === "confirmed") {
+        const eventStart = new Date(event.start);
+        const eventEnd = new Date(event.end);
+        const selectedStart = new Date(startStr);
+        const selectedEnd = new Date(endDate);
+
+        return (
+          (selectedStart >= eventStart && selectedStart <= eventEnd) ||
+          (selectedEnd >= eventStart && selectedEnd <= eventEnd) ||
+          (selectedStart <= eventStart && selectedEnd >= eventEnd)
+        );
+      }
+      return false;
+    });
+
+    if (hasConflict) {
+      toast.error("This period conflicts with a confirmed booking");
+      return;
+    }
+
     setSelectedDates([startStr, endDate]);
-    
-    if (view === 'timeGridDay') {
-      calendarRef.current.getApi().changeView('timeGridDay', startStr);
+
+    if (view === "timeGridDay") {
+      calendarRef.current.getApi().changeView("timeGridDay", startStr);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (selectedDates.length !== 2) {
-      toast.error('Please select start and end dates');
+      toast.error("Please select both start and end dates");
       return;
     }
 
     try {
+      const user = JSON.parse(localStorage.getItem("user"));
+
       const rentalRequestData = {
         equipment: product.id,
-        rental: 2,
-        client: 10,
         start_date: selectedDates[0],
         end_date: selectedDates[1],
+        client: user?.user_id,
         status: "pending",
         quantity: quantity,
-        special_requests: specialRequests
+        total_price: calculateTotalPrice(),
       };
 
       const response = await axios.post(
-        "http://127.0.0.1:8001/rental/rental_requests/",
+        "http://localhost:8000/rental/rental_requests/",
         rentalRequestData,
         {
+          withCredentials: true,
           headers: {
             "Content-Type": "application/json",
           },
@@ -983,28 +1089,26 @@ const CalendarSidebar = ({
       );
 
       const newEvent = {
-        title: `Rental: ${product.stuffname}`,
+        id: response.data.id.toString(),
+        title: `Pending (${quantity}x)`,
         start: selectedDates[0],
         end: selectedDates[1],
+        color: "#f59e0b",
+        textColor: "#ffffff",
         extendedProps: {
-          productId: product.id,
-          quantity,
-          specialRequests,
-          totalPrice: calculateTotalPrice(),
-          rentalRequestId: response.data.id
+          status: "pending",
+          quantity: quantity,
         },
-        color: '#0d9488',
-        textColor: '#ffffff'
       };
 
       setEvents([...events, newEvent]);
       onEventCreated(newEvent);
-      
-      toast.success('Rental request created successfully!');
+
+      toast.success("Rental request submitted!");
       setShowForm(false);
     } catch (error) {
-      console.error('Error creating rental request:', error);
-      toast.error('Failed to create rental request. Please try again.');
+      console.error("Error creating rental request:", error);
+      toast.error("Failed to submit rental request");
     }
   };
 
@@ -1022,222 +1126,265 @@ const CalendarSidebar = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <motion.div 
+          <motion.div
             className="absolute inset-0 bg-black bg-opacity-50"
             onClick={() => setShowForm(false)}
           />
 
           <motion.div
-            className="absolute right-0 top-0 h-full w-full sm:w-1/2 lg:w-1/3 xl:w-1/4 bg-white shadow-xl flex flex-col"
-            initial={{ x: '100%' }}
+            className="absolute right-0 top-0 h-full w-full sm:w-96 bg-white shadow-xl flex flex-col"
+            initial={{ x: "100%" }}
             animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
-            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-teal-600 to-teal-700 text-white">
+            {/* Header with tabs */}
+            <div className="flex border-b border-gray-200">
+              <button
+                onClick={() => setActiveSidebarTab("calendar")}
+                className={`flex-1 py-2 text-xs font-medium ${
+                  activeSidebarTab === "calendar"
+                    ? "text-teal-600 border-b-2 border-teal-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Calendar
+              </button>
+              <button
+                onClick={() => setActiveSidebarTab("messages")}
+                className={`flex-1 py-2 text-xs font-medium ${
+                  activeSidebarTab === "messages"
+                    ? "text-teal-600 border-b-2 border-teal-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Messages
+              </button>
+            </div>
+            <div className="p-4 border-b border-gray-200 bg-teal-600 text-white">
               <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <FiCalendar className="text-teal-200 text-xl" />
-                  <h2 className="text-xl font-semibold">Rental Schedule</h2>
+                <div className="flex items-center gap-2">
+                  {activeSidebarTab === "calendar" ? (
+                    <FiCalendar className="text-teal-200" />
+                  ) : (
+                    <FiMessageSquare className="text-teal-200" />
+                  )}
+                  <h2 className="text-lg font-semibold">
+                    {activeSidebarTab === "calendar"
+                      ? "Rental Schedule"
+                      : "Chat with Owner"}
+                  </h2>
                 </div>
                 <button
                   onClick={() => setShowForm(false)}
                   className="p-1 rounded-full hover:bg-teal-500/30 transition-colors"
                 >
-                  <FiX className="text-xl" />
+                  <FiX className="text-lg" />
                 </button>
               </div>
-              <div className="mt-2 flex items-center text-teal-100 text-sm">
-                <span>{product.stuffname}</span>
-                <span className="mx-2">•</span>
-                <span>${product.price_per_day}/day</span>
+              <div className="mt-1 text-teal-100 text-sm">
+                {product.stuffname}
               </div>
             </div>
 
-            <div className="flex border-b border-gray-200">
-              <button
-                onClick={() => changeView('dayGridMonth')}
-                className={`flex-1 py-3 text-sm font-medium ${view === 'dayGridMonth' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500'}`}
-              >
-                Month
-              </button>
-              <button
-                onClick={() => changeView('timeGridWeek')}
-                className={`flex-1 py-3 text-sm font-medium ${view === 'timeGridWeek' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500'}`}
-              >
-                Week
-              </button>
-              <button
-                onClick={() => changeView('timeGridDay')}
-                className={`flex-1 py-3 text-sm font-medium ${view === 'timeGridDay' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500'}`}
-              >
-                Day
-              </button>
-              <button
-                onClick={() => changeView('listWeek')}
-                className={`flex-1 py-3 text-sm font-medium ${view === 'listWeek' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500'}`}
-              >
-                List
-              </button>
-            </div>
 
-            <div className="flex-1 overflow-y-auto flex flex-col">
-              <div className="p-4 border-b border-gray-200">
-                <FullCalendar
-                  ref={calendarRef}
-                  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-                  initialView={view}
-                  selectable={true}
-                  select={handleDateSelect}
-                  events={events}
-                  headerToolbar={false}
-                  height={300}
-                  selectMirror={true}
-                  dayMaxEvents={true}
-                  weekends={true}
-                  nowIndicator={true}
-                  editable={true}
-                  eventResizableFromStart={true}
-                  selectOverlap={false}
-                  selectConstraint={{
-                    start: new Date().toISOString().split('T')[0],
-                    end: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
-                  }}
+
+            {/* Content based on active tab */}
+            <div className="flex-1 overflow-y-auto">
+              {activeSidebarTab === "calendar" ? (
+                <>
+                  {/* View Toggle */}
+                  <div className="flex border-b border-gray-200">
+                    <button
+                      onClick={() => changeView("dayGridMonth")}
+                      className={`flex-1 py-2 text-xs font-medium ${
+                        view === "dayGridMonth"
+                          ? "text-teal-600 border-b-2 border-teal-600"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      Month
+                    </button>
+                    <button
+                      onClick={() => changeView("timeGridWeek")}
+                      className={`flex-1 py-2 text-xs font-medium ${
+                        view === "timeGridWeek"
+                          ? "text-teal-600 border-b-2 border-teal-600"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      Week
+                    </button>
+                    <button
+                      onClick={() => changeView("timeGridDay")}
+                      className={`flex-1 py-2 text-xs font-medium ${
+                        view === "timeGridDay"
+                          ? "text-teal-600 border-b-2 border-teal-600"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      Day
+                    </button>
+                  </div>
+
+                  {/* Calendar */}
+                  <div className="p-3 border-b border-gray-200">
+                    <FullCalendar
+                      ref={calendarRef}
+                      plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                      initialView={view}
+                      selectable={true}
+                      select={handleDateSelect}
+                      events={events}
+                      headerToolbar={false}
+                      height={300}
+                      selectMirror={true}
+                      dayMaxEvents={true}
+                      weekends={true}
+                      nowIndicator={true}
+                      editable={true}
+                      selectOverlap={(event) => {
+                        return (
+                          !event.extendedProps ||
+                          event.extendedProps.status !== "confirmed"
+                        );
+                      }}
+                      selectConstraint={{
+                        start: new Date().toISOString().split("T")[0],
+                        end: new Date(
+                          new Date().setFullYear(new Date().getFullYear() + 1)
+                        )
+                          .toISOString()
+                          .split("T")[0],
+                      }}
+                      eventDidMount={(info) => {
+                        if (info.event.extendedProps.status === "confirmed") {
+                          info.el.style.borderLeft = "4px solid #ef4444";
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {/* Form */}
+                  <form onSubmit={handleSubmit} className="p-3 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="block text-xs font-medium text-gray-700">
+                          Start Date
+                        </label>
+                        <input
+                          type="date"
+                          value={selectedDates[0] || ""}
+                          onChange={(e) =>
+                            setSelectedDates([e.target.value, selectedDates[1] || ""])
+                          }
+                          className="w-full p-2 text-xs border border-gray-300 rounded-md"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-xs font-medium text-gray-700">
+                          End Date
+                        </label>
+                        <input
+                          type="date"
+                          value={selectedDates[1] || ""}
+                          onChange={(e) =>
+                            setSelectedDates([selectedDates[0] || "", e.target.value])
+                          }
+                          min={selectedDates[0] || ""}
+                          className="w-full p-2 text-xs border border-gray-300 rounded-md"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {selectedDates.length === 2 && (
+                      <div className="bg-teal-50 p-3 rounded-md border border-teal-100 text-xs">
+                        <div className="flex justify-between mb-1">
+                          <span className="text-gray-600">Duration:</span>
+                          <span className="font-medium">
+                            {calculateDuration()} days
+                          </span>
+                        </div>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-gray-600">Daily Rate:</span>
+                          <span className="font-medium">
+                            ${product.price_per_day}
+                          </span>
+                        </div>
+                        <div className="flex justify-between font-semibold text-teal-700 pt-1 border-t border-teal-200">
+                          <span>Total:</span>
+                          <span>${calculateTotalPrice()}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-700">
+                        Quantity
+                      </label>
+                      <div className="flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                          className="px-2 py-1 border border-gray-300 rounded-l-md bg-gray-50"
+                        >
+                          -
+                        </button>
+                        <div className="px-3 py-1 border-t border-b border-gray-300 bg-white text-center w-10">
+                          {quantity}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setQuantity(quantity + 1)}
+                          className="px-2 py-1 border border-gray-300 rounded-r-md bg-gray-50"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </>
+              ) : (
+                <ChatComponent 
+                  isEquipmentChat={true}
+                  product={product}
+                  onClose={() => setShowForm(false)}
                 />
-              </div>
-
-              <form onSubmit={handleSubmit} className="p-4 space-y-4 flex-1">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">Start Date</label>
-                    <div className="relative">
-                      <input
-                        type="datetime-local"
-                        value={selectedDates[0] ? format(parseISO(selectedDates[0]), "yyyy-MM-dd'T'HH:mm") : ''}
-                        onChange={(e) => {
-                          const newDates = [...selectedDates];
-                          newDates[0] = e.target.value;
-                          setSelectedDates(newDates);
-                        }}
-                        className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-                        required
-                      />
-                      <FiCalendar className="absolute right-3 top-3 text-gray-400 pointer-events-none" />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">End Date</label>
-                    <div className="relative">
-                      <input
-                        type="datetime-local"
-                        value={selectedDates[1] ? format(parseISO(selectedDates[0]), "yyyy-MM-dd'T'HH:mm") : ''}
-                        onChange={(e) => {
-                          const newDates = [...selectedDates];
-                          newDates[1] = e.target.value;
-                          setSelectedDates(newDates);
-                        }}
-                        min={selectedDates[0] || ''}
-                        className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-                        required
-                      />
-                      <FiCalendar className="absolute right-3 top-3 text-gray-400 pointer-events-none" />
-                    </div>
-                  </div>
-                </div>
-
-                {selectedDates.length === 2 && (
-                  <div className="bg-teal-50 p-4 rounded-lg border border-teal-100">
-                    <h3 className="font-medium text-teal-800 mb-2">Rental Summary</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Duration:</span>
-                        <span className="font-medium">{calculateDuration()} days</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Daily Rate:</span>
-                        <span className="font-medium">${product.price_per_day}/day</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Quantity:</span>
-                        <span className="font-medium">{quantity}</span>
-                      </div>
-                      <div className="border-t border-teal-200 my-2 pt-2 flex justify-between font-semibold text-teal-700">
-                        <span>Total:</span>
-                        <span>${calculateTotalPrice()}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700">Quantity</label>
-                  <div className="flex items-center">
-                    <motion.button
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="px-3 py-2 border border-gray-300 rounded-l-md bg-gray-50 text-gray-600 hover:bg-gray-100 focus:outline-none"
-                      type="button"
-                    >
-                      -
-                    </motion.button>
-                    <div className="px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-900 text-center w-16">
-                      {quantity}
-                    </div>
-                    <motion.button
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="px-3 py-2 border border-gray-300 rounded-r-md bg-gray-50 text-gray-600 hover:bg-gray-100 focus:outline-none"
-                      type="button"
-                    >
-                      +
-                    </motion.button>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700">Special Requests</label>
-                  <textarea
-                    rows={3}
-                    value={specialRequests}
-                    onChange={(e) => setSpecialRequests(e.target.value)}
-                    className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-                    placeholder="Any additional requirements or notes..."
-                  />
-                </div>
-              </form>
+              )}
             </div>
 
-            <div className="p-4 border-t border-gray-200 bg-gray-50">
-              <div className="flex gap-3">
-                <motion.button
-                  onClick={() => setShowForm(false)}
-                  className="flex-1 py-3 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  whileHover={{ y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="button"
-                >
-                  Cancel
-                </motion.button>
-                <motion.button
-                  onClick={handleSubmit}
-                  disabled={selectedDates.length !== 2}
-                  className={`flex-1 py-3 px-4 text-sm font-medium text-white rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                    selectedDates.length === 2 
-                      ? 'bg-teal-600 hover:bg-teal-700' 
-                      : 'bg-gray-400 cursor-not-allowed'
-                  }`}
-                  whileHover={{ y: selectedDates.length === 2 ? -1 : 0 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="button"
-                >
-                  <FiPlus />
-                  Schedule Rental
-                </motion.button>
+            {/* Footer - only show for calendar tab */}
+            {activeSidebarTab === "calendar" && (
+              <div className="p-3 border-t border-gray-200 bg-gray-50">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowForm(false)}
+                    className="flex-1 py-2 px-3 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    onClick={handleSubmit}
+                    disabled={selectedDates.length !== 2}
+                    className={`flex-1 py-2 px-3 text-xs font-medium text-white rounded-md ${
+                      selectedDates.length === 2
+                        ? "bg-teal-600 hover:bg-teal-700"
+                        : "bg-gray-400 cursor-not-allowed"
+                    }`}
+                  >
+                    Submit Request
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
   );
 };
+
+;

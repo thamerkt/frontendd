@@ -16,7 +16,10 @@ const ClientRequestsPage = () => {
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const clientId = 1;
+        const user = JSON.parse(localStorage.getItem("user"));
+        const clientId = user?.user_id;
+
+
         const response = await RentalRequestService.listRequests({ client: clientId });
         setRequests(response);
       } catch (err) {

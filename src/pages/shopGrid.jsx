@@ -115,17 +115,22 @@ const ShopGrid = () => {
 
   const getProductImage = useCallback((productId) => {
     if (!Array.isArray(images) || images.length === 0) return null;
-    
-    const productImages = images.filter(img => img?.stuff == productId);
+  
+    const productImages = images.filter(img => img?.stuff === productId);
     if (productImages.length === 0) return null;
-    
+  
     const mainImage = productImages.find(img => img?.position === 1);
     let url = mainImage?.url || productImages[0]?.url || null;
-    
+    console.log(url)
+  
     if (url) {
-      url = url.replace('host.docker.internal', '192.168.1.15');
-    }
+      // Replace host.docker.internal
+      if (url.includes('localhost')) {
+        url = url.replace('localhost', 'localhost:8000');
+      }
     
+    }
+  
     return url;
   }, [images]);
 

@@ -1,7 +1,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const API_URL = "https://b010-41-230-62-140.ngrok-free.app/user";
+const API_URL = "http://localhost:8000/user";
 
 const setToken = (token) => token && Cookies.set("token", token);
 const getToken = () => Cookies.get("token");
@@ -26,6 +26,12 @@ const authStore = {
       Cookies.set('keycloak_user_id', data.user_id);
       return data;
     } catch (e) { handleError(e, "Signup failed"); }
+  },
+  resendVerificationCode: async () => {
+    try {
+      const { data } = await axios.post(`${API_URL}/resend-verification-code/`);
+      return data;
+    } catch (e) { handleError(e, "Resend verification code failed"); }
   },
 
   loginWithGoogle: async (credential) => {

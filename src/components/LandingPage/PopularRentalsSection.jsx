@@ -1,22 +1,22 @@
 import { ChevronLeft, ChevronRight, Store, MapPin, Star, ChevronRightCircle, Heart, Zap, Shield, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from 'react-router-dom';
 import TrackingService from "../../services/TrackingService";
-import { useCallback } from "react";
+import EquipmentService from "../../services/EquipmentService";
 
 export default function PopularRentalsSection({
   products = [],
   getProductImage,
   isLoading = false,
   onProductView,
-  onAddToWishlist
 }) {
   const cardsPerPage = 4;
   const totalSets = Math.ceil(products.length / cardsPerPage);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [quickViewProduct, setQuickViewProduct] = useState(null);
+  const [toast, setToast] = useState(null);
   const navigate = useNavigate();
 
   const handleNext = () => {
@@ -63,6 +63,40 @@ export default function PopularRentalsSection({
   const handleProductView = useCallback(async (productId) => {
     await TrackingService.trackPageView(productId);
     navigate(`/equipment/${productId}`);
+  }, [navigate]);
+
+  const handleAddToWishlist = useCallback(async (productId, event) => {
+    event.stopPropagation();
+    
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user || !user.user_id) {
+        setToast({ message: 'Please login to add to wishlist', type: 'error' });
+        navigate('/login');
+        return;
+      }
+
+      const data = {
+        stuff: productId,
+        user: user.user_id
+      };
+
+      await EquipmentService.addToWishlist(data);
+      setToast({ message: 'Added to wishlist!', type: 'success' });
+      
+      // Add visual feedback
+      if (event.currentTarget) {
+        event.currentTarget.classList.add('animate-ping');
+        setTimeout(() => {
+          event.currentTarget?.classList.remove('animate-ping');
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Error adding to wishlist:', error);
+      setToast({ message: 'Failed to add to wishlist', type: 'error' });
+    } finally {
+      setTimeout(() => setToast(null), 3000);
+    }
   }, [navigate]);
 
   const cardVariants = {
@@ -123,6 +157,22 @@ export default function PopularRentalsSection({
 
   return (
     <section className="py-16 px-4 sm:px-8 max-w-7xl mx-auto">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 50, opacity: 0 }}
+            className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg ${
+              toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            } text-white z-50`}
+          >
+            {toast.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Section Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
         <div className="text-left">
@@ -140,7 +190,7 @@ export default function PopularRentalsSection({
           </p>
         </div>
         
-        {/* Navigation Controls - Apple Style */}
+        {/* Navigation Controls */}
         {products.length > cardsPerPage && (
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex gap-1">
@@ -200,14 +250,11 @@ export default function PopularRentalsSection({
               >
                 {/* Wishlist button */}
                 <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddToWishlist(product.id);
-                  }}
-                  className="absolute top-4 right-4 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-red-50 transition-colors"
+                  onClick={(e) => handleAddToWishlist(product.id, e)}
+                  className="absolute top-4 right-4 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-red-50 transition-colors group/wishlist"
                   aria-label="Add to wishlist"
                 >
-                  <Heart className="w-5 h-5 text-gray-400 group-hover:text-red-400" />
+                  <Heart className="w-5 h-5 text-gray-400 group-hover/wishlist:text-red-400 transition-colors" />
                 </button>
 
                 {/* Image with category badge */}
@@ -440,15 +487,27 @@ export default function PopularRentalsSection({
                   </div>
                 </div>
                 
-                <button 
-                  className="w-full mt-6 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-medium"
-                  onClick={() => {
-                    handleProductView(quickViewProduct.id);
-                    setQuickViewProduct(null);
-                  }}
-                >
-                  Rent Now
-                </button>
+                <div className="flex gap-3 mt-6">
+                  <button 
+                    className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-medium"
+                    onClick={() => {
+                      handleProductView(quickViewProduct.id);
+                      setQuickViewProduct(null);
+                    }}
+                  >
+                    Rent Now
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddToWishlist(quickViewProduct.id, e);
+                    }}
+                    className="p-3 rounded-lg border border-gray-300 hover:bg-gray-50 flex items-center justify-center"
+                    aria-label="Add to wishlist"
+                  >
+                    <Heart className="w-5 h-5 text-gray-400 hover:text-red-400 transition-colors" />
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>

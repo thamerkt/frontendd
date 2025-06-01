@@ -67,7 +67,7 @@ const LandingPage = () => {
 
   const fetchip = useCallback(async () => {
     try {
-      const response = await axios.get("https://b010-41-230-62-140.ngrok-free.app/ocr/getipp/");
+      const response = await axios.get("http://localhost:8000/ocr/getipp/");
       setIP(response.data.ip); // Changed to response.data.ip
       console.log("IP fetched:", response.data.ip);
     } catch (error) {
@@ -83,19 +83,25 @@ const LandingPage = () => {
   // Get product image URL
   const getProductImage = useCallback((productId) => {
     if (!Array.isArray(images) || images.length === 0) return null;
-
-    const productImages = images.filter(img => img?.stuff == productId);
+  
+    const productImages = images.filter(img => img?.stuff === productId);
     if (productImages.length === 0) return null;
-
+  
     const mainImage = productImages.find(img => img?.position === 1);
     let url = mainImage?.url || productImages[0]?.url || null;
-
-    if (url && ip) {
-      url = url.replace('host.docker.internal', ip);
+    console.log(url)
+  
+    if (url) {
+      // Replace host.docker.internal
+      if (url.includes('localhost')) {
+        url = url.replace('localhost', 'localhost:8000');
+      }
+    
     }
-
+  
     return url;
-  }, [images, ip]);
+  }, [images]);
+  
 
   const handleProductView = useCallback(async (productId) => {
     await TrackingService.trackPageView(productId);
@@ -126,6 +132,27 @@ const LandingPage = () => {
       behavior: "smooth",
     });
   }, []);
+  const handleAddToWishlist = async (productId) => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user || !user.user_id) {
+        // Handle case where user is not logged in
+        navigate('/login');
+        return;
+      }
+  
+      const data = {
+        stuff: productId,
+        user: user.user_id
+      };
+  
+      await EquipmentService.addToWishlist(data);
+      // Optionally show a success notification
+    } catch (error) {
+      console.error('Error adding to wishlist:', error);
+      // Optionally show an error notification
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -171,6 +198,7 @@ const LandingPage = () => {
           products={products}
           getProductImage={getProductImage}
           currentIndex={currentIndex}
+          onAddToWishlist={handleAddToWishlist}
           handleNext={handleNext}
           handlePrev={handlePrev}
           isLoading={isLoading}

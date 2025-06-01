@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://b010-41-230-62-140.ngrok-free.app/history/"; 
+const API_URL = "http://localhost:8000/history/"; 
 
 
 

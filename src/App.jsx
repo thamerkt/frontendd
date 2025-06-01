@@ -66,7 +66,7 @@ import ClientDashboard from "./pages/Client/dashboard";
 import BlogPost1 from "./components/blog1";
 import BlogPost2 from "./components/blog2";
 import BlogPost3 from "./components/blog3";
-
+import ChatComponent from "./components/Messanger";
 import TrackingService from "./services/TrackingService";
 import Unauthorized from "./components/unauthorized";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -146,7 +146,7 @@ const App = () => {
                   <Route path="/register/identity-verification/verification/back-document" element={<BackCapture />} />
                   <Route path="/register/identity-verification/verification/selfie" element={<SelfieCapture />} />
                   <Route path="/register/identity-verification/verification/verification-complete" element={<VerificationComplete />} />
-
+                  <Route path="/payment" element={<CheckoutProcess />} />
                   {/* Admin Routes */}
                   <Route path="/admin" element={<ProtectedRoute role="rental" />}>
                     <Route path="dashbord" element={<Dashboard />} />
@@ -156,8 +156,9 @@ const App = () => {
                     <Route path="settings" element={<SettingsPage />} />
                     <Route path="history" element={<HistoryPage />} />
                     <Route path="contracts" element={<Contracts />} />
-                    <Route path="add" element={<AddProductForm />} />
+                    
                   </Route>
+                  <Route path="add" element={<AddProductForm />} />
 
                   {/* Owner Routes */}
                   <Route path="/owner" element={<ProtectedRoute role="admin" />}>
@@ -193,10 +194,11 @@ const App = () => {
                     <Route path="payment" element={<CheckoutProcess />} />
                     <Route path="signature" element={<ContractSigner />} />
                   </Route>
+                  <Route path="signature" element={<ContractSigner />} />
 
                   {/* Utilities */}
                   <Route path="/register/test" element={<ImageGallery />} />
-
+                  <Route path="/messanger" element={<ChatComponent isEquipmentChat={false} />} />
                   {/* 404 Not Found */}
                   <Route path="*" element={<h1>404 - Not Found</h1>} />
 

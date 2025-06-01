@@ -3,18 +3,18 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 const RegistrationProgressGuard = ({ allowedStep }) => {
   const location = useLocation();
 
-  // Get progress from sessionStorage (object or string)
+  // Get progress from sessionStorage (default to 'step1')
   const progressData = sessionStorage.getItem('progress');
   let progress = 'step1';
+
   try {
-    const parsed = JSON.parse(progressData);
+    const parsed = typeof progressData === 'string' ? JSON.parse(progressData) : {};
     progress = parsed?.progress || 'step1';
   } catch {
     progress = progressData || 'step1';
   }
 
-  const user = JSON.parse(localStorage.getItem('user'));
-  const role = user?.role;
+  const role = localStorage.getItem('role');
 
   const stepsOrder = ['step1', 'step2', 'step3', 'step4'];
   const stepToPath = {
@@ -24,16 +24,13 @@ const RegistrationProgressGuard = ({ allowedStep }) => {
     step4: '/register/identity-verification',
   };
 
-  const currentStepIndex = stepsOrder.indexOf(progress);
+  // Validate step
+  const isValidStep = stepsOrder.includes(progress);
+  const currentPath = isValidStep ? stepToPath[progress] : stepToPath.step1;
 
-  // Special case for step4 role restriction
-  if (progress === 'step4' && role !== 'equipment_manager_company') {
-    return <Navigate to="/dashboard" replace />;
-  }
+  
 
-  const currentPath = stepToPath[progress] || '/register/email-verification';
-  console.log(currentPath);
-  // If current URL is not matching current progress path → redirect
+  // Redirect if current route does not match user's progress
   if (location.pathname !== currentPath) {
     return <Navigate to={currentPath} replace />;
   }

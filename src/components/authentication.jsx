@@ -67,7 +67,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
     email: "",
     password: "",
     ...(isRegister && {
-      role: "customer",
+      role: "",
       confirmPassword: "",
     })
   });
@@ -286,8 +286,9 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
   
     try {
       if (isRegister) {
-        await authStore.signup(formData.email, formData.password, formData.role|| 'customer');
-        setFormData({ email: "", password: "", confirmPassword: "", role: "customer" });
+        const response = await authStore.signup(formData.email, formData.password, formData.role || 'customer');
+        setFormData({ email: "", password: "", confirmPassword: "", role: formData.role});
+        localStorage.setItem('role', formData.role);
         toast.success("Registration successful! Please check your email for verification.", );
         sessionStorage.setItem('progress', JSON.stringify({ "progress": "step1" }));
         setTimeout(() => navigate("/register/email-verification"), 3000);
@@ -310,7 +311,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
         }
   
         // Determine the role based on roles array
-        let role = 'customer'; // default
+        let role = formData.role; // default
         if (isEmptyRoles) {
           role = 'admin';
         } else if (roles.includes('customer')) {
@@ -509,15 +510,16 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
                     Account Type
                   </label>
                   <select
-                    id="role"
-                    name="role"
-                    value={formData.role}
-                    onChange={handleChange}
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md"
-                  >
-                    <option value="customer">Customer</option>
-                    <option value="owner">Owner</option>
-                  </select>
+  id="role"
+  name="role"
+  value={formData.role}
+  onChange={handleChange}
+  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md"
+>
+  <option value="">Select account type</option>
+  <option value="customer">Customer</option>
+  <option value="equipment_manager_individual">Owner</option>
+</select>
                 </div>
               </>
             )}

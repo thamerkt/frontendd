@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import authStore from "../redux/authStore";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
+
+
+
+
+import authStore from "../redux/authStore";
 import saveProgress from "../components/utils/saveProgress";
 
 const EmailVerification = () => {
@@ -15,7 +20,17 @@ const EmailVerification = () => {
   const [countdown, setCountdown] = useState(30);
   
   const userId = Cookies.get("keycloak_user_id");
-  const email = Cookies.get("email") || "kthirithamer1@gmail.com";
+  const token = Cookies.get("token"); // Assuming your token is stored under 'token'
+  
+  let email = "your-email@example.com"; // fallback
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      email = decoded?.email || email;
+    } catch (err) {
+      console.error("Failed to decode token:", err);
+    }
+  }
 
   // Save initial progress on mount
   useEffect(() => {
@@ -110,7 +125,7 @@ const EmailVerification = () => {
 
   const handleResend = async () => {
     try {
-      await authStore.resendVerificationCode();
+      
       showToast("New verification code sent!", "info");
       setCountdown(30);
     } catch (error) {
@@ -135,8 +150,8 @@ const EmailVerification = () => {
             We've sent a 6-digit confirmation code to <span className="font-medium text-gray-800">{email}</span>
           </p>
         </div>
-        
-        {/* Code Input - Desktop Optimized */}
+
+        {/* Code Input */}
         <div className="mb-10">
           <div 
             className="flex justify-center gap-4 mb-8"
@@ -163,7 +178,7 @@ const EmailVerification = () => {
               </div>
             ))}
           </div>
-          
+
           <button
             onClick={handleVerify}
             disabled={loading || code.some(digit => digit === "")}
@@ -184,7 +199,7 @@ const EmailVerification = () => {
             ) : "Verify and Continue"}
           </button>
         </div>
-        
+
         {/* Resend Code */}
         <div className="text-center">
           <p className="text-gray-600 text-lg">
@@ -205,7 +220,7 @@ const EmailVerification = () => {
           </p>
         </div>
       </div>
-      
+
       <ToastContainer 
         position="top-center"
         autoClose={3000}

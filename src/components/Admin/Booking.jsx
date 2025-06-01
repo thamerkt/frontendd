@@ -26,9 +26,9 @@ useEffect(() => {
     try {
       let apiUrl;
       if (location.pathname.startsWith('/admin')) {
-        apiUrl = 'https://b010-41-230-62-140.ngrok-free.app/rental/rental_requests/?rental=2';
+        apiUrl = 'http://localhost:8000/rental/rental_requests/?rental=2';
       } else {
-        apiUrl = 'https://b010-41-230-62-140.ngrok-free.app/rental/rental_requests/?client=10';
+        apiUrl = 'http://localhost:8000/rental/rental_requests/?client=10';
       }
 
       const response = await fetch(apiUrl, {

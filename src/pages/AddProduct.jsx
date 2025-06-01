@@ -34,10 +34,10 @@ const AddProductForm = () => {
     // Fetch categories
     const fetchCategories = async () => {
       try {
-        const response = await axios.get('https://b010-41-230-62-140.ngrok-free.app/api/categories/', {
+        const response = await axios.get('http://localhost:8000/api/categories/', {
           headers: {
             'Content-Type': 'application/json',
-            
+
           },
           withCredentials: true, // This sends cookies with the request
         });
@@ -48,21 +48,21 @@ const AddProductForm = () => {
         setLoadingCategories(false);
       }
     };
-  
+
     fetchCategories();
   }, []);
-  
 
-  
+
+
 
   const fetchSubCategories = async (categoryId) => {
     try {
       setLoadingSubCategories(true);
-      const response = await axios.get(`https://b010-41-230-62-140.ngrok-free.app/api/subcatgeory/`, {
+      const response = await axios.get(`http://localhost:8000/api/subcatgeory/`, {
         headers: {
           'Content-Type': 'application/json',
-          
-        },withCredentials: true, // This sends cookies with the request
+
+        }, withCredentials: true, // This sends cookies with the request
       });
       // Filter subcategories by the selected category
       const filteredSubCategories = response.data.filter(sub => sub.category == categoryId);
@@ -77,9 +77,9 @@ const AddProductForm = () => {
   const handleImageUploadd = async (file) => {
     try {
       if (!file) return null;
-      
+
       const imageId = Math.random().toString(36).substring(2, 9);
-      
+
       return {
         src: URL.createObjectURL(file),
         id: imageId,
@@ -95,7 +95,7 @@ const AddProductForm = () => {
   };
 
   const handleImageDelete = async (imageId, imageUrl) => {
-    await fetch(`https://b010-41-230-62-140.ngrok-free.app/api/images/${imageId}`, {
+    await fetch(`http://localhost:8000/api/images/${imageId}`, {
       method: 'DELETE'
     });
   };
@@ -261,7 +261,7 @@ const AddProductForm = () => {
         }
 
         const managementRes = await axios.post(
-          'https://b010-41-230-62-140.ngrok-free.app/api/stuffmanagment/',
+          'http://localhost:8000/api/stuffmanagment/',
           managementFormData,
           {
             headers: {
@@ -289,12 +289,12 @@ const AddProductForm = () => {
         stuffFormData.append('state', productData.state);
         stuffFormData.append('rental_location', productData.rental_location);
         stuffFormData.append('price_per_day', productData.price_per_day);
-        
+
         if (editorRef.current) {
           const html = editorRef.current.getHTML();
           stuffFormData.append('detailed_description', html);
         }
-        
+
         stuffFormData.append('location', productData.stuff_management.location);
         stuffFormData.append('category', productData.category.id);
         stuffFormData.append('subcategory', productData.category.subcategory_id);
@@ -302,7 +302,7 @@ const AddProductForm = () => {
         stuffFormData.append('stuff_management', stuffManagementId);
         stuffFormData.append('user', productData.user);
 
-        const stuffRes = await axios.post('https://b010-41-230-62-140.ngrok-free.app/api/stuffs/', stuffFormData, {
+        const stuffRes = await axios.post('http://localhost:8000/api/stuffs/', stuffFormData, {
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${Cookies.get('access_token')}`
@@ -323,8 +323,8 @@ const AddProductForm = () => {
         imgFormData.append('position', Number.isInteger(img.position) ? img.position : i);
 
         try {
-          await axios.post('https://b010-41-230-62-140.ngrok-free.app/api/images/', imgFormData, {
-            headers: { 
+          await axios.post('http://localhost:8000/api/images/', imgFormData, {
+            headers: {
               'Content-Type': 'multipart/form-data',
               'Authorization': `Bearer ${Cookies.get('access_token')}`
             },
@@ -345,8 +345,8 @@ const AddProductForm = () => {
             imgFormData.append('position', 0);
 
             try {
-              await axios.post('https://b010-41-230-62-140.ngrok-free.app/api/images/', imgFormData, {
-                headers: { 
+              await axios.post('http://localhost:8000/api/images/', imgFormData, {
+                headers: {
                   'Content-Type': 'multipart/form-data',
                   'Authorization': `Bearer ${Cookies.get('access_token')}`
                 },
@@ -447,7 +447,7 @@ const AddProductForm = () => {
             <div className="lg:col-span-2 space-y-6">
               {/* Basic Information Section */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:border-teal-200">
-                <div 
+                <div
                   className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
                   onClick={() => toggleSection('basic')}
                 >
@@ -515,9 +515,17 @@ const AddProductForm = () => {
                     <div className="space-y-1">
                       <label className="block text-sm font-medium text-gray-700">Detailed Description *</label>
                       <MyEditor
-                        ref={editorRef}
-                        onImageUpload={handleImageUploadd}
-                        onImageDelete={handleImageDelete}
+                        onImageUpload={async (formData) => {
+                          const response = await axios.post(`${API_BASE_URL}/images/`, formData, {
+                            headers: getAuthHeaders(true) // true for multipart/form-data
+                          });
+                          return response.data; // Should return { id, url }
+                        }}
+                        onImageDelete={async (imageId) => {
+                          await axios.delete(`${API_BASE_URL}/images/${imageId}`, {
+                            headers: getAuthHeaders()
+                          });
+                        }}
                       />
                     </div>
 
@@ -552,7 +560,7 @@ const AddProductForm = () => {
               </div>
               {/* Pricing Section */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:border-teal-200">
-                <div 
+                <div
                   className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
                   onClick={() => toggleSection('pricing')}
                 >
@@ -649,7 +657,7 @@ const AddProductForm = () => {
 
               {/* Management Information Section */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:border-teal-200">
-                <div 
+                <div
                   className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
                   onClick={() => toggleSection('management')}
                 >
@@ -739,7 +747,7 @@ const AddProductForm = () => {
             <div className="space-y-6">
               {/* Product Images Section */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:border-teal-200">
-                <div 
+                <div
                   className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
                   onClick={() => toggleSection('images')}
                 >
@@ -883,7 +891,7 @@ const AddProductForm = () => {
                 )}
               </div>           {/* Category & Brand Section */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:border-teal-200">
-                <div 
+                <div
                   className="flex items-center justify-between p-4 cursor-pointer bg-gray-50"
                   onClick={() => toggleSection('category')}
                 >
@@ -987,7 +995,7 @@ const AddProductForm = () => {
                 <FiEye className="mr-1.5" size={14} />
                 {showPreview ? 'Hide Preview' : 'Show Preview'}
               </button>
-             
+
               <button
                 type="submit"
                 disabled={isSubmitting}

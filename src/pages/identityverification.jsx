@@ -1,24 +1,26 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 import useProgressGuard from "../components/utils/ProcessGuard";
 
 const IdentityVerification = () => {
-  const [qrCode, setQrCode] = useState("");
-  const [verificationLink, setVerificationLink] = useState("");
-  const user = Cookies.get('keycloak_user_id');
-  //useProgressGuard(1, 3); 
+  const [qrCode, setQrCode] = useState(""); // controlled from start
+  const [verificationLink, setVerificationLink] = useState(""); // optional for linking
+  const user = Cookies.get("keycloak_user_id");
+
+  // Uncomment when ready to use guard
+  // useProgressGuard(1, 3);
 
   useEffect(() => {
     if (!user) return;
 
     axios
-      .post("https://b010-41-230-62-140.ngrok-free.app/ocr/generate-qr/",  {
+      .post("http://localhost:8000/ocr/generate-qr/", {
         user: user,
-      } )
+      })
       .then((response) => {
-        setQrCode(response.data.qr_code);
-        setVerificationLink(response.data.link);
+        setQrCode(response.data.qr_code || ""); // ensure never undefined
+        setVerificationLink(response.data.link || "");
       })
       .catch((error) => console.error("Error fetching QR Code:", error));
   }, [user]);

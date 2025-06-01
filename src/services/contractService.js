@@ -1,6 +1,6 @@
 import Cookies from "js-cookie";
 
-const API_URL = "https://b010-41-230-62-140.ngrok-free.app/contracts"; // no trailing slash
+const API_URL = "http://localhost:8000/contracts"; // no trailing slash
 
 const getHeaders = (isJson = false) => {
   const token = Cookies.get("token");

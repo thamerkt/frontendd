@@ -1,6 +1,6 @@
 import Cookies from "js-cookie";
 
-const API_URL = "https://b010-41-230-62-140.ngrok-free.app/api"; // no trailing slash
+const API_URL = "http://localhost:8000/api"; // no trailing slash
 
 const getHeaders = (isJson = false) => {
   const token = Cookies.get("token");
@@ -30,7 +30,7 @@ const request = async (method, url, data = null, isJson = false) => {
     if (data) {
       options.body = isJson ? JSON.stringify(data) : data;
       if (!isJson && headers["Content-Type"]) {
-        delete headers["Content-Type"]; // Let browser set correct multipart/form-data boundary
+        delete headers["Content-Type"];
       }
     }
 
@@ -40,7 +40,6 @@ const request = async (method, url, data = null, isJson = false) => {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
 
-    // If response is 204 No Content or empty, skip parsing
     const contentType = res.headers.get("content-type");
     if (res.status === 204 || !contentType || !contentType.includes("application/json")) {
       return null;
@@ -85,7 +84,6 @@ const EquipmentService = {
 
   // Analytics
   trackView: (data) => request("post", `${API_URL}/item-views/`, data, true),
-
   trackCart: async (data) => {
     const result = await request("post", `${API_URL}/cart-activities/`, data, true);
     if (result?.session_key) {
@@ -93,9 +91,22 @@ const EquipmentService = {
     }
     return result;
   },
-
   CreateVisitor: (session_key) =>
     request("post", `${API_URL}/visitors/`, { session_key: session_key || null }, true),
+
+  // Reviews
+  fetchReviews: () => request("get", `${API_URL}/reviews/`, null, true),
+  fetchReviewById: (id) => request("get", `${API_URL}/reviews/${id}/`, null, true),
+  createReview: (data) => request("post", `${API_URL}/reviews/`, data, true),
+  updateReview: (id, data) => request("put", `${API_URL}/reviews/${id}/`, data, true),
+  deleteReview: (id) => request("delete", `${API_URL}/reviews/${id}/`),
+
+  // Wishlist
+  fetchWishlist: () => request("get", `${API_URL}/wishlist/`, null, true),
+  fetchWishlistById: (id) => request("get", `${API_URL}/wishlist/${id}/`, null, true),
+  addToWishlist: (data) => request("post", `${API_URL}/wishlist/`, data, true),
+  updateWishlist: (id, data) => request("put", `${API_URL}/wishlist/${id}/`, data, true),
+  removeFromWishlist: (id) => request("delete", `${API_URL}/wishlist/${id}/`),
 };
 
 export default EquipmentService;

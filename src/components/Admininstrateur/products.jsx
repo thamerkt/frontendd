@@ -10,8 +10,8 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 import axios from 'axios';
 
 // API Configuration
-const API_BASE_URL = "https://b010-41-230-62-140.ngrok-free.app/api";
-const PROFILE_API_URL = "https://b010-41-230-62-140.ngrok-free.app/profile/profil/";
+const API_BASE_URL = "http://localhost:8000/api";
+const PROFILE_API_URL = "http://localhost:8000/profile/profil/";
 const axiosInstance = axios.create({
   withCredentials: true
 });
@@ -30,11 +30,11 @@ const apiService = {
   },
   reports: {
     getByUser: async (username) => {
-      const response = await axios.get(`https://b010-41-230-62-140.ngrok-free.app/reports/rapports/?user=${username}`);
+      const response = await axios.get(`http://localhost:8000/reports/rapports/?user=${username}`);
       return response.data;
     },
     create: async (reportData) => {
-      const response = await axios.post('https://b010-41-230-62-140.ngrok-free.app/reports/rapports/', reportData, {
+      const response = await axios.post('http://localhost:8000/reports/rapports/', reportData, {
         headers: { 'Content-Type': 'application/json' }
       });
       return response.data;
@@ -42,11 +42,11 @@ const apiService = {
   },
   reportData: {
     getByReport: async (reportId) => {
-      const response = await axios.get(`https://b010-41-230-62-140.ngrok-free.app/reports/rapport-data/?rapport=${reportId}`);
+      const response = await axios.get(`http://localhost:8000/reports/rapport-data/?rapport=${reportId}`);
       return response.data;
     },
     create: async (metricData) => {
-      const response = await axios.post('https://b010-41-230-62-140.ngrok-free.app/reports/rapport-data/', metricData);
+      const response = await axios.post('http://localhost:8000/reports/rapport-data/', metricData);
       return response.data;
     }
   }

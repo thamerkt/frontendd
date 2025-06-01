@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Facebook, Twitter, Instagram, Mail, ShoppingCart, 
-  ChevronDown, MapPin, Menu, X, User, Briefcase,
-  ClipboardList, List, Bell, Heart
+import {
+    Facebook, Twitter, Instagram, Mail, ShoppingCart,
+    ChevronDown, MapPin, Menu, X, User, Briefcase,
+    ClipboardList, List, Bell, Heart, MessageCircle
 } from 'lucide-react';
+import Cookies from 'js-cookie';
+
+
 
 const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -14,6 +17,9 @@ const Navbar = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [notificationCount, setNotificationCount] = useState(0);
+    const [notificationCountt, setNotificationCountt] = useState(0);
+    const [notifications, setNotifications] = useState([]);
+    const [messageCount, setMessageCount] = useState(0);
     const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token') || !!localStorage.getItem('user'));
     const [user, setUser] = useState(() => {
         const userData = localStorage.getItem('user');
@@ -29,6 +35,8 @@ const Navbar = () => {
     const [profilePicture, setProfilePicture] = useState(null);
     const location = useLocation();
     const navigate = useNavigate();
+    const websocket = useRef(null);
+    const notificationsRef = useRef(null);
 
     // Navigation items - direct links
     const navItems = [
@@ -62,35 +70,201 @@ const Navbar = () => {
         ) {
             return true;
         }
-        // Also check the original hiddenPaths
         return hiddenPaths.some(hp => path.startsWith(hp));
     })();
 
-    // Sync login state and user/profile on location change (route change)
+    // Fetch notifications
+    const fetchNotificationss = async () => {
+        try {
+            const userId = Cookies.get('keycloak_user_id');
+            if (!userId) {
+                console.log("No user ID found in cookies");
+                return;
+            }
+            
+            console.log("Fetching notifications for user:", userId);
+            const response = await fetch(`http://127.0.0.1:8002/notify/notifications/?user=${userId}`);
+            
+            console.log("Response status:", response.status);
+            if (!response.ok) {
+                console.error("Response not OK:", await response.text());
+                return;
+            }
+            
+            const data = await response.json();
+            console.log("Received notifications:", data);
+            
+            setNotifications(data);
+            const unreadCount = data.filter(notification => !notification.is_read).length;
+            setNotificationCountt(unreadCount);
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+        }
+    };
+
+    // Mark notifications as read
+    const markNotificationsAsRead = async () => {
+        try {
+            const userId = Cookies.get('keycloak_user_id');
+            if (!userId) return;
+            
+            const response = await fetch(`http://127.0.0.1:8002/notify/notifications/mark-read/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ user: userId })
+            });
+            
+            if (response.ok) {
+                // Update local state to mark all as read
+                setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+                setNotificationCountt(0);
+            }
+        } catch (error) {
+            console.error('Error marking notifications as read:', error);
+        }
+    };
+
+    // Handle click outside notifications dropdown
     useEffect(() => {
-        // Check if user is logged in
+        const handleClickOutside = (event) => {
+            if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+                setNotificationsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Initialize WebSocket connection for real-time updates
+    useEffect(() => {
+        if (isLoggedIn && user?.user_id) {
+            const wsUrl = `ws://127.0.0.1:8001/ws/notifications/${user.user_id}/`;
+            websocket.current = new WebSocket(wsUrl);
+
+            websocket.current.onopen = () => {
+                console.log('WebSocket connected');
+                // Fetch initial counts immediately after connection
+                fetchUnreadMessageCount();
+                fetchNotifications();
+            };
+
+            websocket.current.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                if (data.type === 'new_message') {
+                    // Increment message count when new message arrives
+                    setMessageCount(prev => prev + 1);
+                } else if (data.type === 'message_read') {
+                    // Decrement message count when messages are read
+                    setMessageCount(prev => Math.max(0, prev - data.count));
+                } else if (data.type === 'new_notification') {
+                    // Increment notification count when new notification arrives
+                    setNotificationCount(prev => prev + 1);
+                    // Fetch updated notifications
+                    fetchNotifications();
+                }
+            };
+
+            websocket.current.onclose = () => {
+                console.log('WebSocket disconnected');
+                // Attempt to reconnect after 5 seconds
+                setTimeout(() => {
+                    if (isLoggedIn) {
+                        websocket.current = new WebSocket(wsUrl);
+                    }
+                }, 5000);
+            };
+
+            websocket.current.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            return () => {
+                if (websocket.current) {
+                    websocket.current.close();
+                }
+            };
+        }
+    }, [isLoggedIn, user?.user_id]);
+
+    // Fetch unread message count from REST API
+    const fetchUnreadMessageCount = async () => {
+        try {
+            const response = await fetch(`http://127.0.0.1:8001/api/chat/chat/unread/${user?.user_id}/`);
+            if (response.ok) {
+                const data = await response.json();
+                // Assuming data.unread_messages is an array
+                const unreadCount = data.unread_messages?.length || 0;
+                setMessageCount(unreadCount);
+            }
+        } catch (error) {
+            console.error('Error fetching unread message count:', error);
+        }
+    };
+    
+    // Mark messages as read when visiting messages page
+    const markMessagesAsRead = async () => {
+        try {
+            const response = await fetch(`http://127.0.0.1:8001/api/chat/chat/mark_read/${user?.user_id}/`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            if (response.ok) {
+                setMessageCount(0);
+                // Notify WebSocket server that messages were read
+                if (websocket.current && websocket.current.readyState === WebSocket.OPEN) {
+                    websocket.current.send(JSON.stringify({
+                        type: 'messages_read'
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error('Error marking messages as read:', error);
+        }
+    };
+
+    // Fetch initial counts when user logs in or route changes
+    useEffect(() => {
+        if (isLoggedIn && isCustomer) {
+            fetchUnreadMessageCount();
+            
+            
+            // If we're on the messages page, mark messages as read
+            if (location.pathname === '/messanger') {
+                markMessagesAsRead();
+            }
+        }
+    }, [isLoggedIn, isCustomer, location.pathname]);
+
+    // Sync login state and user/profile on location change
+    useEffect(() => {
         const token = localStorage.getItem('token');
         const userData = localStorage.getItem('user');
+        fetchNotificationss();
         if (token || userData) {
             setIsLoggedIn(true);
             if (userData) {
                 const parsedUser = JSON.parse(userData);
                 setUser(parsedUser);
                 setIsCustomer(!parsedUser.role || parsedUser.role === 'customer');
-                fetchProfileDetails(parsedUser.user_id,parsedUser.role);
+                fetchProfileDetails(parsedUser.user_id, parsedUser.role);
             }
         } else {
             setIsLoggedIn(false);
             setUser(null);
             setProfile(null);
             setProfilePicture(null);
+            setMessageCount(0);
+            setNotificationCount(0);
+            setNotifications([]);
         }
-        // Close mobile menu when navigating
         setMobileMenuOpen(false);
-        // Close dropdowns on route change
         setIsDropdownOpen(false);
         setNotificationsOpen(false);
-    // eslint-disable-next-line
     }, [location.pathname]);
 
     // Scroll event for sticky effect
@@ -110,60 +284,58 @@ const Navbar = () => {
     const fetchProfileDetails = async (userId, isCustomerRole) => {
         if (isCustomerRole !== 'admin') {
             try {
-                // Fetch profile
-                const profileResponse = await fetch(`https://b010-41-230-62-140.ngrok-free.app/profile/profil/?user=${userId}`, {
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include'
-            });
-            if (!profileResponse.ok) throw new Error('Profile fetch failed');
-            const profileData = await profileResponse.json();
-            if (profileData.length > 0) {
-                const userProfile = profileData[0];
-                setProfile(userProfile);
+                const profileResponse = await fetch(`http://localhost:8000/profile/profil/?user=${userId}`, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                if (!profileResponse.ok) throw new Error('Profile fetch failed');
+                const profileData = await profileResponse.json();
+                if (profileData.length > 0) {
+                    const userProfile = profileData[0];
+                    setProfile(userProfile);
 
-                // Fetch profile picture based on user role
-                if (isCustomerRole) {
-                    const physicalResponse = await fetch(`https://b010-41-230-62-140.ngrok-free.app/profile/physicalprofil/?profil=${userProfile.id}`, {
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        credentials: 'include'
-                    });
-                    if (physicalResponse.ok) {
-                        const physicalData = await physicalResponse.json();
-                        if (physicalData.length > 0 && physicalData[0].profile_picture) {
-                            setProfilePicture(physicalData[0].profile_picture);
-                        } else {
-                            setProfilePicture(null);
+                    if (isCustomerRole) {
+                        const physicalResponse = await fetch(`http://localhost:8000/profile/physicalprofil/?profil=${userProfile.id}`, {
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            credentials: 'include'
+                        });
+                        if (physicalResponse.ok) {
+                            const physicalData = await physicalResponse.json();
+                            if (physicalData.length > 0 && physicalData[0].profile_picture) {
+                                setProfilePicture(physicalData[0].profile_picture);
+                            } else {
+                                setProfilePicture(null);
+                            }
+                        }
+                    } else {
+                        const moralResponse = await fetch(`http://localhost:8000/profile/profilmoral/?profil=${userProfile.id}`, {
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            credentials: 'include'
+                        });
+                        if (moralResponse.ok) {
+                            const moralData = await moralResponse.json();
+                            if (moralData.length > 0 && moralData[0].logo) {
+                                setProfilePicture(moralData[0].logo);
+                            } else {
+                                setProfilePicture(null);
+                            }
                         }
                     }
                 } else {
-                    const moralResponse = await fetch(`https://b010-41-230-62-140.ngrok-free.app/profile/profilmoral/?profil=${userProfile.id}`, {
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        credentials: 'include'
-                    });
-                    if (moralResponse.ok) {
-                        const moralData = await moralResponse.json();
-                        if (moralData.length > 0 && moralData[0].logo) {
-                            setProfilePicture(moralData[0].logo);
-                        } else {
-                            setProfilePicture(null);
-                        }
-                    }
+                    setProfile(null);
+                    setProfilePicture(null);
                 }
-            } else {
+            } catch (error) {
                 setProfile(null);
                 setProfilePicture(null);
             }
-        } catch (error) {
-            setProfile(null);
-            setProfilePicture(null);
-            // Optionally log error
-        }}
+        }
     };
 
     const detectLocation = () => {
@@ -244,6 +416,12 @@ const Navbar = () => {
         setUser(null);
         setProfile(null);
         setProfilePicture(null);
+        setMessageCount(0);
+        setNotificationCount(0);
+        setNotifications([]);
+        if (websocket.current) {
+            websocket.current.close();
+        }
         navigate('/');
         setIsDropdownOpen(false);
     };
@@ -256,9 +434,19 @@ const Navbar = () => {
     const toggleNotifications = () => {
         setNotificationsOpen((prev) => !prev);
         setIsDropdownOpen(false);
-        if (notificationsOpen) {
-            setNotificationCount(0);
+        
+        // When opening notifications, mark them as read
+        if (IsDropdownOpen && notificationCount > 0) {
+            markNotificationsAsRead();
         }
+    };
+
+    const handleMessagesClick = () => {
+        // Mark messages as read when clicking the messages icon
+        if (messageCount > 0) {
+            markMessagesAsRead();
+        }
+        navigate('/messanger');
     };
 
     const renderDropdownItems = () => {
@@ -377,17 +565,44 @@ const Navbar = () => {
                     <div className="h-5 w-px bg-gray-600"></div>
 
                     <div className="flex items-center space-x-4">
-                        <button
-                            className="text-gray-300 hover:text-teal-400 transition-colors duration-200 relative"
-                            onClick={toggleNotifications}
-                        >
-                            <Bell className="w-4 h-4" />
-                            {notificationCount > 0 && (
-                                <span className="absolute -top-2 -right-2 bg-teal-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                                    {notificationCount}
-                                </span>
+                        <div className="relative" ref={notificationsRef}>
+                            <button
+                                className="text-gray-300 hover:text-teal-400 transition-colors duration-200 relative"
+                                onClick={toggleNotifications}
+                            >
+                                <Bell className="w-4 h-4" />
+                                {notificationCountt > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-teal-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                        {notificationCountt}
+                                    </span>
+                                )}
+                            </button>
+
+                            {notificationsOpen && (
+                                <div className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200 max-h-96 overflow-y-auto">
+                                    <div className="px-4 py-2 border-b border-gray-100 text-sm font-medium text-gray-700">
+                                        Notifications
+                                    </div>
+                                    {notifications.length > 0 ? (
+                                        notifications.map(notification => (
+                                            <div 
+                                                key={notification.id} 
+                                                className={`px-4 py-3 text-sm ${notification.is_read ? 'text-gray-600' : 'text-gray-900 bg-gray-50'}`}
+                                            >
+                                                <div className="font-medium">{notification.title}</div>
+                                                <div className="text-xs text-gray-500 mt-1">
+                                                    {new Date(notification.created_at).toLocaleString()}
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="px-4 py-3 text-sm text-gray-500">
+                                            No notifications
+                                        </div>
+                                    )}
+                                </div>
                             )}
-                        </button>
+                        </div>
 
                         <button className="text-gray-300 hover:text-teal-400 transition-colors duration-200 relative">
                             <ShoppingCart className="w-4 h-4" />
@@ -442,6 +657,22 @@ const Navbar = () => {
                                     >
                                         <Heart className="w-5 h-5" />
                                     </a>
+
+                                    {/* Messenger button - only for logged-in customers */}
+                                    {isCustomer && (
+                                        <button
+                                            onClick={handleMessagesClick}
+                                            className="relative p-2 text-gray-700 hover:text-teal-600 transition-colors duration-200"
+                                            aria-label="Messages"
+                                        >
+                                            <MessageCircle className="w-5 h-5" />
+                                            {messageCount > 0 && (
+                                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                                    {messageCount > 9 ? '9+' : messageCount}
+                                                </span>
+                                            )}
+                                        </button>
+                                    )}
 
                                     {/* User dropdown */}
                                     <div className="relative">
@@ -536,6 +767,22 @@ const Navbar = () => {
                                             <span>Wishlist</span>
                                         </a>
 
+                                        {/* Messenger button for mobile */}
+                                        {isCustomer && (
+                                            <button
+                                                onClick={handleMessagesClick}
+                                                className="flex items-center justify-center space-x-2 text-gray-700 hover:text-teal-600 transition-colors duration-200 font-medium px-4 py-2 rounded-lg border border-gray-200 hover:border-teal-600 relative"
+                                            >
+                                                <MessageCircle className="w-4 h-4" />
+                                                <span>Messages</span>
+                                                {messageCount > 0 && (
+                                                    <span className="absolute right-4 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                                        {messageCount > 9 ? '9+' : messageCount}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        )}
+
                                         <button
                                             onClick={toggleDropdown}
                                             className="w-full flex items-center justify-center space-x-2 text-gray-700 hover:text-teal-600 transition-colors duration-200 font-medium px-4 py-2 rounded-lg border border-gray-200 hover:border-teal-600"
@@ -587,7 +834,6 @@ const Navbar = () => {
                 )}
             </header>
 
-            {/* Add the animation keyframes to the document */}
             <style>
                 {`
                 @keyframes gradientAnimation {

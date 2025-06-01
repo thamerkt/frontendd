@@ -56,7 +56,7 @@ export default function CategoriesSection() {
   
   const fetchip = useCallback(async () => {
     try {
-      const response = await axios.get("https://b010-41-230-62-140.ngrok-free.app/ocr/getipp/", {
+      const response = await axios.get("http://localhost:8000/ocr/getipp/", {
         withCredentials: true, // Include credentials like cookies
       });
       setIP(response.data.ip);
@@ -187,19 +187,25 @@ export default function CategoriesSection() {
   // Get product image URL
   const getProductImage = useCallback((productId) => {
     if (!Array.isArray(images) || images.length === 0) return null;
-
-    const productImages = images.filter(img => img?.stuff == productId);
+  
+    const productImages = images.filter(img => img?.stuff === productId);
     if (productImages.length === 0) return null;
-
+  
     const mainImage = productImages.find(img => img?.position === 1);
     let url = mainImage?.url || productImages[0]?.url || null;
-
-    if (url && ip) {
-      url = url.replace('host.docker.internal', ip);
+    console.log(url)
+  
+    if (url) {
+      // Replace host.docker.internal
+      if (url.includes('localhost')) {
+        url = url.replace('localhost', 'localhost:8000');
+      }
+    
     }
-
+  
     return url;
-  }, [images, ip]);
+  }, [images]);
+  
 
   // Track product views
   const handleProductView = useCallback(async (productId) => {
