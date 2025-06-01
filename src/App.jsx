@@ -8,7 +8,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import Navbar from "./components/navbar";
 import SidebarAdmin from "./components/Admin/Adminsidebar";
 import SidebarAdministrateur from "./components/Admininstrateur/Adminsidebar";
-import SidebarClient from "./components/client/Clientsidebar";
 import Sidebar from "./components/sidebar";
 import ProfileNavbar from "./components/ProfileNavbar";
 import RegistrationProgressGuard from "./RegistrationProgressGuard";
