@@ -9,7 +9,7 @@ import { jwtDecode } from "jwt-decode";
 
 
 import authStore from "../redux/authStore";
-import saveProgress from "../components/utils/saveProgress";
+
 
 const EmailVerification = () => {
   const [code, setCode] = useState(new Array(6).fill(""));
@@ -104,12 +104,7 @@ const EmailVerification = () => {
       const response = await authStore.verify(verificationCode);
       showToast(response?.message || "Verification successful!");
       
-      await saveProgress(userId, {
-        phase: 1,
-        currentStep: 1,
-        email,
-        verified: true,
-      });
+      
       
       sessionStorage.setItem('progress', JSON.stringify({ "progress": "step2" }));
       setTimeout(() => {

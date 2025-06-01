@@ -203,11 +203,7 @@ const FrontCapture = ({
   
       let response1;
       try {
-<<<<<<< HEAD
         response1 = await axios.post(`http://192.168.1.120:8000/ocr/upload-image/`, formDataImage, {
-=======
-        response1 = await axios.post(`https://f7d3-197-27-48-225.ngrok-free.app/ocr/upload-image/`, formDataImage, {
->>>>>>> d03da818f893f39d397953961c629c5e8ee283fe
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -240,11 +236,7 @@ const FrontCapture = ({
       let response2;
 try {
   response2 = await axios.post(
-<<<<<<< HEAD
     `http://192.168.1.120:8000/ocr/document/`,
-=======
-    `https://f7d3-197-27-48-225.ngrok-free.app/ocr/document/`,
->>>>>>> d03da818f893f39d397953961c629c5e8ee283fe
     formData,
     {
       headers: {
@@ -304,11 +296,7 @@ console.log(response2);
 
           // Make API call
           const response = await axios.post(
-<<<<<<< HEAD
             `http://192.168.1.120:8000/ocr/document/`,
-=======
-            `https://f7d3-197-27-48-225.ngrok-free.app/ocr/document/`,
->>>>>>> d03da818f893f39d397953961c629c5e8ee283fe
             formData,
             {
               headers: {
