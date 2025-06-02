@@ -179,7 +179,7 @@ const App = () => {
                   <Route path="/client" element={<ProtectedRoute role="customer" />}>
                     <Route path="dashboard" element={<ClientDashboard />} />
                     <Route path="bookings" element={<BookingComponent />} />
-                    <Route path="favorites" element={<FavoritesPage />} />
+                    
                     <Route path="products" element={<ProductsPage />} />
                     <Route path="clients" element={<ClientComponent />} />
                     <Route path="history" element={<HistoryPage />} />
