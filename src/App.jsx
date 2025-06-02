@@ -92,7 +92,7 @@ const App = () => {
             <div className="flex flex-1">
               <SidebarAdmin />
               <SidebarAdministrateur />
-              <SidebarClient />
+              
               <Sidebar />
               <main className="flex-1">
                 <Routes>
