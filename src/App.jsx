@@ -52,7 +52,6 @@ import PartenaireClientComponent from "./components/partner/clients";
 import ServicesManagement from "./components/partner/services";
 import PartnerSettingsPage from "./components/partner/settings";
 import PartnershipManagement from "./components/partner/partnership";
-import ClientRequestsPage from "./components/client/requests.jsx";
 import Contracts from "./components/contracts";
 import CheckoutProcess from "./components/paymentProcess";
 import ContractSigner from "./components/signature";
@@ -184,7 +183,7 @@ const App = () => {
                     <Route path="products" element={<ProductsPage />} />
                     <Route path="clients" element={<ClientComponent />} />
                     <Route path="history" element={<HistoryPage />} />
-                    <Route path="request" element={<ClientRequestsPage />} />
+                    
                     <Route path="settings" element={<SettingsPage />} />
                     <Route path="contracts" element={<Contracts />} />
                     <Route path="payment" element={<CheckoutProcess />} />
