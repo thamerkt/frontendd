@@ -212,7 +212,7 @@ const ChatComponent = ({
       ws.close();
     }
 
-    const websocket = new WebSocket(`ws://127.0.0.1:8001/ws/chatroom/${roomId}/${user.user_id}/`);
+    const websocket = new WebSocket(`ws://chat-service-7nng.onrender.com/ws/chatroom/${roomId}/${user.user_id}/`);
 
     websocket.onopen = () => {
       console.log("WebSocket connected:", websocket.url);

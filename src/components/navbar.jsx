@@ -143,7 +143,7 @@ const Navbar = () => {
     // Initialize WebSocket connection for real-time updates
     useEffect(() => {
         if (isLoggedIn && user?.user_id) {
-            const wsUrl = `ws://127.0.0.1:8001/ws/notifications/${user.user_id}/`;
+            const wsUrl = `ws://chat-service-7nng.onrender.com/ws/notifications/${user.user_id}/`;
             websocket.current = new WebSocket(wsUrl);
 
             websocket.current.onopen = () => {
