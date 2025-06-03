@@ -1,11 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { FiCamera, FiRotateCw, FiArrowRight, FiUpload, FiCheck } from 'react-icons/fi';
+import { FiCamera, FiRotateCw, FiArrowRight, FiUpload, FiCheck, FiLoader } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import axios from 'axios';
-import { useNavigate,useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Cookies from "js-cookie";
-
-
 
 const FrontCapture = ({
   onNext,
@@ -22,9 +20,10 @@ const FrontCapture = ({
   const [detectionStatus, setDetectionStatus] = useState('position');
   const [showUploadOption, setShowUploadOption] = useState(false);
   const [capturedImage, setCapturedImage] = useState(initialImage || null);
+  const [verificationProgress, setVerificationProgress] = useState(0);
+  const [verificationStatus, setVerificationStatus] = useState(null);
   const { user } = useParams();
   const navigate = useNavigate();
-
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -43,15 +42,24 @@ const FrontCapture = ({
   });
 
   useEffect(() => {
-
-    const url = new URL(window.location.href);
-    const hostname = url.hostname;
-
-    
     const startCamera = async () => {
       try {
         setIsLoading(true);
         setError(null);
+        
+        // Check if we're on HTTPS (except localhost for development)
+        const isLocalhost = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1';
+        const isSecure = window.location.protocol === 'https:';
+        
+        if (!isLocalhost && !isSecure) {
+          throw new Error('Camera access requires HTTPS in production environment');
+        }
+
+        // Check if browser supports mediaDevices API
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('Camera API not supported in this browser');
+        }
 
         const constraints = {
           video: {
@@ -61,20 +69,58 @@ const FrontCapture = ({
           }
         };
 
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.muted = true;
-          videoRef.current.playsInline = true;
-          await videoRef.current.play();
-          setIsCameraActive(true);
-          startDetectionSimulation();
+        // Check camera permissions first
+        if (navigator.permissions && navigator.permissions.query) {
+          const permissions = await navigator.permissions.query({ name: 'camera' });
+          if (permissions.state === 'denied') {
+            throw new Error('Camera permissions denied. Please enable in browser settings.');
+          }
         }
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
+          .catch(err => {
+            if (err.name === 'NotAllowedError') {
+              throw new Error('Camera access denied. Please allow camera permissions.');
+            } else if (err.name === 'NotFoundError') {
+              throw new Error('No camera device found.');
+            } else if (err.name === 'NotReadableError') {
+              throw new Error('Camera is already in use by another application.');
+            } else if (err.name === 'OverconstrainedError') {
+              throw new Error('Camera does not support requested constraints.');
+            } else {
+              throw new Error('Could not access camera: ' + err.message);
+            }
+          });
+
+        if (!videoRef.current) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
+        videoRef.current.srcObject = stream;
+        videoRef.current.muted = true;
+        videoRef.current.playsInline = true;
+        
+        // Handle cases where play() might fail
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          await playPromise.catch(err => {
+            stream.getTracks().forEach(track => track.stop());
+            throw new Error('Could not play video stream: ' + err.message);
+          });
+        }
+
+        setIsCameraActive(true);
+        startDetectionSimulation();
       } catch (err) {
-        console.error("Camera error:", err);
-        setError("Could not access camera. Please ensure permissions are granted.");
+        console.error("Camera initialization error:", err);
+        setError(err.message || "Could not access camera. Please ensure permissions are granted.");
         setShowUploadOption(true);
+        
+        // Stop any tracks if we got a stream but failed later
+        if (videoRef.current?.srcObject) {
+          videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+        }
       } finally {
         setIsLoading(false);
       }
@@ -149,6 +195,11 @@ const FrontCapture = ({
     animationRef.current = requestAnimationFrame(detect);
   };
 
+  const updateVerificationProgress = (progress, status) => {
+    setVerificationProgress(progress);
+    setVerificationStatus(status);
+  };
+
   const capturePhoto = async () => {
     if (!isCameraActive || detectionStatus !== "ready") {
       setError("Camera is not ready. Please try again.");
@@ -174,6 +225,8 @@ const FrontCapture = ({
   
     try {
       setIsSubmitting(true);
+      setVerificationProgress(10);
+      setVerificationStatus("Processing image...");
       
       // Convert base64 to Blob
       const blob = await (await fetch(imageData)).blob();
@@ -182,6 +235,8 @@ const FrontCapture = ({
       if (!imageData || !file) {
         throw new Error("Failed to process captured image");
       }
+
+      updateVerificationProgress(20, "Preparing for upload...");
   
       // Save image to localStorage
       const imagePayload = { 
@@ -196,6 +251,8 @@ const FrontCapture = ({
         timestamp: new Date().toISOString()
       };
       localStorage.setItem('capturedImage', JSON.stringify(imagePayload));
+
+      updateVerificationProgress(30, "Uploading image...");
   
       // Upload image to first API
       const formDataImage = new FormData();
@@ -208,17 +265,25 @@ const FrontCapture = ({
             "Content-Type": "multipart/form-data",
           },
           withCredentials: true,
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 70) / progressEvent.total);
+            updateVerificationProgress(30 + percentCompleted, "Uploading image...");
+          }
         });
       } catch (err) {
         console.error("Upload-image API error:", err.response?.data || err.message);
         localStorage.removeItem('capturedImage');
         setError("Failed to upload image. Please try again.");
+        updateVerificationProgress(0, "Upload failed");
         return;
       }
+
+      updateVerificationProgress(80, "Verifying document...");
   
       if (!response1.data || response1.data.status !== "success" || !response1.data.data_verified) {
         localStorage.removeItem('capturedImage');
         setError("Image processing failed. Ensure the document is clear and valid.");
+        updateVerificationProgress(0, "Verification failed");
         return;
       }
       
@@ -232,25 +297,29 @@ const FrontCapture = ({
       formData.append("document_type",'1');
       formData.append("submission_date", new Date().toISOString());
       formData.append("file", file);
+
+      updateVerificationProgress(90, "Saving document...");
   
       let response2;
-try {
-  response2 = await axios.post(
-    `https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`,
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
-} catch (err) {
-  console.error("Document API error:", err.response?.data || err.message);
-  setError("Failed to save document. Please try again.");
-  return;
-}
-console.log(response2);
+      try {
+        response2 = await axios.post(
+          `https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+      } catch (err) {
+        console.error("Document API error:", err.response?.data || err.message);
+        setError("Failed to save document. Please try again.");
+        updateVerificationProgress(0, "Save failed");
+        return;
+      }
 
+      updateVerificationProgress(100, "Verification complete!");
+  
       // Final success handling
       setCapturedImage(imageData);
       if (onCapture) onCapture(imageData);
@@ -267,13 +336,20 @@ console.log(response2);
       console.error("Unexpected error:", err);
       setError(err.message || "An unexpected error occurred. Please try again.");
       localStorage.removeItem('capturedImage');
+      updateVerificationProgress(0, "Error occurred");
     } finally {
       setIsSubmitting(false);
+      setTimeout(() => {
+        setVerificationProgress(0);
+        setVerificationStatus(null);
+      }, 2000);
     }
   };
 
   const handleRetake = () => {
     setCapturedImage(null);
+    setVerificationProgress(0);
+    setVerificationStatus(null);
     if (onRetake) onRetake();
   };
 
@@ -284,6 +360,7 @@ console.log(response2);
       reader.onload = async (event) => {
         try {
           setIsSubmitting(true);
+          setVerificationProgress(20, "Processing uploaded file...");
 
           // Create FormData
           const formData = new FormData();
@@ -294,6 +371,8 @@ console.log(response2);
           formData.append("document_type",'1');
           formData.append('submission_date', new Date().toISOString());
 
+          setVerificationProgress(40, "Uploading document...");
+
           // Make API call
           const response = await axios.post(
             `https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`,
@@ -303,9 +382,15 @@ console.log(response2);
                 "Content-Type": "multipart/form-data",
               },
               withCredentials: true,
+              onUploadProgress: (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 50) / progressEvent.total);
+                setVerificationProgress(40 + percentCompleted);
+              }
             }
           );
 
+          setVerificationProgress(100, "Upload complete!");
+          
           // Update state if successful
           setCapturedImage(event.target.result);
           if (onCapture) onCapture(event.target.result);
@@ -313,8 +398,13 @@ console.log(response2);
         } catch (err) {
           console.error("Upload error:", err);
           setError("Failed to upload document. Please try again.");
+          setVerificationProgress(0, "Upload failed");
         } finally {
           setIsSubmitting(false);
+          setTimeout(() => {
+            setVerificationProgress(0);
+            setVerificationStatus(null);
+          }, 2000);
         }
       };
       reader.readAsDataURL(file);
@@ -403,6 +493,25 @@ console.log(response2);
           )}
         </div>
 
+        {verificationProgress > 0 && (
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm font-medium text-gray-700">
+                {verificationStatus || "Processing..."}
+              </span>
+              <span className="text-sm font-medium text-gray-700">
+                {verificationProgress}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full" 
+                style={{ width: `${verificationProgress}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+
         <div className="mb-4 text-center">
           <p className={`text-sm font-medium ${detectionStatus === 'ready' ? 'text-green-600' :
               detectionStatus === 'aligned' ? 'text-yellow-500' :
@@ -426,10 +535,7 @@ console.log(response2);
                 }`}>
                 {isSubmitting ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <FiLoader className="animate-spin mr-2" />
                     Uploading...
                   </>
                 ) : (
@@ -458,20 +564,15 @@ console.log(response2);
               </button>
               <button
                 onClick={() => {
-
                   const updatedProgress = {
                     ...progress,
                     step: 3, // Moving to step 3 (back capture)
                     subStep: 1
                   };
                   
-                  // Save to localStorage and state
                   localStorage.setItem('registrationProgress', JSON.stringify(updatedProgress));
                   setProgress(updatedProgress);
                   navigate('/register/identity-verification/verification/back-document');
-                  
-                  
-                  
                 }}
                 className="bg-blue-600 text-white py-2 px-4 rounded-full flex-1 flex items-center justify-center"
               >
@@ -489,11 +590,8 @@ console.log(response2);
             >
               {isSubmitting ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Uploading...
+                  <FiLoader className="animate-spin mr-2" />
+                  Processing...
                 </>
               ) : (
                 <>
