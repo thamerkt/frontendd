@@ -70,21 +70,41 @@ const FrontCapture = ({
             throw err;
           });
 
+        // Wait for video element to be ready
         if (!videoRef.current) {
-          throw new Error('Video element not ready');
+          await new Promise(resolve => {
+            const checkVideoRef = () => {
+              if (videoRef.current) {
+                resolve();
+              } else {
+                setTimeout(checkVideoRef, 100);
+              }
+            };
+            checkVideoRef();
+          });
         }
 
         videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play()
-            .then(() => {
-              setIsCameraActive(true);
-              startDetectionSimulation();
-            })
-            .catch(err => {
-              throw new Error('Failed to play video stream');
-            });
-        };
+        
+        // Wait for video to be ready to play
+        await new Promise((resolve, reject) => {
+          videoRef.current.onloadedmetadata = resolve;
+          videoRef.current.onerror = reject;
+          
+          // Fallback in case onloadedmetadata doesn't fire
+          setTimeout(() => {
+            if (videoRef.current.readyState >= 3) {
+              resolve();
+            }
+          }, 1000);
+        });
+
+        await videoRef.current.play().catch(err => {
+          throw new Error('Failed to play video stream');
+        });
+
+        setIsCameraActive(true);
+        startDetectionSimulation();
 
       } catch (err) {
         console.error('Camera error:', err);
