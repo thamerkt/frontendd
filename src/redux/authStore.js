@@ -1,7 +1,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const API_URL = "http://localhost:8000/user";
+const API_URL = "https://kong-7e283b39dauspilq0.kongcloud.dev/user";
 
 const setToken = (token) => token && Cookies.set("token", token);
 const getToken = () => Cookies.get("token");

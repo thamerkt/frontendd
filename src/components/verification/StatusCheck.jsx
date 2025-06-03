@@ -84,7 +84,7 @@ const VerificationComplete = () => {
         formData.append('selfie', selfieFile);
         formData.append('keycloak_user', Cookies.get('user'));
 
-        const apiUrl = `http://192.168.1.120:8000/ocr/publish-event/`;
+        const apiUrl = `https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/publish-event/`;
 
         // Upload with longer timeout (10 minutes = 600,000ms)
         const uploadResponse = await axios.post(apiUrl, formData, {

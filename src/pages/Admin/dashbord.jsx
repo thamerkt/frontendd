@@ -16,11 +16,11 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 const apiService = {
   reports: {
     getByUser: async (username) => {
-      const response = await axios.get(`http://localhost:8000/reports/rapports/?user=${username}`,{withCredentials: true});
+      const response = await axios.get(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapports/?user=${username}`,{withCredentials: true});
       return response.data;
     },
     create: async (reportData) => {
-      const response = await axios.post('http://localhost:8000/reports/rapports/', reportData, {
+      const response = await axios.post('https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapports/', reportData, {
         headers: { 'Content-Type': 'application/json' },
         withCredentials: true
       });
@@ -29,11 +29,11 @@ const apiService = {
   },
   reportData: {
     getByReport: async (reportId) => {
-      const response = await axios.get(`http://localhost:8000/reports/rapport-data/?rapport=${reportId}`,{withCredentials: true});
+      const response = await axios.get(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapport-data/?rapport=${reportId}`,{withCredentials: true});
       return response.data;
     },
     create: async (metricData) => {
-      const response = await axios.post('http://localhost:8000/reports/rapport-data/', metricData,{withCredentials: true});
+      const response = await axios.post('https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapport-data/', metricData,{withCredentials: true});
       return response.data;
     }
   }

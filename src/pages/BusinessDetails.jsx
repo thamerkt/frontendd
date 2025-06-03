@@ -118,7 +118,7 @@ const BusinessDetail = () => {
   
     try {
       const response = await axios.post(
-        'http://localhost:8000/ocr/verification/company/',
+        'https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/verification/company/',
         company,
       );
       console.log(response)

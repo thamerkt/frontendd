@@ -1,7 +1,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const API_URL = "http://localhost:8000/profile";
+const API_URL = "https://kong-7e283b39dauspilq0.kongcloud.dev/profile";
 
 const Profileservice = {
   // CREATE: Add Profile and Assign Role
@@ -31,7 +31,7 @@ const Profileservice = {
       console.log("✅ Profile created:", profileResponse);
   
       // 2. Assign role
-      const roleResponse = await axios.post(`http://localhost:8000/user/assign/role/`, { role, user_id }, {
+      const roleResponse = await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/user/assign/role/`, { role, user_id }, {
         headers: { "Content-Type": "application/json" },
         withCredentials: true,
       });

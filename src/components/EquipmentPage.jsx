@@ -211,7 +211,7 @@ export default function ProductDetail() {
       
         const [productData, productImages] = await Promise.all([
           EquipmentService.fetchRentalById(productId),
-          axios.get(`http://localhost:8000/api/images/?stuff=${productId}`, {
+          axios.get(`https://kong-7e283b39dauspilq0.kongcloud.dev/api/images/?stuff=${productId}`, {
             withCredentials: true,
           }),
         ]);
@@ -240,7 +240,7 @@ export default function ProductDetail() {
         };
       
         const allProducts = await axios.get(
-          `http://localhost:8000/api/stuffs/?category=${productData.category}`,
+          `https://kong-7e283b39dauspilq0.kongcloud.dev/api/stuffs/?category=${productData.category}`,
           {
             withCredentials: true,
           }
@@ -252,7 +252,7 @@ export default function ProductDetail() {
             if (updatedImage.includes('host.docker.internal')) {
               updatedImage = updatedImage.replace('host.docker.internal', 'localhost:8000');
             } else if (/^https:\/\/[^/]+\.ngrok-free\.app/.test(updatedImage)) {
-              updatedImage = updatedImage.replace(/^https:\/\/[^/]+\.ngrok-free\.app/, 'http://localhost:8000');
+              updatedImage = updatedImage.replace(/^https:\/\/[^/]+\.ngrok-free\.app/, 'https://kong-7e283b39dauspilq0.kongcloud.dev');
             }
           }
         
@@ -260,7 +260,7 @@ export default function ProductDetail() {
           if (updatedDescription) {
             updatedDescription = updatedDescription
               .replace(/host\.docker\.internal/g, 'localhost:8000')
-              .replace(/https:\/\/[^/]+\.ngrok-free\.app/g, 'http://localhost:8000');
+              .replace(/https:\/\/[^/]+\.ngrok-free\.app/g, 'https://kong-7e283b39dauspilq0.kongcloud.dev');
           }
         
           return {
@@ -955,7 +955,7 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
     const fetchRentalRequests = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:8000/rental/rental_requests/?equipment_id=${product.id}`,
+          `https://kong-7e283b39dauspilq0.kongcloud.dev/rental/rental_requests/?equipment_id=${product.id}`,
           {
             withCredentials: true,
             headers: {
@@ -1096,7 +1096,7 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
       };
 
       const response = await axios.post(
-        "http://localhost:8000/rental/rental_requests/",
+        "https://kong-7e283b39dauspilq0.kongcloud.dev/rental/rental_requests/",
         rentalRequestData,
         {
           withCredentials: true,

@@ -226,7 +226,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
       const formData = new FormData();
       formData.append("selfie", file);
 
-      const response = await axios.post(`http://192.168.1.120:8000/ocr/selfie/`, formData, {
+      const response = await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/selfie/`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -246,7 +246,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
       documentFormData.append('file', file);
 
       const documentResponse = await axios.post(
-        `http://192.168.1.120:8000/ocr/document/`,
+        `https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`,
         documentFormData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );

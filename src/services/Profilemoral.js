@@ -1,7 +1,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const API_URL = "http://localhost:8000/profile"; // Remplace par l'URL correcte de ton API
+const API_URL = "https://kong-7e283b39dauspilq0.kongcloud.dev/profile"; // Remplace par l'URL correcte de ton API
 
 const Profilmoralservice = {
   addProfilemoral: async (formData) => {

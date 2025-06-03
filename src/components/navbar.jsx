@@ -284,7 +284,7 @@ const Navbar = () => {
     const fetchProfileDetails = async (userId, isCustomerRole) => {
         if (isCustomerRole !== 'admin') {
             try {
-                const profileResponse = await fetch(`http://localhost:8000/profile/profil/?user=${userId}`, {
+                const profileResponse = await fetch(`https://kong-7e283b39dauspilq0.kongcloud.dev/profile/profil/?user=${userId}`, {
                     headers: {
                         'Content-Type': 'application/json'
                     },
@@ -297,7 +297,7 @@ const Navbar = () => {
                     setProfile(userProfile);
 
                     if (isCustomerRole) {
-                        const physicalResponse = await fetch(`http://localhost:8000/profile/physicalprofil/?profil=${userProfile.id}`, {
+                        const physicalResponse = await fetch(`https://kong-7e283b39dauspilq0.kongcloud.dev/profile/physicalprofil/?profil=${userProfile.id}`, {
                             headers: {
                                 'Content-Type': 'application/json'
                             },
@@ -312,7 +312,7 @@ const Navbar = () => {
                             }
                         }
                     } else {
-                        const moralResponse = await fetch(`http://localhost:8000/profile/profilmoral/?profil=${userProfile.id}`, {
+                        const moralResponse = await fetch(`https://kong-7e283b39dauspilq0.kongcloud.dev/profile/profilmoral/?profil=${userProfile.id}`, {
                             headers: {
                                 'Content-Type': 'application/json'
                             },

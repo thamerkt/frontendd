@@ -67,7 +67,7 @@ const LandingPage = () => {
 
   const fetchip = useCallback(async () => {
     try {
-      const response = await axios.get("http://localhost:8000/ocr/getipp/");
+      const response = await axios.get("https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/getipp/");
       setIP(response.data.ip); // Changed to response.data.ip
       console.log("IP fetched:", response.data.ip);
     } catch (error) {

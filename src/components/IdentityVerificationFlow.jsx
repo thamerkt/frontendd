@@ -14,7 +14,7 @@ const VerificationFlow = () => {
     back: null,
     selfie: null
   });
-  const url='http://localhost:8000'
+  const url='https://kong-7e283b39dauspilq0.kongcloud.dev'
 
   const startVerification = async () => {
     try {

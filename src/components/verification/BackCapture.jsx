@@ -191,7 +191,7 @@ const BackCapture = ({
 
         let response;
         try {
-          response = await axios.post(`http://192.168.1.120:8000/ocr/document/`, formData, {
+          response = await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
           });
         } catch (err) {

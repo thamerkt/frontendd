@@ -1,6 +1,6 @@
 import Cookies from "js-cookie";
 
-const API_URL = "http://localhost:8000/rental"; // base path updated
+const API_URL = "https://kong-7e283b39dauspilq0.kongcloud.dev/rental"; // base path updated
 
 const getHeaders = (isJson = false) => {
   const headers = {

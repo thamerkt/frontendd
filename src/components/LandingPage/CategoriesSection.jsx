@@ -56,7 +56,7 @@ export default function CategoriesSection() {
   
   const fetchip = useCallback(async () => {
     try {
-      const response = await axios.get("http://localhost:8000/ocr/getipp/", {
+      const response = await axios.get("https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/getipp/", {
         withCredentials: true, // Include credentials like cookies
       });
       setIP(response.data.ip);

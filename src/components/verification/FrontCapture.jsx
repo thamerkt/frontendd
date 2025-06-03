@@ -203,7 +203,7 @@ const FrontCapture = ({
   
       let response1;
       try {
-        response1 = await axios.post(`http://192.168.1.120:8000/ocr/upload-image/`, formDataImage, {
+        response1 = await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/upload-image/`, formDataImage, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -236,7 +236,7 @@ const FrontCapture = ({
       let response2;
 try {
   response2 = await axios.post(
-    `http://192.168.1.120:8000/ocr/document/`,
+    `https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`,
     formData,
     {
       headers: {
@@ -296,7 +296,7 @@ console.log(response2);
 
           // Make API call
           const response = await axios.post(
-            `http://192.168.1.120:8000/ocr/document/`,
+            `https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`,
             formData,
             {
               headers: {

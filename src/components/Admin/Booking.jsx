@@ -26,9 +26,9 @@ useEffect(() => {
     try {
       let apiUrl;
       if (location.pathname.startsWith('/admin')) {
-        apiUrl = 'http://localhost:8000/rental/rental_requests/?rental=2';
+        apiUrl = 'https://kong-7e283b39dauspilq0.kongcloud.dev/rental/rental_requests/?rental=2';
       } else {
-        apiUrl = 'http://localhost:8000/rental/rental_requests/?client=10';
+        apiUrl = 'https://kong-7e283b39dauspilq0.kongcloud.dev/rental/rental_requests/?client=10';
       }
 
       const response = await fetch(apiUrl, {

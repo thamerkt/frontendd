@@ -15,7 +15,7 @@ const IdentityVerification = () => {
     if (!user) return;
 
     axios
-      .post("http://localhost:8000/ocr/generate-qr/", {
+      .post("https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/generate-qr/", {
         user: user,
       })
       .then((response) => {
