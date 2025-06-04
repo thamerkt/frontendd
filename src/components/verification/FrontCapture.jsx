@@ -7,22 +7,48 @@ import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import Cookies from "js-cookie";
 
+interface FrontCaptureProps {
+  onNext?: () => void;
+  onCapture?: (imageData: string) => void;
+  onRetake?: () => void;
+  initialImage?: string | null;
+  currentStep?: number;
+  totalSteps?: number;
+}
+
+interface RegistrationProgress {
+  step?: number;
+  subStep?: number;
+  phase?: string;
+  subPhase?: string;
+}
+
 const FrontCapture = ({
   onNext,
   onCapture,
   onRetake,
-  initialImage,
+  initialImage = null,
   currentStep = 2,
   totalSteps = 5
-}) => {
+}: FrontCaptureProps) => {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [detectionStatus, setDetectionStatus] = useState('position');
+  const [detectionStatus, setDetectionStatus] = useState<'position' | 'aligned' | 'ready'>('position');
   const [showUploadOption, setShowUploadOption] = useState(false);
-  const [capturedImage, setCapturedImage] = useState(initialImage || null);
+  const [capturedImage, setCapturedImage] = useState<string | null>(initialImage);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [ip] = useState(Cookies.get('local_ip') || '');
+  const [progress, setProgress] = useState<RegistrationProgress>(() => {
+    const savedProgress = localStorage.getItem('registrationProgress');
+    return savedProgress ? JSON.parse(savedProgress) : {
+      step: 5,
+      subStep: 2,
+      phase: 'identity_verification',
+      subPhase: 'document_capture'
+    };
+  });
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -30,18 +56,7 @@ const FrontCapture = ({
   const detectionCanvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [ip, setIP] = useState(Cookies.get('local_ip'));
-  const [progress, setProgress] = useState(() => {
-    const savedProgress = localStorage.getItem('registrationProgress') || '{}';
-    return {
-      step: savedProgress.step || 5,
-      subStep: savedProgress.subStep || 2,
-      phase: savedProgress.phase || 'identity_verification',
-      subPhase: savedProgress.subPhase || 'document_capture'
-    };
-  });
 
-  // Check if environment supports camera
   const checkEnvironment = useCallback(() => {
     const isSecure =
       window.location.protocol === "https:" || 
@@ -59,7 +74,6 @@ const FrontCapture = ({
     return true;
   }, []);
 
-  // Check camera permissions
   const checkPermissions = useCallback(async () => {
     try {
       if ("permissions" in navigator) {
@@ -81,7 +95,6 @@ const FrontCapture = ({
     }
   }, []);
 
-  // Start camera function with improved error handling (same as CameraComponent)
   const startCamera = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -91,7 +104,7 @@ const FrontCapture = ({
 
       const constraints = {
         video: {
-          facingMode: "environment", // Prefer back camera
+          facingMode: "environment",
           width: { ideal: 1280, max: 1920 },
           height: { ideal: 720, max: 1080 },
         },
@@ -102,7 +115,6 @@ const FrontCapture = ({
         stream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (backCameraError) {
         console.log("Back camera failed, trying front camera:", backCameraError);
-        // Fallback to front camera
         const frontConstraints = {
           video: {
             facingMode: "user",
@@ -161,7 +173,6 @@ const FrontCapture = ({
     }
   }, [checkEnvironment]);
 
-  // Stop camera function (same as CameraComponent)
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => {
@@ -182,7 +193,7 @@ const FrontCapture = ({
     }
   }, []);
 
-  const startDetectionSimulation = () => {
+  const startDetectionSimulation = useCallback(() => {
     let detectionProgress = 0;
     let lastUpdate = 0;
 
@@ -236,7 +247,7 @@ const FrontCapture = ({
     };
 
     animationRef.current = requestAnimationFrame(detect);
-  };
+  }, [detectionStatus]);
 
   const capturePhoto = async () => {
     if (!isCameraActive || detectionStatus !== "ready") {
@@ -266,7 +277,6 @@ const FrontCapture = ({
     try {
       setIsSubmitting(true);
       
-      // Convert base64 to Blob
       const blob = await (await fetch(imageData)).blob();
       const file = new File([blob], `image_${imageId}.jpg`, { type: "image/jpeg" });
       
@@ -274,7 +284,6 @@ const FrontCapture = ({
         throw new Error("Failed to process captured image");
       }
   
-      // Save image to localStorage
       const imagePayload = { 
         id: imageId, 
         imageData, 
@@ -288,20 +297,19 @@ const FrontCapture = ({
       };
       localStorage.setItem('capturedImage', JSON.stringify(imagePayload));
   
-      // Upload image to first API
       const formDataImage = new FormData();
       formDataImage.append("image", file);
   
       let response1;
       try {
-        response1 = await axios.post(`http://192.168.1.120:8000/ocr/upload-image/`, formDataImage, {
+        response1 = await axios.post(`http://${ip}:8000/ocr/upload-image/`, formDataImage, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
           withCredentials: true,
         });
       } catch (err) {
-        console.error("Upload-image API error:", err.response?.data || err.message);
+        console.error("Upload-image API error:", err);
         localStorage.removeItem('capturedImage');
         setError("Failed to upload image. Please try again.");
         return;
@@ -313,7 +321,6 @@ const FrontCapture = ({
         return;
       }
       
-      // Upload to second API
       const extractedData = response1.data.extracted_data || {};
       const formData = new FormData();
       formData.append("document_name", "National ID Front");
@@ -327,7 +334,7 @@ const FrontCapture = ({
       let response2;
       try {
         response2 = await axios.post(
-          `http://192.168.1.120:8000/ocr/document/`,
+          `http://${ip}:8000/ocr/document/`,
           formData,
           {
             headers: {
@@ -336,12 +343,11 @@ const FrontCapture = ({
           }
         );
       } catch (err) {
-        console.error("Document API error:", err.response?.data || err.message);
+        console.error("Document API error:", err);
         setError("Failed to save document. Please try again.");
         return;
       }
 
-      // Final success handling
       setCapturedImage(imageData);
       if (onCapture) onCapture(imageData);
   
@@ -365,7 +371,7 @@ const FrontCapture = ({
   const handleRetake = () => {
     setCapturedImage(null);
     if (onRetake) onRetake();
-    startCamera(); // Restart camera when retaking
+    startCamera();
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -377,7 +383,6 @@ const FrontCapture = ({
       try {
         setIsSubmitting(true);
 
-        // Create FormData
         const formData = new FormData();
         formData.append('document_name', 'National ID Front');
         formData.append('document_url', file);
@@ -386,9 +391,8 @@ const FrontCapture = ({
         formData.append("document_type",'1');
         formData.append('submission_date', new Date().toISOString());
 
-        // Make API call
         const response = await axios.post(
-          `http://192.168.1.120:8000/ocr/document/`,
+          `http://${ip}:8000/ocr/document/`,
           formData,
           {
             headers: {
@@ -398,7 +402,6 @@ const FrontCapture = ({
           }
         );
 
-        // Update state if successful
         setCapturedImage(event.target?.result as string);
         if (onCapture) onCapture(event.target?.result as string);
 
@@ -421,12 +424,10 @@ const FrontCapture = ({
     }
   };
 
-  // Check permissions on mount
   useEffect(() => {
     checkPermissions();
   }, [checkPermissions]);
 
-  // Initialize camera when no captured image
   useEffect(() => {
     if (!capturedImage) {
       startCamera();
@@ -581,7 +582,7 @@ const FrontCapture = ({
                 onClick={() => {
                   const updatedProgress = {
                     ...progress,
-                    step: 3, // Moving to step 3 (back capture)
+                    step: 3,
                     subStep: 1
                   };
                   
