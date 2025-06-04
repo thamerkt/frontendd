@@ -13,6 +13,8 @@ import {
   FiShield,
 } from "react-icons/fi"
 import { motion } from "framer-motion"
+import axios from "axios"
+import { useNavigate, useParams } from "react-router-dom"
 import Cookies from "js-cookie"
 
 const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, currentStep = 2, totalSteps = 5 }) => {
@@ -29,6 +31,11 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
   const [debugInfo, setDebugInfo] = useState("")
   const [componentMounted, setComponentMounted] = useState(false)
   const [ip] = useState(Cookies.get("local_ip") || "")
+  const [frameColor, setFrameColor] = useState("rgba(239, 68, 68, 0.7)") // Default red
+  const [uploadProgress, setUploadProgress] = useState(0)
+  
+  const { user } = useParams()
+  const navigate = useNavigate()
 
   const videoRef = useRef(null)
   const streamRef = useRef(null)
@@ -88,66 +95,6 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
     }
   }, [])
 
-  // Enhanced debug function
-  const debugCameraState = useCallback(() => {
-    const info = {
-      componentMounted,
-      isCameraActive,
-      cameraReady,
-      streamActive,
-      hasPermission,
-      permissionRequested,
-      videoElement: !!videoRef.current,
-      streamRef: !!streamRef.current,
-      retryCount: retryCountRef.current,
-      environment: {
-        protocol: window.location.protocol,
-        hostname: window.location.hostname,
-        userAgent: navigator.userAgent.substring(0, 100),
-      },
-    }
-
-    if (videoRef.current) {
-      const video = videoRef.current
-      info.video = {
-        paused: video.paused,
-        readyState: video.readyState,
-        videoWidth: video.videoWidth,
-        videoHeight: video.videoHeight,
-        currentTime: video.currentTime,
-        srcObject: !!video.srcObject,
-        autoplay: video.autoplay,
-        muted: video.muted,
-        playsInline: video.playsInline,
-        offsetWidth: video.offsetWidth,
-        offsetHeight: video.offsetHeight,
-        style: video.style.cssText,
-      }
-    } else {
-      info.video = "Video element not found"
-    }
-
-    if (streamRef.current) {
-      info.stream = {
-        active: streamRef.current.active,
-        tracks: streamRef.current.getVideoTracks().map((track) => ({
-          label: track.label,
-          enabled: track.enabled,
-          readyState: track.readyState,
-          muted: track.muted,
-          settings: track.getSettings(),
-        })),
-      }
-    }
-
-    console.group("🎥 Camera Debug Info")
-    console.table(info)
-    console.groupEnd()
-
-    setDebugInfo(JSON.stringify(info, null, 2))
-    return info
-  }, [componentMounted, isCameraActive, cameraReady, streamActive, hasPermission, permissionRequested])
-
   // Request camera permission explicitly
   const requestCameraPermission = useCallback(async () => {
     console.log("🔐 Requesting camera permission explicitly...")
@@ -155,7 +102,6 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
     setError(null)
 
     try {
-      // First check current permission state
       const currentPermission = await checkPermissions()
 
       if (currentPermission === "granted") {
@@ -167,13 +113,11 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
         throw new Error("Camera permission was denied. Please enable camera access in your browser settings.")
       }
 
-      // Try to get user media to trigger permission prompt
       console.log("📱 Triggering permission prompt...")
       const tempStream = await navigator.mediaDevices.getUserMedia({
         video: { width: 320, height: 240 },
       })
 
-      // Immediately stop the temporary stream
       tempStream.getTracks().forEach((track) => track.stop())
 
       console.log("✅ Permission granted successfully")
@@ -210,21 +154,16 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
     retryCountRef.current += 1
 
     try {
-      // Environment check
       checkEnvironment()
 
-      // Check if component is mounted
       if (!componentMounted) {
         throw new Error("Component not fully mounted yet")
       }
 
-      // Wait a bit for DOM to settle
       await new Promise((resolve) => setTimeout(resolve, 100))
 
-      // Check video element availability
       if (!videoRef.current) {
         console.error("Video ref is null, waiting for element...")
-        // Try to wait for the element
         let attempts = 0
         while (!videoRef.current && attempts < 10) {
           await new Promise((resolve) => setTimeout(resolve, 100))
@@ -236,30 +175,20 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
         }
       }
 
-      console.log("✅ Video element confirmed available:", {
-        element: !!videoRef.current,
-        offsetWidth: videoRef.current.offsetWidth,
-        offsetHeight: videoRef.current.offsetHeight,
-      })
-
-      // Clear any existing stream
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop())
         streamRef.current = null
       }
 
-      // Check/request permission first
       if (!permissionRequested || hasPermission !== true) {
         const permissionGranted = await requestCameraPermission()
         if (!permissionGranted) {
-          return // Error already set in requestCameraPermission
+          return
         }
       }
 
-      // Wait a bit for permission to settle
       await new Promise((resolve) => setTimeout(resolve, 500))
 
-      // Now try to get the actual stream
       console.log("📹 Getting camera stream...")
 
       const constraints = {
@@ -291,7 +220,6 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
         console.log("✅ Front camera stream obtained")
       }
 
-      // Verify stream
       if (!stream || !stream.active || stream.getVideoTracks().length === 0) {
         throw new Error("Failed to get valid video stream")
       }
@@ -304,21 +232,17 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
         settings: videoTrack.getSettings(),
       })
 
-      // Store stream
       streamRef.current = stream
       setStreamActive(true)
 
-      // Get video element reference
       const video = videoRef.current
 
-      // Reset and configure video element
       video.srcObject = null
       video.autoplay = true
       video.playsInline = true
       video.muted = true
       video.controls = false
 
-      // Create promise for video setup
       const videoSetupPromise = new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           cleanup()
@@ -369,14 +293,12 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
           reject(new Error("Video element error"))
         }
 
-        // Add event listeners
         video.addEventListener("loadstart", onLoadStart)
         video.addEventListener("loadedmetadata", onLoadedMetadata)
         video.addEventListener("canplay", onCanPlay)
         video.addEventListener("playing", onPlaying)
         video.addEventListener("error", onError)
 
-        // Set the stream
         console.log("🔗 Attaching stream to video element...")
         video.srcObject = stream
       })
@@ -386,15 +308,11 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
       setIsCameraActive(true)
       console.log("🎉 Camera initialization complete!")
 
-      // Reset retry count on success
       retryCountRef.current = 0
-
-      // Start detection simulation
       startDetectionSimulation()
     } catch (err) {
       console.error("💥 Camera initialization failed:", err)
 
-      // Clean up on error
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop())
         streamRef.current = null
@@ -414,7 +332,6 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
         errorMessage = err.message
       }
 
-      // Add retry suggestion for certain errors
       if (retryCountRef.current < 3 && !err.message?.includes("denied")) {
         errorMessage += ` (Attempt ${retryCountRef.current}/3)`
       }
@@ -455,7 +372,7 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
     retryCountRef.current = 0
   }, [])
 
-  // Detection simulation
+  // Detection simulation with color changing frame
   const startDetectionSimulation = useCallback(() => {
     if (!videoRef.current || !detectionCanvasRef.current) return
 
@@ -491,13 +408,21 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
 
       const pulse = 0.7 + 0.3 * Math.sin(timestamp / 300)
 
-      ctx.strokeStyle =
-        detectionStatus === "ready"
-          ? `rgba(34, 197, 94, ${pulse})`
-          : detectionStatus === "aligned"
-            ? `rgba(234, 179, 8, ${pulse})`
-            : `rgba(239, 68, 68, ${pulse})`
+      // Update frame color based on detection status
+      let newColor
+      switch(detectionStatus) {
+        case "ready":
+          newColor = `rgba(34, 197, 94, ${pulse})` // Green
+          break
+        case "aligned":
+          newColor = `rgba(234, 179, 8, ${pulse})` // Yellow
+          break
+        default:
+          newColor = `rgba(239, 68, 68, ${pulse})` // Red
+      }
+      setFrameColor(newColor)
 
+      ctx.strokeStyle = newColor
       ctx.lineWidth = 3
       ctx.setLineDash([8, 8])
       ctx.strokeRect(zoneX, zoneY, zoneWidth, zoneHeight)
@@ -550,7 +475,7 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
     animationRef.current = requestAnimationFrame(detect)
   }, [detectionStatus, cameraReady])
 
-  // Capture photo function
+  // Capture photo function with API calls
   const capturePhoto = async () => {
     if (!isCameraActive || !cameraReady || !streamActive) {
       setError("Camera is not ready. Please wait or restart the camera.")
@@ -568,6 +493,7 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
 
     try {
       setIsSubmitting(true)
+      setUploadProgress(0)
 
       const context = canvas.getContext("2d")
       if (!context) throw new Error("Canvas context not available")
@@ -579,14 +505,72 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
       const imageData = canvas.toDataURL("image/jpeg", 0.8)
       setCapturedImage(imageData)
 
-      if (onCapture) onCapture(imageData)
+      // Convert to blob for upload
+      const blob = await (await fetch(imageData)).blob()
+      const file = new File([blob], `id_front_${Date.now()}.jpg`, { type: "image/jpeg" })
 
-      console.log("📸 Photo captured successfully")
+      // First API call
+      const formDataImage = new FormData()
+      formDataImage.append("image", file)
+
+      const uploadConfig = {
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          setUploadProgress(percentCompleted)
+        }
+      }
+
+      // First API call to process image
+      const response1 = await axios.post(
+        `https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/upload-image/`,
+        formDataImage,
+        {
+          ...uploadConfig,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          withCredentials: true,
+        }
+      )
+
+      if (!response1.data || response1.data.status !== "success" || !response1.data.data_verified) {
+        throw new Error("Image processing failed. Ensure the document is clear and valid.")
+      }
+
+      // Second API call to save document
+      const formData = new FormData()
+      formData.append("document_name", "National ID Front")
+      formData.append("document_url", file)
+      formData.append("status", "pending")
+      formData.append("uploaded_by", localStorage.getItem("user") || "")
+      formData.append("document_type", "1")
+      formData.append("submission_date", new Date().toISOString())
+      formData.append("file", file)
+
+      const response2 = await axios.post(
+        `https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`,
+        formData,
+        {
+          ...uploadConfig,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      )
+
+      console.log("Upload successful:", {
+        apiResponse1: response1.data,
+        apiResponse2: response2.data,
+      })
+
+      if (onCapture) onCapture(imageData)
     } catch (err) {
-      console.error("📸 Capture failed:", err)
-      setError("Failed to capture photo. Please try again.")
+      console.error("Capture failed:", err)
+      setError(err.response?.data?.message || err.message || "Failed to capture and upload photo")
+      setCapturedImage(null)
     } finally {
       setIsSubmitting(false)
+      setUploadProgress(0)
     }
   }
 
@@ -600,13 +584,50 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
     const file = e.target.files?.[0]
     if (!file) return
 
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const result = event.target?.result
-      setCapturedImage(result)
-      if (onCapture) onCapture(result)
+    try {
+      setIsSubmitting(true)
+      setUploadProgress(0)
+
+      const reader = new FileReader()
+      reader.onload = async (event) => {
+        const result = event.target?.result
+        setCapturedImage(result)
+
+        // Upload the file
+        const formData = new FormData()
+        formData.append("document_name", "National ID Front (Upload)")
+        formData.append("document_url", file)
+        formData.append("status", "pending")
+        formData.append("uploaded_by", localStorage.getItem("user") || "")
+        formData.append("document_type", "1")
+        formData.append("submission_date", new Date().toISOString())
+        formData.append("file", file)
+
+        await axios.post(
+          `https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`,
+          formData,
+          {
+            onUploadProgress: (progressEvent) => {
+              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+              setUploadProgress(percentCompleted)
+            },
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+            withCredentials: true,
+          }
+        )
+
+        if (onCapture) onCapture(result)
+      }
+      reader.readAsDataURL(file)
+    } catch (err) {
+      console.error("Upload error:", err)
+      setError(err.response?.data?.message || err.message || "Failed to upload document")
+    } finally {
+      setIsSubmitting(false)
+      setUploadProgress(0)
     }
-    reader.readAsDataURL(file)
   }
 
   const getStatusMessage = () => {
@@ -632,11 +653,9 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
 
   // Effects
   useEffect(() => {
-    // Mark component as mounted
     setComponentMounted(true)
     console.log("✅ Component mounted")
 
-    // Check permissions
     checkPermissions()
 
     return () => {
@@ -734,9 +753,17 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
             }}
           />
 
-          {/* Detection canvas overlay */}
+          {/* Detection canvas overlay with color-changing frame */}
           {isCameraActive && cameraReady && (
-            <canvas ref={detectionCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+            <canvas 
+              ref={detectionCanvasRef} 
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              style={{
+                border: `4px solid ${frameColor}`,
+                borderRadius: "0.75rem",
+                boxShadow: `0 0 10px ${frameColor}`
+              }}
+            />
           )}
 
           {/* Loading state */}
@@ -749,6 +776,19 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
                   {!componentMounted ? "Loading interface..." : "Please allow camera access when prompted"}
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* Upload progress indicator */}
+          {isSubmitting && uploadProgress > 0 && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="w-3/4 bg-gray-200 rounded-full h-2.5">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full" 
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+              <span className="ml-2 text-white text-sm">{uploadProgress}%</span>
             </div>
           )}
 
@@ -812,24 +852,10 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
                   >
                     {retryCountRef.current >= 3 ? "Max Retries" : "Retry Camera"}
                   </button>
-                  <button
-                    onClick={debugCameraState}
-                    className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded transition-colors"
-                  >
-                    Debug Info
-                  </button>
                 </div>
               </div>
             </div>
           </div>
-        )}
-
-        {/* Debug Info */}
-        {debugInfo && (
-          <details className="mb-4">
-            <summary className="text-xs text-gray-500 cursor-pointer">Debug Information</summary>
-            <pre className="text-xs bg-gray-100 p-2 rounded mt-2 overflow-auto max-h-32">{debugInfo}</pre>
-          </details>
         )}
 
         {/* Action Buttons */}
@@ -870,9 +896,7 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
                 <FiRotateCw className="mr-2" /> Retake
               </button>
               <button
-                onClick={() => {
-                  if (onNext) onNext()
-                }}
+                onClick={() => navigate('/register/identity-verification/verification/back-document')}
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-full flex items-center justify-center font-medium transition-colors"
               >
                 Next <FiArrowRight className="ml-2" />
