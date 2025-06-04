@@ -17,13 +17,13 @@ import axios from "axios"
 import { useNavigate } from "react-router-dom"
 import Cookies from "js-cookie"
 
-const BackCapture = ({
+const BackCaptureWithFrame = ({
   onNext,
   onCapture,
   onRetake,
   initialImage = null,
-  currentStep = 3, // Default to step 3 (Back Card)
-  totalSteps = 5, // Default total steps
+  currentStep = 3,
+  totalSteps = 5,
 }) => {
   const [isCameraActive, setIsCameraActive] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -54,7 +54,6 @@ const BackCapture = ({
     return savedProgress
   })
 
-  // Use the currentStep from props if available, otherwise fall back to progress.step
   const activeStep = currentStep || progress?.step || 3
 
   // Enhanced environment check
@@ -66,13 +65,6 @@ const BackCapture = ({
       window.location.hostname.includes("vercel.app") ||
       window.location.hostname.includes("netlify.app") ||
       window.location.hostname.includes("vusercontent.net")
-
-    console.log("Environment check:", {
-      protocol: window.location.protocol,
-      hostname: window.location.hostname,
-      isSecure,
-      userAgent: navigator.userAgent,
-    })
 
     if (!isSecure) {
       throw new Error("Camera requires HTTPS connection")
@@ -90,95 +82,29 @@ const BackCapture = ({
     try {
       if ("permissions" in navigator) {
         const permission = await navigator.permissions.query({ name: "camera" })
-        console.log("Permission state:", permission.state)
         setHasPermission(permission.state === "granted")
 
         permission.onchange = () => {
-          console.log("Permission changed to:", permission.state)
           setHasPermission(permission.state === "granted")
         }
 
         return permission.state
       }
     } catch (error) {
-      console.log("Permissions check not supported, will request directly")
       setHasPermission(null)
       return "unknown"
     }
   }, [])
 
-  // Enhanced debug function
-  const debugCameraState = useCallback(() => {
-    const info = {
-      componentMounted,
-      isCameraActive,
-      cameraReady,
-      streamActive,
-      hasPermission,
-      permissionRequested,
-      videoElement: !!videoRef.current,
-      streamRef: !!streamRef.current,
-      retryCount: retryCountRef.current,
-      environment: {
-        protocol: window.location.protocol,
-        hostname: window.location.hostname,
-        userAgent: navigator.userAgent.substring(0, 100),
-      },
-    }
-
-    if (videoRef.current) {
-      const video = videoRef.current
-      info.video = {
-        paused: video.paused,
-        readyState: video.readyState,
-        videoWidth: video.videoWidth,
-        videoHeight: video.videoHeight,
-        currentTime: video.currentTime,
-        srcObject: !!video.srcObject,
-        autoplay: video.autoplay,
-        muted: video.muted,
-        playsInline: video.playsInline,
-        offsetWidth: video.offsetWidth,
-        offsetHeight: video.offsetHeight,
-        style: video.style.cssText,
-      }
-    } else {
-      info.video = "Video element not found"
-    }
-
-    if (streamRef.current) {
-      info.stream = {
-        active: streamRef.current.active,
-        tracks: streamRef.current.getVideoTracks().map((track) => ({
-          label: track.label,
-          enabled: track.enabled,
-          readyState: track.readyState,
-          muted: track.muted,
-          settings: track.getSettings(),
-        })),
-      }
-    }
-
-    console.group("🎥 Camera Debug Info")
-    console.table(info)
-    console.groupEnd()
-
-    setDebugInfo(JSON.stringify(info, null, 2))
-    return info
-  }, [componentMounted, isCameraActive, cameraReady, streamActive, hasPermission, permissionRequested])
-
   // Request camera permission explicitly
   const requestCameraPermission = useCallback(async () => {
-    console.log("🔐 Requesting camera permission explicitly...")
     setPermissionRequested(true)
     setError(null)
 
     try {
-      // First check current permission state
       const currentPermission = await checkPermissions()
 
       if (currentPermission === "granted") {
-        console.log("✅ Permission already granted")
         return true
       }
 
@@ -186,21 +112,14 @@ const BackCapture = ({
         throw new Error("Camera permission was denied. Please enable camera access in your browser settings.")
       }
 
-      // Try to get user media to trigger permission prompt
-      console.log("📱 Triggering permission prompt...")
       const tempStream = await navigator.mediaDevices.getUserMedia({
         video: { width: 320, height: 240 },
       })
 
-      // Immediately stop the temporary stream
       tempStream.getTracks().forEach((track) => track.stop())
-
-      console.log("✅ Permission granted successfully")
       setHasPermission(true)
       return true
     } catch (error) {
-      console.error("❌ Permission request failed:", error)
-
       let errorMessage = "Camera permission request failed"
       if (error.name === "NotAllowedError") {
         errorMessage =
@@ -222,7 +141,6 @@ const BackCapture = ({
 
   // Start camera function
   const startCamera = useCallback(async () => {
-    console.log("🚀 Starting camera...")
     setIsLoading(true)
     setError(null)
     setCameraReady(false)
@@ -230,21 +148,15 @@ const BackCapture = ({
     retryCountRef.current += 1
 
     try {
-      // Environment check
       checkEnvironment()
 
-      // Check if component is mounted
       if (!componentMounted) {
         throw new Error("Component not fully mounted yet")
       }
 
-      // Wait a bit for DOM to settle
       await new Promise((resolve) => setTimeout(resolve, 100))
 
-      // Check video element availability
       if (!videoRef.current) {
-        console.error("Video ref is null, waiting for element...")
-        // Try to wait for the element
         let attempts = 0
         while (!videoRef.current && attempts < 10) {
           await new Promise((resolve) => setTimeout(resolve, 100))
@@ -256,31 +168,19 @@ const BackCapture = ({
         }
       }
 
-      console.log("✅ Video element confirmed available:", {
-        element: !!videoRef.current,
-        offsetWidth: videoRef.current.offsetWidth,
-        offsetHeight: videoRef.current.offsetHeight,
-      })
-
-      // Clear any existing stream
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop())
         streamRef.current = null
       }
 
-      // Check/request permission first
       if (!permissionRequested || hasPermission !== true) {
         const permissionGranted = await requestCameraPermission()
         if (!permissionGranted) {
-          return // Error already set in requestCameraPermission
+          return
         }
       }
 
-      // Wait a bit for permission to settle
       await new Promise((resolve) => setTimeout(resolve, 500))
-
-      // Now try to get the actual stream
-      console.log("📹 Getting camera stream...")
 
       const constraints = {
         video: {
@@ -294,11 +194,8 @@ const BackCapture = ({
       let stream
 
       try {
-        console.log("Trying back camera...")
         stream = await navigator.mediaDevices.getUserMedia(constraints)
-        console.log("✅ Back camera stream obtained")
       } catch (error) {
-        console.log("❌ Back camera failed, trying front camera...")
         const frontConstraints = {
           video: {
             width: { ideal: 1280, min: 640 },
@@ -308,37 +205,22 @@ const BackCapture = ({
           },
         }
         stream = await navigator.mediaDevices.getUserMedia(frontConstraints)
-        console.log("✅ Front camera stream obtained")
       }
 
-      // Verify stream
       if (!stream || !stream.active || stream.getVideoTracks().length === 0) {
         throw new Error("Failed to get valid video stream")
       }
 
-      const videoTrack = stream.getVideoTracks()[0]
-      console.log("📹 Video track details:", {
-        label: videoTrack.label,
-        enabled: videoTrack.enabled,
-        readyState: videoTrack.readyState,
-        settings: videoTrack.getSettings(),
-      })
-
-      // Store stream
       streamRef.current = stream
       setStreamActive(true)
 
-      // Get video element reference
       const video = videoRef.current
-
-      // Reset and configure video element
       video.srcObject = null
       video.autoplay = true
       video.playsInline = true
       video.muted = true
       video.controls = false
 
-      // Create promise for video setup
       const videoSetupPromise = new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           cleanup()
@@ -351,70 +233,44 @@ const BackCapture = ({
           video.removeEventListener("canplay", onCanPlay)
           video.removeEventListener("playing", onPlaying)
           video.removeEventListener("error", onError)
-          video.removeEventListener("loadstart", onLoadStart)
-        }
-
-        const onLoadStart = () => {
-          console.log("📺 Video load started")
         }
 
         const onLoadedMetadata = () => {
-          console.log("📺 Video metadata loaded:", {
-            videoWidth: video.videoWidth,
-            videoHeight: video.videoHeight,
-            duration: video.duration,
-            readyState: video.readyState,
-          })
+          console.log("Video metadata loaded")
         }
 
         const onCanPlay = () => {
-          console.log("▶️ Video can play, attempting to start...")
           video.play().catch((playError) => {
-            console.error("❌ Video play failed:", playError)
             cleanup()
             reject(new Error(`Video play failed: ${playError.message}`))
           })
         }
 
         const onPlaying = () => {
-          console.log("🎬 Video is now playing!")
           setCameraReady(true)
           cleanup()
           resolve()
         }
 
         const onError = (event) => {
-          console.error("❌ Video error:", event)
           cleanup()
           reject(new Error("Video element error"))
         }
 
-        // Add event listeners
-        video.addEventListener("loadstart", onLoadStart)
         video.addEventListener("loadedmetadata", onLoadedMetadata)
         video.addEventListener("canplay", onCanPlay)
         video.addEventListener("playing", onPlaying)
         video.addEventListener("error", onError)
 
-        // Set the stream
-        console.log("🔗 Attaching stream to video element...")
         video.srcObject = stream
       })
 
       await videoSetupPromise
 
       setIsCameraActive(true)
-      console.log("🎉 Camera initialization complete!")
-
-      // Reset retry count on success
       retryCountRef.current = 0
-
-      // Start detection simulation
       startDetectionSimulation()
     } catch (err) {
-      console.error("💥 Camera initialization failed:", err)
-
-      // Clean up on error
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop())
         streamRef.current = null
@@ -434,7 +290,6 @@ const BackCapture = ({
         errorMessage = err.message
       }
 
-      // Add retry suggestion for certain errors
       if (retryCountRef.current < 3 && !err.message?.includes("denied")) {
         errorMessage += ` (Attempt ${retryCountRef.current}/3)`
       }
@@ -450,18 +305,13 @@ const BackCapture = ({
 
   // Stop camera function
   const stopCamera = useCallback(() => {
-    console.log("🛑 Stopping camera...")
-
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current)
       animationRef.current = null
     }
 
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => {
-        track.stop()
-        console.log("🔌 Stopped track:", track.kind)
-      })
+      streamRef.current.getTracks().forEach((track) => track.stop())
       streamRef.current = null
     }
 
@@ -476,7 +326,7 @@ const BackCapture = ({
     retryCountRef.current = 0
   }, [])
 
-  // Detection simulation - Adjusted for back of ID card
+  // Enhanced detection simulation with prominent red frame
   const startDetectionSimulation = useCallback(() => {
     if (!videoRef.current || !detectionCanvasRef.current) return
 
@@ -503,57 +353,108 @@ const BackCapture = ({
       canvas.width = video.videoWidth
       canvas.height = video.videoHeight
 
-      // Adjusted capture zone for back card
-      const zoneWidth = (video.videoWidth * 80) / 100
-      const zoneHeight = (video.videoHeight * 55) / 100 // Slightly taller than front
-      const zoneX = (video.videoWidth * 10) / 100
-      const zoneY = (video.videoHeight * 22.5) / 100 // Positioned slightly lower
-
+      // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      const pulse = 0.7 + 0.3 * Math.sin(timestamp / 300)
+      // Calculate frame dimensions for ID card back
+      const frameWidth = (canvas.width * 75) / 100 // 75% of video width
+      const frameHeight = (canvas.height * 50) / 100 // 50% of video height
+      const frameX = (canvas.width - frameWidth) / 2
+      const frameY = (canvas.height - frameHeight) / 2
 
-      ctx.strokeStyle =
-        detectionStatus === "ready"
-          ? `rgba(34, 197, 94, ${pulse})`
-          : detectionStatus === "aligned"
-            ? `rgba(234, 179, 8, ${pulse})`
-            : `rgba(239, 68, 68, ${pulse})`
+      // Animation pulse effect
+      const pulse = 0.8 + 0.2 * Math.sin(timestamp / 400)
 
-      ctx.lineWidth = 3
-      ctx.setLineDash([8, 8])
-      ctx.strokeRect(zoneX, zoneY, zoneWidth, zoneHeight)
-      ctx.setLineDash([])
+      // Determine frame color based on detection status
+      let frameColor
+      switch (detectionStatus) {
+        case "ready":
+          frameColor = `rgba(34, 197, 94, ${pulse})` // Green
+          break
+        case "aligned":
+          frameColor = `rgba(251, 191, 36, ${pulse})` // Yellow
+          break
+        default:
+          frameColor = `rgba(239, 68, 68, ${pulse})` // Red
+      }
 
-      // Corner markers
-      const cornerSize = 20
+      // Draw main frame rectangle with thick red lines
+      ctx.strokeStyle = frameColor
       ctx.lineWidth = 4
-      ctx.strokeStyle = ctx.strokeStyle.replace(/[\d.]+\)$/, "1)")
+      ctx.setLineDash([])
+      ctx.strokeRect(frameX, frameY, frameWidth, frameHeight)
 
-      // Draw corners
-      const corners = [
-        [zoneX, zoneY, zoneX + cornerSize, zoneY, zoneX, zoneY + cornerSize],
-        [zoneX + zoneWidth - cornerSize, zoneY, zoneX + zoneWidth, zoneY, zoneX + zoneWidth, zoneY + cornerSize],
-        [zoneX, zoneY + zoneHeight - cornerSize, zoneX, zoneY + zoneHeight, zoneX + cornerSize, zoneY + zoneHeight],
-        [
-          zoneX + zoneWidth - cornerSize,
-          zoneY + zoneHeight,
-          zoneX + zoneWidth,
-          zoneY + zoneHeight,
-          zoneX + zoneWidth,
-          zoneY + zoneHeight - cornerSize,
-        ],
-      ]
+      // Draw corner brackets for better visual guidance
+      const cornerLength = 30
+      const cornerThickness = 6
 
-      corners.forEach(([x1, y1, x2, y2, x3, y3]) => {
-        ctx.beginPath()
-        ctx.moveTo(x1, y1)
-        ctx.lineTo(x2, y2)
-        ctx.lineTo(x3, y3)
-        ctx.stroke()
-      })
+      ctx.lineWidth = cornerThickness
+      ctx.strokeStyle = frameColor.replace(/[\d.]+\)$/, "1)") // Full opacity for corners
 
-      if (timestamp - lastUpdate > 1500) {
+      // Top-left corner
+      ctx.beginPath()
+      ctx.moveTo(frameX, frameY + cornerLength)
+      ctx.lineTo(frameX, frameY)
+      ctx.lineTo(frameX + cornerLength, frameY)
+      ctx.stroke()
+
+      // Top-right corner
+      ctx.beginPath()
+      ctx.moveTo(frameX + frameWidth - cornerLength, frameY)
+      ctx.lineTo(frameX + frameWidth, frameY)
+      ctx.lineTo(frameX + frameWidth, frameY + cornerLength)
+      ctx.stroke()
+
+      // Bottom-left corner
+      ctx.beginPath()
+      ctx.moveTo(frameX, frameY + frameHeight - cornerLength)
+      ctx.lineTo(frameX, frameY + frameHeight)
+      ctx.lineTo(frameX + cornerLength, frameY + frameHeight)
+      ctx.stroke()
+
+      // Bottom-right corner
+      ctx.beginPath()
+      ctx.moveTo(frameX + frameWidth - cornerLength, frameY + frameHeight)
+      ctx.lineTo(frameX + frameWidth, frameY + frameHeight)
+      ctx.lineTo(frameX + frameWidth, frameY + frameHeight - cornerLength)
+      ctx.stroke()
+
+      // Add center crosshairs for alignment
+      const centerX = frameX + frameWidth / 2
+      const centerY = frameY + frameHeight / 2
+      const crosshairLength = 20
+
+      ctx.lineWidth = 2
+      ctx.strokeStyle = frameColor.replace(/[\d.]+\)$/, "0.6)")
+
+      // Horizontal crosshair
+      ctx.beginPath()
+      ctx.moveTo(centerX - crosshairLength, centerY)
+      ctx.lineTo(centerX + crosshairLength, centerY)
+      ctx.stroke()
+
+      // Vertical crosshair
+      ctx.beginPath()
+      ctx.moveTo(centerX, centerY - crosshairLength)
+      ctx.lineTo(centerX, centerY + crosshairLength)
+      ctx.stroke()
+
+      // Add text overlay for guidance
+      ctx.font = "16px Arial"
+      ctx.fillStyle = frameColor.replace(/[\d.]+\)$/, "0.9)")
+      ctx.textAlign = "center"
+
+      const instructionText =
+        detectionStatus === "ready"
+          ? "READY TO CAPTURE"
+          : detectionStatus === "aligned"
+            ? "ALIGN ID CARD"
+            : "POSITION ID CARD"
+
+      ctx.fillText(instructionText, centerX, frameY - 20)
+
+      // Simulate detection state changes
+      if (timestamp - lastUpdate > 2000) {
         detectionProgress = (detectionProgress + 0.33) % 1
         lastUpdate = timestamp
 
@@ -572,7 +473,7 @@ const BackCapture = ({
     animationRef.current = requestAnimationFrame(detect)
   }, [detectionStatus, cameraReady])
 
-  // Capture photo function with API integration
+  // Capture photo function
   const capturePhoto = async () => {
     if (!isCameraActive || !cameraReady || !streamActive) {
       setError("Camera is not ready. Please wait or restart the camera.")
@@ -600,18 +501,15 @@ const BackCapture = ({
 
       const imageData = canvas.toDataURL("image/jpeg", 0.8)
 
-      // Check for internet connection
       if (!navigator.onLine) {
         setError("No internet connection. Please check your network.")
         return
       }
 
       try {
-        // Convert base64 image to Blob
         const blob = await (await fetch(imageData)).blob()
         const file = new File([blob], "national_id_backend.jpg", { type: "image/jpeg" })
 
-        // ✅ Upload directly to /api/document/
         const formData = new FormData()
         formData.append("document_name", "National ID Back")
         formData.append("status", "pending")
@@ -621,29 +519,20 @@ const BackCapture = ({
         formData.append("submission_date", new Date().toISOString())
         formData.append("file", file)
 
-        let response
-        try {
-          response = await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          })
-          console.log("Upload successful:", response.data)
-        } catch (err) {
-          console.error("Document API error:", err.response?.data || err.message)
-          setError("Failed to save document. Please try again.")
-          return
-        }
+        const response = await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        console.log("Upload successful:", response.data)
       } catch (err) {
-        console.error("Upload error:", err)
-        setError("Failed to upload image. Please try again.")
+        console.error("Document API error:", err.response?.data || err.message)
+        setError("Failed to save document. Please try again.")
+        return
       }
 
-      // Set captured image regardless of upload success
       setCapturedImage(imageData)
       if (onCapture) onCapture(imageData)
-
-      console.log("📸 Photo captured successfully")
     } catch (err) {
-      console.error("📸 Capture failed:", err)
+      console.error("Capture failed:", err)
       setError("Failed to capture photo. Please try again.")
     } finally {
       setIsSubmitting(false)
@@ -666,7 +555,6 @@ const BackCapture = ({
       reader.onload = async (event) => {
         const result = event.target.result
 
-        // Upload to API
         try {
           const blob = await (await fetch(result)).blob()
           const apiFile = new File([blob], "national_id_backend.jpg", { type: "image/jpeg" })
@@ -711,9 +599,9 @@ const BackCapture = ({
 
     switch (detectionStatus) {
       case "position":
-        return "Move the back of your ID into the frame"
+        return "Position the back of your ID within the red frame"
       case "aligned":
-        return "Align the back with the outline"
+        return "Align the ID card with the frame outline"
       case "ready":
         return "Perfect! Ready to capture"
       default:
@@ -722,20 +610,14 @@ const BackCapture = ({
   }
 
   const handleNext = () => {
-    // Navigate to selfie page
     navigate("/register/identity-verification/verification/selfie")
   }
 
   // Effects
   useEffect(() => {
-    // Mark component as mounted
     setComponentMounted(true)
-    console.log("✅ Component mounted")
-
-    // Check permissions
     checkPermissions()
 
-    // Get IP from URL if available
     const url = new URL(window.location.href)
     const hostname = url.hostname
     const ipv4Regex = /^(?:\d{1,3}\.){3}\d{1,3}$/
@@ -744,12 +626,10 @@ const BackCapture = ({
     }
 
     return () => {
-      console.log("🧹 Component unmounting")
       stopCamera()
     }
   }, [checkPermissions, stopCamera])
 
-  // Start camera automatically if no captured image
   useEffect(() => {
     if (!capturedImage && componentMounted && !isCameraActive && !isLoading) {
       startCamera()
@@ -766,7 +646,7 @@ const BackCapture = ({
       >
         <div className="mb-6 text-center">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">Back of ID Card</h2>
-          <p className="text-sm sm:text-base text-gray-600">Ensure all details are clearly visible</p>
+          <p className="text-sm sm:text-base text-gray-600">Position your ID within the red frame</p>
 
           {/* Progress Stepper */}
           <div className="mt-6 overflow-x-auto px-2">
@@ -784,7 +664,6 @@ const BackCapture = ({
                   >
                     {step < activeStep ? <FiCheck size={14} /> : step}
                   </div>
-
                   {step < 5 && <div className={`h-1 w-6 ${step < activeStep ? "bg-green-100" : "bg-gray-200"}`} />}
                 </div>
               ))}
@@ -831,7 +710,7 @@ const BackCapture = ({
         {/* Hidden canvas for capture */}
         <canvas ref={canvasRef} style={{ display: "none" }} />
 
-        {/* Camera/Image Display */}
+        {/* Camera/Image Display with Red Frame Overlay */}
         <div className="relative aspect-video bg-gray-900 rounded-xl overflow-hidden mb-4 flex items-center justify-center border-2 border-gray-200">
           {/* Always-rendered video element */}
           <video
@@ -842,14 +721,14 @@ const BackCapture = ({
             className={`w-full h-full object-cover ${isCameraActive && cameraReady ? "block" : "hidden"}`}
           />
 
-          {/* Detection canvas overlay */}
+          {/* Red Frame Detection Canvas Overlay */}
           {isCameraActive && cameraReady && (
-            <canvas ref={detectionCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+            <canvas ref={detectionCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-10" />
           )}
 
           {/* Loading state */}
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center text-white bg-gray-900 bg-opacity-75">
+            <div className="absolute inset-0 flex items-center justify-center text-white bg-gray-900 bg-opacity-75 z-20">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-3"></div>
                 <p>Starting camera...</p>
@@ -865,13 +744,13 @@ const BackCapture = ({
             <img
               src={capturedImage || "/placeholder.svg"}
               alt="Captured ID Back"
-              className="absolute inset-0 w-full h-full object-contain"
+              className="absolute inset-0 w-full h-full object-contain z-10"
             />
           )}
 
           {/* Inactive camera state */}
           {!isCameraActive && !capturedImage && !isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center text-white">
+            <div className="absolute inset-0 flex items-center justify-center text-white z-20">
               <div className="text-center p-8">
                 <FiVideo className="mx-auto h-16 w-16 mb-4 opacity-50" />
                 <p className="mb-4 opacity-75">Camera not active</p>
@@ -897,7 +776,7 @@ const BackCapture = ({
                   ? "text-green-600"
                   : detectionStatus === "aligned" && cameraReady
                     ? "text-yellow-500"
-                    : "text-gray-500"
+                    : "text-red-500"
             }`}
           >
             {capturedImage ? "✅ Back captured successfully" : getStatusMessage()}
@@ -920,24 +799,10 @@ const BackCapture = ({
                   >
                     {retryCountRef.current >= 3 ? "Max Retries" : "Retry Camera"}
                   </button>
-                  <button
-                    onClick={debugCameraState}
-                    className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded transition-colors"
-                  >
-                    Debug Info
-                  </button>
                 </div>
               </div>
             </div>
           </div>
-        )}
-
-        {/* Debug Info */}
-        {debugInfo && (
-          <details className="mb-4">
-            <summary className="text-xs text-gray-500 cursor-pointer">Debug Information</summary>
-            <pre className="text-xs bg-gray-100 p-2 rounded mt-2 overflow-auto max-h-32">{debugInfo}</pre>
-          </details>
         )}
 
         {/* Action Buttons */}
@@ -998,7 +863,7 @@ const BackCapture = ({
                 className={`flex-1 py-3 px-4 rounded-full flex items-center justify-center font-medium transition-colors ${
                   !cameraReady || !streamActive || isSubmitting || detectionStatus !== "ready"
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "bg-green-600 hover:bg-green-700 text-white"
                 }`}
               >
                 {isSubmitting ? (
@@ -1020,4 +885,4 @@ const BackCapture = ({
   )
 }
 
-export default BackCapture
+export default BackCaptureWithFrame
