@@ -565,7 +565,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
           {!image ? (
             <button
               onClick={capturePhoto}
-              disabled={!isCameraActive || !cameraReady || faceStatus !== "ready" || isUploading}
+              disabled={!isCameraActive || !cameraReady || isUploading}
               className={`py-3 px-6 rounded-lg flex items-center justify-center transition-colors ${
                 !isCameraActive || !cameraReady || faceStatus !== "ready" || isUploading
                   ? "bg-gray-200 text-gray-500 cursor-not-allowed"
