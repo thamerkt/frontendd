@@ -33,6 +33,7 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
   const [ip] = useState(Cookies.get("local_ip") || "")
   const [frameColor, setFrameColor] = useState("rgba(239, 68, 68, 0.7)") // Default red
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [cardDetected, setCardDetected] = useState(false)
   
   const { user } = useParams()
   const navigate = useNavigate()
@@ -399,33 +400,36 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
       canvas.width = video.videoWidth
       canvas.height = video.videoHeight
 
-      const zoneWidth = (video.videoWidth * 80) / 100
-      const zoneHeight = (video.videoHeight * 60) / 100
-      const zoneX = (video.videoWidth - zoneWidth) / 2
-      const zoneY = (video.videoHeight - zoneHeight) / 2
+      // Define the frame size (smaller than full screen)
+      const frameWidth = Math.min(video.videoWidth * 0.8, 600) // Max width 600px or 80% of video width
+      const frameHeight = frameWidth * 0.63 // Maintain aspect ratio (close to ID card)
+      const frameX = (video.videoWidth - frameWidth) / 2
+      const frameY = (video.videoHeight - frameHeight) / 2
 
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       const pulse = 0.7 + 0.3 * Math.sin(timestamp / 300)
 
+      // Simulate card detection - this would be replaced with actual detection logic
+      const isCardDetected = timestamp % 5000 > 3000 // Simulates detection every 5 seconds
+      setCardDetected(isCardDetected)
+
       // Update frame color based on detection status
       let newColor
-      switch(detectionStatus) {
-        case "ready":
-          newColor = `rgba(34, 197, 94, ${pulse})` // Green
-          break
-        case "aligned":
-          newColor = `rgba(234, 179, 8, ${pulse})` // Yellow
-          break
-        default:
-          newColor = `rgba(239, 68, 68, ${pulse})` // Red
+      if (isCardDetected) {
+        newColor = `rgba(34, 197, 94, ${pulse})` // Green when card detected
+        setDetectionStatus("ready")
+      } else {
+        newColor = `rgba(239, 68, 68, ${pulse})` // Red when no card
+        setDetectionStatus("position")
       }
       setFrameColor(newColor)
 
+      // Draw the frame border
       ctx.strokeStyle = newColor
       ctx.lineWidth = 3
       ctx.setLineDash([8, 8])
-      ctx.strokeRect(zoneX, zoneY, zoneWidth, zoneHeight)
+      ctx.strokeRect(frameX, frameY, frameWidth, frameHeight)
       ctx.setLineDash([])
 
       // Corner markers
@@ -435,16 +439,16 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
 
       // Draw corners
       const corners = [
-        [zoneX, zoneY, zoneX + cornerSize, zoneY, zoneX, zoneY + cornerSize],
-        [zoneX + zoneWidth - cornerSize, zoneY, zoneX + zoneWidth, zoneY, zoneX + zoneWidth, zoneY + cornerSize],
-        [zoneX, zoneY + zoneHeight - cornerSize, zoneX, zoneY + zoneHeight, zoneX + cornerSize, zoneY + zoneHeight],
+        [frameX, frameY, frameX + cornerSize, frameY, frameX, frameY + cornerSize],
+        [frameX + frameWidth - cornerSize, frameY, frameX + frameWidth, frameY, frameX + frameWidth, frameY + cornerSize],
+        [frameX, frameY + frameHeight - cornerSize, frameX, frameY + frameHeight, frameX + cornerSize, frameY + frameHeight],
         [
-          zoneX + zoneWidth - cornerSize,
-          zoneY + zoneHeight,
-          zoneX + zoneWidth,
-          zoneY + zoneHeight,
-          zoneX + zoneWidth,
-          zoneY + zoneHeight - cornerSize,
+          frameX + frameWidth - cornerSize,
+          frameY + frameHeight,
+          frameX + frameWidth,
+          frameY + frameHeight,
+          frameX + frameWidth,
+          frameY + frameHeight - cornerSize,
         ],
       ]
 
@@ -456,24 +460,23 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
         ctx.stroke()
       })
 
-      if (timestamp - lastUpdate > 1500) {
-        detectionProgress = (detectionProgress + 0.33) % 1
-        lastUpdate = timestamp
+      // Add instructional text
+      ctx.fillStyle = "white"
+      ctx.font = "bold 16px Arial"
+      ctx.textAlign = "center"
+      ctx.fillText("Position your ID card inside this frame", video.videoWidth / 2, frameY - 20)
 
-        if (detectionProgress < 0.33) {
-          setDetectionStatus("position")
-        } else if (detectionProgress < 0.66) {
-          setDetectionStatus("aligned")
-        } else {
-          setDetectionStatus("ready")
-        }
+      if (isCardDetected) {
+        ctx.fillStyle = "rgba(34, 197, 94, 0.9)"
+        ctx.font = "bold 18px Arial"
+        ctx.fillText("Card detected! Ready to capture", video.videoWidth / 2, frameY + frameHeight + 40)
       }
 
       animationRef.current = requestAnimationFrame(detect)
     }
 
     animationRef.current = requestAnimationFrame(detect)
-  }, [detectionStatus, cameraReady])
+  }, [cameraReady])
 
   // Capture photo function with API calls
   const capturePhoto = async () => {
@@ -758,11 +761,6 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
             <canvas 
               ref={detectionCanvasRef} 
               className="absolute inset-0 w-full h-full pointer-events-none"
-              style={{
-                border: `4px solid ${frameColor}`,
-                borderRadius: "0.75rem",
-                boxShadow: `0 0 10px ${frameColor}`
-              }}
             />
           )}
 
@@ -912,9 +910,9 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
               </button>
               <button
                 onClick={capturePhoto}
-                disabled={!cameraReady || !streamActive || isSubmitting}
+                disabled={!cameraReady || !streamActive || isSubmitting || !cardDetected}
                 className={`flex-1 py-3 px-4 rounded-full flex items-center justify-center font-medium transition-colors ${
-                  !cameraReady || !streamActive || isSubmitting
+                  !cameraReady || !streamActive || isSubmitting || !cardDetected
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : detectionStatus === "ready"
                       ? "bg-green-600 hover:bg-green-700 text-white"
