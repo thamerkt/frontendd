@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FiCamera, FiRotateCw, FiArrowRight, FiUpload, FiCheck } from 'react-icons/fi';
 import { motion } from 'framer-motion';
