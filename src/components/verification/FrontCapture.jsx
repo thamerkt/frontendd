@@ -12,29 +12,17 @@ const FrontCapture = ({
   initialImage = null,
   currentStep = 2,
   totalSteps = 5
-}: {
-  onNext?: () => void;
-  onCapture?: (imageData: string) => void;
-  onRetake?: () => void;
-  initialImage?: string | null;
-  currentStep?: number;
-  totalSteps?: number;
 }) => {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [detectionStatus, setDetectionStatus] = useState<'position' | 'aligned' | 'ready'>('position');
+  const [error, setError] = useState(null);
+  const [detectionStatus, setDetectionStatus] = useState('position');
   const [showUploadOption, setShowUploadOption] = useState(false);
-  const [capturedImage, setCapturedImage] = useState<string | null>(initialImage);
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [capturedImage, setCapturedImage] = useState(initialImage);
+  const [hasPermission, setHasPermission] = useState(null);
   const [ip] = useState(Cookies.get('local_ip') || '');
-  const [progress, setProgress] = useState<{
-    step?: number;
-    subStep?: number;
-    phase?: string;
-    subPhase?: string;
-  }>(() => {
+  const [progress, setProgress] = useState(() => {
     const savedProgress = localStorage.getItem('registrationProgress');
     return savedProgress ? JSON.parse(savedProgress) : {
       step: 5,
@@ -44,12 +32,12 @@ const FrontCapture = ({
     };
   });
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const detectionCanvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const canvasRef = useRef(null);
+  const detectionCanvasRef = useRef(null);
+  const animationRef = useRef(null);
+  const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
   const checkEnvironment = useCallback(() => {
@@ -73,7 +61,7 @@ const FrontCapture = ({
     try {
       if ("permissions" in navigator) {
         try {
-          const permission = await navigator.permissions.query({ name: "camera" as PermissionName });
+          const permission = await navigator.permissions.query({ name: "camera" });
           setHasPermission(permission.state === "granted");
 
           permission.onchange = () => {
@@ -105,7 +93,7 @@ const FrontCapture = ({
         },
       };
 
-      let stream: MediaStream;
+      let stream;
       try {
         stream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (backCameraError) {
@@ -142,7 +130,7 @@ const FrontCapture = ({
       setIsCameraActive(true);
       setHasPermission(true);
       startDetectionSimulation();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Camera start failed:", err);
 
       let errorMessage = "Unknown camera error";
@@ -192,7 +180,7 @@ const FrontCapture = ({
     let detectionProgress = 0;
     let lastUpdate = 0;
 
-    const detect = (timestamp: number) => {
+    const detect = (timestamp) => {
       if (!videoRef.current || !detectionCanvasRef.current) {
         animationRef.current = requestAnimationFrame(detect);
         return;
@@ -354,7 +342,7 @@ const FrontCapture = ({
   
       return { ...response2.data, localStorageImageId: imageId };
   
-    } catch (err: any) {
+    } catch (err) {
       console.error("Unexpected error:", err);
       setError(err.message || "An unexpected error occurred. Please try again.");
       localStorage.removeItem('capturedImage');
@@ -369,7 +357,7 @@ const FrontCapture = ({
     startCamera();
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -397,10 +385,10 @@ const FrontCapture = ({
           }
         );
 
-        setCapturedImage(event.target?.result as string);
-        if (onCapture) onCapture(event.target?.result as string);
+        setCapturedImage(event.target?.result);
+        if (onCapture) onCapture(event.target?.result);
 
-      } catch (err: any) {
+      } catch (err) {
         console.error("Upload error:", err);
         setError("Failed to upload document. Please try again.");
       } finally {
