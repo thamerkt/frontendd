@@ -859,7 +859,7 @@ const BackCaptureWithFrame = ({
               </button>
               <button
                 onClick={capturePhoto}
-                disabled={!cameraReady || !streamActive || isSubmitting || detectionStatus !== "ready"}
+                disabled={!cameraReady || !streamActive || isSubmitting }
                 className={`flex-1 py-3 px-4 rounded-full flex items-center justify-center font-medium transition-colors ${
                   !cameraReady || !streamActive || isSubmitting || detectionStatus !== "ready"
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
