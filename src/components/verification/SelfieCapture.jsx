@@ -6,8 +6,8 @@ import { useDispatch } from "react-redux"
 import { motion } from "framer-motion"
 import axios from "axios"
 import Cookies from "js-cookie"
-import { FiCamera, FiRotateCw, FiCheck, FiAlertCircle, FiUser, FiPlay, FiVideo, FiShield } from "react-icons/fi"
-
+import { FiCamera, FiRotateCw, FiCheck, FiAlertCircle, FiUser } from "react-icons/fi"
+import { removeImage } from "../../redux/selfieSlice"
 
 const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }) => {
   const navigate = useNavigate()
@@ -24,18 +24,14 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
 
   const [image, setImage] = useState(null)
   const [isCameraActive, setIsCameraActive] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [faceStatus, setFaceStatus] = useState("position")
+  const [isUploading, setIsUploading] = useState(false)
   const [imageId, setImageId] = useState(null)
   const [ip, setIP] = useState(Cookies.get("local_ip"))
   const [hasPermission, setHasPermission] = useState(null)
   const [cameraReady, setCameraReady] = useState(false)
-  const [streamActive, setStreamActive] = useState(false)
-  const [permissionRequested, setPermissionRequested] = useState(false)
-  const [debugInfo, setDebugInfo] = useState("")
-  const [componentMounted, setComponentMounted] = useState(false)
 
   // Refs
   const videoRef = useRef(null)
@@ -43,14 +39,13 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
   const canvasRef = useRef(null)
   const detectionCanvasRef = useRef(null)
   const animationRef = useRef(null)
-  const retryCountRef = useRef(0)
 
   // Configuration for face detection zone
   const DETECTION_CONFIG = {
     width: 60, // % of video width
     height: 70, // % of video height
     x: 20, // % offset from left
-    y: 15, // % offset from top
+    y: 15 // % offset from top
   }
 
   // Status messages and colors
@@ -58,181 +53,19 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
     position: {
       message: "Move your face into the frame",
       hint: "Make sure your entire face is visible",
-      color: "red",
+      color: "red"
     },
     centered: {
       message: "Center your face in the frame",
       hint: "Keep your face aligned with the outline",
-      color: "yellow",
+      color: "yellow"
     },
     ready: {
       message: "Perfect! Hold still",
       hint: "Ready to capture your selfie",
-      color: "green",
-    },
+      color: "green"
+    }
   }
-
-  // Enhanced environment check
-  const checkEnvironment = useCallback(() => {
-    const isSecure =
-      window.location.protocol === "https:" ||
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1" ||
-      window.location.hostname.includes("vercel.app") ||
-      window.location.hostname.includes("netlify.app") ||
-      window.location.hostname.includes("vusercontent.net")
-
-    console.log("Environment check:", {
-      protocol: window.location.protocol,
-      hostname: window.location.hostname,
-      isSecure,
-      userAgent: navigator.userAgent,
-    })
-
-    if (!isSecure) {
-      throw new Error("Camera requires HTTPS connection")
-    }
-
-    if (!navigator.mediaDevices?.getUserMedia) {
-      throw new Error("Camera API not supported in this browser")
-    }
-
-    return true
-  }, [])
-
-  // Enhanced permission check
-  const checkPermissions = useCallback(async () => {
-    try {
-      if ("permissions" in navigator) {
-        const permission = await navigator.permissions.query({ name: "camera" })
-        console.log("Permission state:", permission.state)
-        setHasPermission(permission.state === "granted")
-
-        permission.onchange = () => {
-          console.log("Permission changed to:", permission.state)
-          setHasPermission(permission.state === "granted")
-        }
-
-        return permission.state
-      }
-    } catch (error) {
-      console.log("Permissions check not supported, will request directly")
-      setHasPermission(null)
-      return "unknown"
-    }
-  }, [])
-
-  // Enhanced debug function
-  const debugCameraState = useCallback(() => {
-    const info = {
-      componentMounted,
-      isCameraActive,
-      cameraReady,
-      streamActive,
-      hasPermission,
-      permissionRequested,
-      videoElement: !!videoRef.current,
-      streamRef: !!streamRef.current,
-      retryCount: retryCountRef.current,
-      environment: {
-        protocol: window.location.protocol,
-        hostname: window.location.hostname,
-        userAgent: navigator.userAgent.substring(0, 100),
-      },
-    }
-
-    if (videoRef.current) {
-      const video = videoRef.current
-      info.video = {
-        paused: video.paused,
-        readyState: video.readyState,
-        videoWidth: video.videoWidth,
-        videoHeight: video.videoHeight,
-        currentTime: video.currentTime,
-        srcObject: !!video.srcObject,
-        autoplay: video.autoplay,
-        muted: video.muted,
-        playsInline: video.playsInline,
-        offsetWidth: video.offsetWidth,
-        offsetHeight: video.offsetHeight,
-        style: video.style.cssText,
-      }
-    } else {
-      info.video = "Video element not found"
-    }
-
-    if (streamRef.current) {
-      info.stream = {
-        active: streamRef.current.active,
-        tracks: streamRef.current.getVideoTracks().map((track) => ({
-          label: track.label,
-          enabled: track.enabled,
-          readyState: track.readyState,
-          muted: track.muted,
-          settings: track.getSettings(),
-        })),
-      }
-    }
-
-    console.group("🎥 Camera Debug Info")
-    console.table(info)
-    console.groupEnd()
-
-    setDebugInfo(JSON.stringify(info, null, 2))
-    return info
-  }, [componentMounted, isCameraActive, cameraReady, streamActive, hasPermission, permissionRequested])
-
-  // Request camera permission explicitly
-  const requestCameraPermission = useCallback(async () => {
-    console.log("🔐 Requesting camera permission explicitly...")
-    setPermissionRequested(true)
-    setError(null)
-
-    try {
-      // First check current permission state
-      const currentPermission = await checkPermissions()
-
-      if (currentPermission === "granted") {
-        console.log("✅ Permission already granted")
-        return true
-      }
-
-      if (currentPermission === "denied") {
-        throw new Error("Camera permission was denied. Please enable camera access in your browser settings.")
-      }
-
-      // Try to get user media to trigger permission prompt
-      console.log("📱 Triggering permission prompt...")
-      const tempStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 320, height: 240 },
-      })
-
-      // Immediately stop the temporary stream
-      tempStream.getTracks().forEach((track) => track.stop())
-
-      console.log("✅ Permission granted successfully")
-      setHasPermission(true)
-      return true
-    } catch (error) {
-      console.error("❌ Permission request failed:", error)
-
-      let errorMessage = "Camera permission request failed"
-      if (error.name === "NotAllowedError") {
-        errorMessage =
-          "Camera access denied. Please click 'Allow' when prompted, or enable camera access in your browser settings."
-      } else if (error.name === "NotFoundError") {
-        errorMessage = "No camera found on this device."
-      } else if (error.name === "NotSupportedError") {
-        errorMessage = "Camera not supported in this browser."
-      } else if (error.message) {
-        errorMessage = error.message
-      }
-
-      setError(errorMessage)
-      setHasPermission(false)
-      return false
-    }
-  }, [checkPermissions])
 
   // Start camera function
   const startCamera = useCallback(async () => {
@@ -240,224 +73,36 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
     setIsLoading(true)
     setError(null)
     setCameraReady(false)
-    setStreamActive(false)
-    retryCountRef.current += 1
 
     try {
-      // Environment check
-      checkEnvironment()
-
-      // Check if component is mounted
-      if (!componentMounted) {
-        throw new Error("Component not fully mounted yet")
-      }
-
-      // Wait a bit for DOM to settle
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
-      // Check video element availability
-      if (!videoRef.current) {
-        console.error("Video ref is null, waiting for element...")
-        // Try to wait for the element
-        let attempts = 0
-        while (!videoRef.current && attempts < 10) {
-          await new Promise((resolve) => setTimeout(resolve, 100))
-          attempts++
-        }
-
-        if (!videoRef.current) {
-          throw new Error("Video element not available after waiting")
-        }
-      }
-
-      console.log("✅ Video element confirmed available:", {
-        element: !!videoRef.current,
-        offsetWidth: videoRef.current.offsetWidth,
-        offsetHeight: videoRef.current.offsetHeight,
-      })
-
-      // Clear any existing stream
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop())
-        streamRef.current = null
-      }
-
-      // Check/request permission first
-      if (!permissionRequested || hasPermission !== true) {
-        const permissionGranted = await requestCameraPermission()
-        if (!permissionGranted) {
-          return // Error already set in requestCameraPermission
-        }
-      }
-
-      // Wait a bit for permission to settle
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      // Now try to get the actual stream - for selfie, we want front camera
-      console.log("📹 Getting camera stream...")
-
-      const constraints = {
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 1280, min: 640 },
-          height: { ideal: 720, min: 480 },
-          facingMode: "user", // Front camera for selfie
-          frameRate: { ideal: 30, min: 15 },
-        },
-      }
-
-      let stream
-
-      try {
-        console.log("Trying front camera...")
-        stream = await navigator.mediaDevices.getUserMedia(constraints)
-        console.log("✅ Front camera stream obtained")
-      } catch (error) {
-        console.log("❌ Front camera failed, trying any available camera...")
-        const anyConstraints = {
-          video: {
-            width: { ideal: 1280, min: 640 },
-            height: { ideal: 720, min: 480 },
-          },
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
         }
-        stream = await navigator.mediaDevices.getUserMedia(anyConstraints)
-        console.log("✅ Camera stream obtained")
-      }
-
-      // Verify stream
-      if (!stream || !stream.active || stream.getVideoTracks().length === 0) {
-        throw new Error("Failed to get valid video stream")
-      }
-
-      const videoTrack = stream.getVideoTracks()[0]
-      console.log("📹 Video track details:", {
-        label: videoTrack.label,
-        enabled: videoTrack.enabled,
-        readyState: videoTrack.readyState,
-        settings: videoTrack.getSettings(),
       })
 
-      // Store stream
       streamRef.current = stream
-      setStreamActive(true)
 
-      // Get video element reference
-      const video = videoRef.current
-
-      // Reset and configure video element
-      video.srcObject = null
-      video.autoplay = true
-      video.playsInline = true
-      video.muted = true
-      video.controls = false
-
-      // Create promise for video setup
-      const videoSetupPromise = new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          cleanup()
-          reject(new Error("Video setup timeout after 15 seconds"))
-        }, 15000)
-
-        const cleanup = () => {
-          clearTimeout(timeout)
-          video.removeEventListener("loadedmetadata", onLoadedMetadata)
-          video.removeEventListener("canplay", onCanPlay)
-          video.removeEventListener("playing", onPlaying)
-          video.removeEventListener("error", onError)
-          video.removeEventListener("loadstart", onLoadStart)
-        }
-
-        const onLoadStart = () => {
-          console.log("📺 Video load started")
-        }
-
-        const onLoadedMetadata = () => {
-          console.log("📺 Video metadata loaded:", {
-            videoWidth: video.videoWidth,
-            videoHeight: video.videoHeight,
-            duration: video.duration,
-            readyState: video.readyState,
-          })
-        }
-
-        const onCanPlay = () => {
-          console.log("▶️ Video can play, attempting to start...")
-          video.play().catch((playError) => {
-            console.error("❌ Video play failed:", playError)
-            cleanup()
-            reject(new Error(`Video play failed: ${playError.message}`))
-          })
-        }
-
-        const onPlaying = () => {
-          console.log("🎬 Video is now playing!")
-          setCameraReady(true)
-          cleanup()
-          resolve()
-        }
-
-        const onError = (event) => {
-          console.error("❌ Video error:", event)
-          cleanup()
-          reject(new Error("Video element error"))
-        }
-
-        // Add event listeners
-        video.addEventListener("loadstart", onLoadStart)
-        video.addEventListener("loadedmetadata", onLoadedMetadata)
-        video.addEventListener("canplay", onCanPlay)
-        video.addEventListener("playing", onPlaying)
-        video.addEventListener("error", onError)
-
-        // Set the stream
-        console.log("🔗 Attaching stream to video element...")
-        video.srcObject = stream
-      })
-
-      await videoSetupPromise
-
-      setIsCameraActive(true)
-      console.log("🎉 Camera initialization complete!")
-
-      // Reset retry count on success
-      retryCountRef.current = 0
-
-      // Start face detection simulation
-      startFaceDetectionSimulation()
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        videoRef.current.muted = true
+        videoRef.current.playsInline = true
+        await videoRef.current.play()
+        setIsCameraActive(true)
+        setCameraReady(true)
+        startFaceDetectionSimulation()
+        setHasPermission(true)
+      }
     } catch (err) {
-      console.error("💥 Camera initialization failed:", err)
-
-      // Clean up on error
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop())
-        streamRef.current = null
-      }
-
-      let errorMessage = "Camera initialization failed"
-      if (err.name === "NotAllowedError") {
-        errorMessage = "Camera access denied. Please allow camera permissions and try again."
-        setHasPermission(false)
-      } else if (err.name === "NotFoundError") {
-        errorMessage = "No camera found on this device."
-      } else if (err.name === "NotSupportedError") {
-        errorMessage = "Camera not supported in this browser."
-      } else if (err.name === "NotReadableError") {
-        errorMessage = "Camera is being used by another application."
-      } else if (err.message) {
-        errorMessage = err.message
-      }
-
-      // Add retry suggestion for certain errors
-      if (retryCountRef.current < 3 && !err.message?.includes("denied")) {
-        errorMessage += ` (Attempt ${retryCountRef.current}/3)`
-      }
-
-      setError(errorMessage)
-      setStreamActive(false)
-      setCameraReady(false)
+      console.error("Camera error:", err)
+      setError("Camera access denied. Please allow camera permissions.")
+      setHasPermission(false)
     } finally {
       setIsLoading(false)
     }
-  }, [checkEnvironment, requestCameraPermission, hasPermission, permissionRequested, componentMounted])
+  }, [])
 
   // Stop camera function
   const stopCamera = useCallback(() => {
@@ -483,8 +128,6 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
 
     setIsCameraActive(false)
     setCameraReady(false)
-    setStreamActive(false)
-    retryCountRef.current = 0
   }, [])
 
   // Face detection simulation
@@ -502,14 +145,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
 
       const video = videoRef.current
       const canvas = detectionCanvasRef.current
-
-      if (video.videoWidth === 0 || video.videoHeight === 0) {
-        animationRef.current = requestAnimationFrame(detectFace)
-        return
-      }
-
       const ctx = canvas.getContext("2d")
-      if (!ctx) return
 
       // Set canvas dimensions
       canvas.width = video.videoWidth
@@ -594,7 +230,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
 
   // Capture photo function
   const capturePhoto = async () => {
-    if (!isCameraActive || !cameraReady || !streamActive) {
+    if (!isCameraActive || !cameraReady) {
       setError("Camera is not ready. Please wait or restart the camera.")
       return
     }
@@ -615,7 +251,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
 
     let newImageId = null
     try {
-      setIsSubmitting(true)
+      setIsUploading(true)
       newImageId = Date.now()
       setImageId(newImageId)
 
@@ -659,43 +295,38 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
       }
 
       // Upload to API
-      try {
-        const formData = new FormData()
-        formData.append("selfie", file)
+      const formData = new FormData()
+      formData.append("selfie", file)
 
-        const response = await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/selfie/`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        })
+      const response = await axios.post(`http://192.168.1.120:8000/ocr/selfie/`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
 
-        if (response.data?.status !== "success") {
-          console.warn("API returned non-success status:", response.data)
-        }
-
-        // Upload document metadata
-        const documentFormData = new FormData()
-        documentFormData.append("document_name", "Selfie")
-        documentFormData.append("status", "pending")
-        documentFormData.append("document_url", file)
-        documentFormData.append("uploaded_by", localStorage.getItem("user"))
-        documentFormData.append("document_type", "1")
-        documentFormData.append("submission_date", new Date().toISOString())
-        documentFormData.append("file", file)
-
-        const documentResponse = await axios.post(
-          `https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`,
-          documentFormData,
-          { headers: { "Content-Type": "multipart/form-data" } },
-        )
-
-        console.log("Upload successful:", documentResponse.data)
-      } catch (apiError) {
-        console.error("API Error:", apiError)
-        setError("Failed to upload to server, but your selfie has been saved locally.")
+      if (response.data?.status !== "success") {
+        localStorage.removeItem('selfie')
+        throw new Error(response.data?.message || "Selfie upload failed")
       }
+
+      // Upload document metadata
+      const documentFormData = new FormData()
+      documentFormData.append("document_name", "Selfie")
+      documentFormData.append('status', 'pending')
+      documentFormData.append('document_url', file)
+      documentFormData.append('uploaded_by', localStorage.getItem('user')) 
+      documentFormData.append("document_type",'1')
+      documentFormData.append('submission_date', new Date().toISOString())
+      documentFormData.append('file', file)
+
+      const documentResponse = await axios.post(
+        `http://192.168.1.120:8000/ocr/document/`,
+        documentFormData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      )
 
       // Success handling
       setImage(imageData)
       stopCamera()
+      console.log("Upload successful:", documentResponse.data)
     } catch (err) {
       console.error("Error:", err)
       setError(err.message || "An error occurred while capturing")
@@ -704,7 +335,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
         setImageId(null)
       }
     } finally {
-      setIsSubmitting(false)
+      setIsUploading(false)
     }
   }
 
@@ -737,33 +368,22 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
 
   // Effects
   useEffect(() => {
-    // Mark component as mounted
-    setComponentMounted(true)
-    console.log("✅ Component mounted")
-
-    // Get IP from URL if available
     const url = new URL(window.location.href)
     const hostname = url.hostname
     const ipv4Regex = /^(?:\d{1,3}\.){3}\d{1,3}$/
     if (ipv4Regex.test(hostname)) {
       setIP(hostname)
+    } else {
+      setIP('localhost')
     }
+    console.log('Current progress:', progress)
 
-    // Check permissions
-    checkPermissions()
+    startCamera()
 
     return () => {
-      console.log("🧹 Component unmounting")
       stopCamera()
     }
-  }, [checkPermissions, stopCamera])
-
-  // Start camera automatically when component is mounted
-  useEffect(() => {
-    if (componentMounted && !image && !isCameraActive && !isLoading) {
-      startCamera()
-    }
-  }, [componentMounted, image, isCameraActive, isLoading, startCamera])
+  }, [startCamera, stopCamera])
 
   return (
     <div className="max-w-md mx-auto">
@@ -800,39 +420,22 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
                 </div>
               ))}
             </div>
-
-            <div className="flex justify-between mt-2 px-1 text-center">
-              {["Select", "Front", "Back", "Selfie", "Confirm"].map((label, index) => (
-                <span
-                  key={label}
-                  className={`text-xs w-12 ${
-                    index + 1 === currentStep
-                      ? "font-medium text-blue-600"
-                      : index + 1 < currentStep
-                        ? "text-green-600"
-                        : "text-gray-400"
-                  }`}
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
           </div>
         </div>
 
         {/* Permission Notice */}
-        {permissionRequested && hasPermission === false && (
+        {hasPermission === false && (
           <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 mb-4 rounded-lg">
             <div className="flex items-start">
-              <FiShield className="mr-2 mt-0.5 flex-shrink-0" />
+              <FiAlertCircle className="mr-2 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
                 <p className="font-medium">Camera Permission Required</p>
-                <p className="text-sm mt-1">Please allow camera access when prompted by your browser.</p>
+                <p className="text-sm mt-1">Please allow camera access in your browser settings.</p>
                 <button
-                  onClick={requestCameraPermission}
+                  onClick={startCamera}
                   className="mt-2 text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-1 rounded transition-colors"
                 >
-                  Request Permission
+                  Retry
                 </button>
               </div>
             </div>
@@ -845,34 +448,11 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
             <div className="flex items-start">
               <FiAlertCircle className="mr-2 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <p className="font-medium">Camera Error</p>
+                <p className="font-medium">Error</p>
                 <p className="text-sm mt-1">{error}</p>
-                <div className="mt-3 flex gap-2">
-                  <button
-                    onClick={startCamera}
-                    disabled={retryCountRef.current >= 3}
-                    className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded transition-colors disabled:opacity-50"
-                  >
-                    {retryCountRef.current >= 3 ? "Max Retries" : "Retry Camera"}
-                  </button>
-                  <button
-                    onClick={debugCameraState}
-                    className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded transition-colors"
-                  >
-                    Debug Info
-                  </button>
-                </div>
               </div>
             </div>
           </div>
-        )}
-
-        {/* Debug Info */}
-        {debugInfo && (
-          <details className="mb-4">
-            <summary className="text-xs text-gray-500 cursor-pointer">Debug Information</summary>
-            <pre className="text-xs bg-gray-100 p-2 rounded mt-2 overflow-auto max-h-32">{debugInfo}</pre>
-          </details>
         )}
 
         {/* Hidden canvas for capture */}
@@ -900,9 +480,6 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-3"></div>
                 <p>Starting camera...</p>
-                <p className="text-xs mt-2 opacity-75">
-                  {!componentMounted ? "Loading interface..." : "Please allow camera access when prompted"}
-                </p>
               </div>
             </div>
           )}
@@ -910,7 +487,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
           {/* Captured image */}
           {image && (
             <img
-              src={image || "/placeholder.svg"}
+              src={image}
               alt="Captured selfie"
               className="absolute inset-0 w-full h-full object-cover"
             />
@@ -920,14 +497,14 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
           {!isCameraActive && !image && !isLoading && (
             <div className="absolute inset-0 flex items-center justify-center text-white">
               <div className="text-center p-8">
-                <FiVideo className="mx-auto h-16 w-16 mb-4 opacity-50" />
+                <FiCamera className="mx-auto h-16 w-16 mb-4 opacity-50" />
                 <p className="mb-4 opacity-75">Camera not active</p>
                 <button
                   onClick={startCamera}
-                  disabled={isLoading || !componentMounted}
+                  disabled={isLoading}
                   className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-full flex items-center justify-center mx-auto transition-colors disabled:opacity-50"
                 >
-                  <FiPlay className="mr-2" /> Start Camera
+                  Start Camera
                 </button>
               </div>
             </div>
@@ -988,14 +565,14 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }
           {!image ? (
             <button
               onClick={capturePhoto}
-              disabled={!isCameraActive || !cameraReady || !streamActive || faceStatus !== "ready" || isSubmitting}
+              disabled={!isCameraActive || !cameraReady || faceStatus !== "ready" || isUploading}
               className={`py-3 px-6 rounded-lg flex items-center justify-center transition-colors ${
-                !isCameraActive || !cameraReady || !streamActive || faceStatus !== "ready" || isSubmitting
+                !isCameraActive || !cameraReady || faceStatus !== "ready" || isUploading
                   ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                   : "bg-blue-600 text-white hover:bg-blue-700"
               }`}
             >
-              {isSubmitting ? (
+              {isUploading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
                   Uploading...
