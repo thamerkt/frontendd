@@ -1,9 +1,8 @@
-"use client"
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FiCamera, FiRotateCw, FiArrowRight, FiUpload, FiCheck } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import axios from 'axios';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Cookies from "js-cookie";
 
 interface FrontCaptureProps {
@@ -55,6 +54,7 @@ const FrontCapture = ({
   const detectionCanvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   const checkEnvironment = useCallback(() => {
     const isSecure =
