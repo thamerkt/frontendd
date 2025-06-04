@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { FiCamera, FiRotateCw, FiArrowRight, FiUpload, FiCheck } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import axios from 'axios';
@@ -20,193 +20,213 @@ const FrontCapture = ({
   const [detectionStatus, setDetectionStatus] = useState('position');
   const [showUploadOption, setShowUploadOption] = useState(false);
   const [capturedImage, setCapturedImage] = useState(initialImage || null);
+  const [hasPermission, setHasPermission] = useState(null);
   const { user } = useParams();
   const navigate = useNavigate();
 
   const videoRef = useRef(null);
+  const streamRef = useRef(null);
   const canvasRef = useRef(null);
   const detectionCanvasRef = useRef(null);
   const animationRef = useRef(null);
   const fileInputRef = useRef(null);
   const [ip, setIP] = useState(Cookies.get('local_ip'));
   const [progress, setProgress] = useState(() => {
-    try {
-      const savedProgress = JSON.parse(localStorage.getItem('registrationProgress') || '{}');
-      return {
-        step: savedProgress.step || 5,
-        subStep: savedProgress.subStep || 2,
-        phase: savedProgress.phase || 'identity_verification',
-        subPhase: savedProgress.subPhase || 'document_capture'
-      };
-    } catch (e) {
-      console.error("Error parsing saved progress:", e);
-      return {
-        step: 5,
-        subStep: 2,
-        phase: 'identity_verification',
-        subPhase: 'document_capture'
-      };
-    }
+    const savedProgress = localStorage.getItem('registrationProgress') || '{}';
+    return {
+      step: savedProgress.step || 5,
+      subStep: savedProgress.subStep || 2,
+      phase: savedProgress.phase || 'identity_verification',
+      subPhase: savedProgress.subPhase || 'document_capture'
+    };
   });
 
-  // Error types for better error handling
-  const ERROR_TYPES = {
-    CAMERA_ACCESS: "Could not access camera. Please ensure permissions are granted.",
-    NETWORK: "Network error. Please check your internet connection.",
-    IMAGE_PROCESSING: "Image processing failed. Ensure the document is clear and valid.",
-    UPLOAD_FAILED: "Failed to upload document. Please try again.",
-    UNEXPECTED: "An unexpected error occurred. Please try again.",
-    INVALID_RESPONSE: "Received invalid response from server.",
-    STORAGE: "Failed to save data locally.",
-    FILE_READ: "Failed to read the selected file."
-  };
+  // Check if environment supports camera
+  const checkEnvironment = useCallback(() => {
+    const isSecure =
+      window.location.protocol === "https:" || 
+      window.location.hostname === "localhost" || 
+      window.location.hostname === "127.0.0.1";
 
-  useEffect(() => {
-    let stream = null;
-    let isMounted = true;
+    if (!isSecure) {
+      throw new Error("Camera requires HTTPS connection");
+    }
 
-    const startCamera = async () => {
-      try {
-        if (!isMounted) return;
-        
-        setIsLoading(true);
-        setError(null);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error("Camera API not supported in this browser");
+    }
 
-        // Check if browser supports mediaDevices
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error("Camera API not supported in this browser");
+    return true;
+  }, []);
+
+  // Check camera permissions
+  const checkPermissions = useCallback(async () => {
+    try {
+      if ("permissions" in navigator) {
+        try {
+          const permission = await navigator.permissions.query({ name: "camera" });
+          setHasPermission(permission.state === "granted");
+
+          permission.onchange = () => {
+            setHasPermission(permission.state === "granted");
+          };
+        } catch (permError) {
+          console.log("Permissions API not fully supported, will try direct access");
+          setHasPermission(null);
         }
+      }
+    } catch (error) {
+      console.log("Permissions check failed:", error);
+      setHasPermission(null);
+    }
+  }, []);
 
-        const constraints = {
+  // Start camera function with improved error handling
+  const startCamera = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      checkEnvironment();
+
+      const constraints = {
+        video: {
+          facingMode: "environment", // Prefer back camera
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
+        },
+      };
+
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (backCameraError) {
+        console.log("Back camera failed, trying front camera:", backCameraError);
+        // Fallback to front camera
+        const frontConstraints = {
           video: {
-            facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+            facingMode: "user",
+            width: { ideal: 1280, max: 1920 },
+            height: { ideal: 720, max: 1080 },
+          },
+        };
+        stream = await navigator.mediaDevices.getUserMedia(frontConstraints);
+      }
+
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          if (videoRef.current) {
+            videoRef.current.play().catch((playError) => {
+              console.error("Video play error:", playError);
+              setError("Failed to start video playback");
+            });
           }
         };
 
-        stream = await navigator.mediaDevices.getUserMedia(constraints)
-          .catch(err => {
-            if (err.name === 'NotAllowedError') {
-              throw new Error("Camera access denied. Please allow camera permissions.");
-            } else if (err.name === 'NotFoundError') {
-              throw new Error("No camera found on this device.");
-            } else {
-              throw new Error("Could not access camera: " + err.message);
-            }
-          });
-
-        if (!isMounted) {
-          stream.getTracks().forEach(track => track.stop());
-          return;
-        }
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.muted = true;
-          videoRef.current.playsInline = true;
-          
-          // Handle video play errors
-          videoRef.current.onerror = () => {
-            throw new Error("Failed to play video stream");
-          };
-          
-          await videoRef.current.play().catch(err => {
-            throw new Error("Failed to play video: " + err.message);
-          });
-          
-          setIsCameraActive(true);
-          startDetectionSimulation();
-        }
-      } catch (err) {
-        console.error("Camera initialization error:", err);
-        if (isMounted) {
-          setError(err.message || ERROR_TYPES.CAMERA_ACCESS);
-          setShowUploadOption(true);
-        }
-      } finally {
-        if (isMounted) setIsLoading(false);
+        videoRef.current.onerror = (videoError) => {
+          console.error("Video element error:", videoError);
+          setError("Video display error");
+        };
       }
-    };
 
-    if (!capturedImage) {
-      startCamera();
+      setIsCameraActive(true);
+      setHasPermission(true);
+      startDetectionSimulation();
+    } catch (err) {
+      console.error("Camera start failed:", err);
+
+      let errorMessage = "Unknown camera error";
+      if (err.name === "NotAllowedError") {
+        errorMessage = "Camera access denied. Please allow camera permissions and try again.";
+        setHasPermission(false);
+      } else if (err.name === "NotFoundError") {
+        errorMessage = "No camera found on this device.";
+      } else if (err.name === "NotSupportedError") {
+        errorMessage = "Camera not supported in this browser.";
+      } else if (err.name === "NotReadableError") {
+        errorMessage = "Camera is already in use by another application.";
+      } else if (err.name === "OverconstrainedError") {
+        errorMessage = "Camera constraints not supported.";
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
+      setShowUploadOption(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [checkEnvironment]);
+
+  // Stop camera function
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        track.stop();
+      });
+      streamRef.current = null;
     }
 
-    return () => {
-      isMounted = false;
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-      if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [capturedImage]);
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    setIsCameraActive(false);
+  }, []);
 
   const startDetectionSimulation = () => {
     let detectionProgress = 0;
     let lastUpdate = 0;
 
     const detect = (timestamp) => {
-      try {
-        if (!videoRef.current || !detectionCanvasRef.current) {
-          animationRef.current = requestAnimationFrame(detect);
-          return;
-        }
-
-        const video = videoRef.current;
-        const canvas = detectionCanvasRef.current;
-        const ctx = canvas.getContext('2d');
-
-        if (!ctx) {
-          console.error("Could not get canvas context");
-          return;
-        }
-
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-
-        const zoneWidth = (video.videoWidth * 85) / 100;
-        const zoneHeight = (video.videoHeight * 70) / 100;
-        const zoneX = (video.videoWidth * 7.5) / 100;
-        const zoneY = (video.videoHeight * 15) / 100;
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        const pulse = 0.7 + 0.3 * Math.sin(timestamp / 300);
-
-        ctx.strokeStyle =
-          detectionStatus === 'ready' ? `rgba(74, 222, 128, ${pulse})` :
-            detectionStatus === 'aligned' ? `rgba(250, 204, 21, ${pulse})` :
-              `rgba(239, 68, 68, ${pulse})`;
-
-        ctx.lineWidth = 4;
-        ctx.setLineDash([10, 10]);
-        ctx.strokeRect(zoneX, zoneY, zoneWidth, zoneHeight);
-        ctx.setLineDash([]);
-
-        if (timestamp - lastUpdate > 1000) {
-          detectionProgress = (detectionProgress + 0.2) % 1;
-          lastUpdate = timestamp;
-
-          if (detectionProgress < 0.4) {
-            setDetectionStatus('position');
-          } else if (detectionProgress < 0.8) {
-            setDetectionStatus('aligned');
-          } else {
-            setDetectionStatus('ready');
-          }
-        }
-
+      if (!videoRef.current || !detectionCanvasRef.current) {
         animationRef.current = requestAnimationFrame(detect);
-      } catch (err) {
-        console.error("Detection simulation error:", err);
-        cancelAnimationFrame(animationRef.current);
+        return;
       }
+
+      const video = videoRef.current;
+      const canvas = detectionCanvasRef.current;
+      const ctx = canvas.getContext('2d');
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const zoneWidth = (video.videoWidth * 85) / 100;
+      const zoneHeight = (video.videoHeight * 70) / 100;
+      const zoneX = (video.videoWidth * 7.5) / 100;
+      const zoneY = (video.videoHeight * 15) / 100;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const pulse = 0.7 + 0.3 * Math.sin(timestamp / 300);
+
+      ctx.strokeStyle =
+        detectionStatus === 'ready' ? `rgba(74, 222, 128, ${pulse})` :
+          detectionStatus === 'aligned' ? `rgba(250, 204, 21, ${pulse})` :
+            `rgba(239, 68, 68, ${pulse})`;
+
+      ctx.lineWidth = 4;
+      ctx.setLineDash([10, 10]);
+      ctx.strokeRect(zoneX, zoneY, zoneWidth, zoneHeight);
+      ctx.setLineDash([]);
+
+      if (timestamp - lastUpdate > 1000) {
+        detectionProgress = (detectionProgress + 0.2) % 1;
+        lastUpdate = timestamp;
+
+        if (detectionProgress < 0.4) {
+          setDetectionStatus('position');
+        } else if (detectionProgress < 0.8) {
+          setDetectionStatus('aligned');
+        } else {
+          setDetectionStatus('ready');
+        }
+      }
+
+      animationRef.current = requestAnimationFrame(detect);
     };
 
     animationRef.current = requestAnimationFrame(detect);
@@ -219,67 +239,46 @@ const FrontCapture = ({
     }
   
     if (!navigator.onLine) {
-      setError(ERROR_TYPES.NETWORK);
+      setError("No internet connection. Please check your network.");
       return;
     }
   
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    
-    if (!video || !canvas) {
-      setError("Camera components not initialized properly.");
-      return;
-    }
+    if (!video || !canvas) return;
+  
+    const context = canvas.getContext("2d");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  
+    const imageData = canvas.toDataURL("image/png");
+    const imageId = Date.now();
   
     try {
-      const context = canvas.getContext("2d");
-      if (!context) {
-        throw new Error("Could not get canvas context");
-      }
-      
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  
-      const imageData = canvas.toDataURL("image/png");
-      if (!imageData || imageData.length < 100) { // Simple check if image is valid
-        throw new Error("Failed to capture image");
-      }
-  
-      const imageId = Date.now();
       setIsSubmitting(true);
-      setError(null);
       
       // Convert base64 to Blob
-      let blob;
-      try {
-        const response = await fetch(imageData);
-        if (!response.ok) throw new Error("Failed to convert image to blob");
-        blob = await response.blob();
-      } catch (err) {
-        throw new Error(ERROR_TYPES.IMAGE_PROCESSING);
-      }
-      
+      const blob = await (await fetch(imageData)).blob();
       const file = new File([blob], `image_${imageId}.jpg`, { type: "image/jpeg" });
       
-      // Save image to localStorage
-      try {
-        const imagePayload = { 
-          id: imageId, 
-          imageData, 
-          fileInfo: {
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            lastModified: file.lastModified
-          },
-          timestamp: new Date().toISOString()
-        };
-        localStorage.setItem('capturedImage', JSON.stringify(imagePayload));
-      } catch (err) {
-        console.error("Local storage error:", err);
-        throw new Error(ERROR_TYPES.STORAGE);
+      if (!imageData || !file) {
+        throw new Error("Failed to process captured image");
       }
+  
+      // Save image to localStorage
+      const imagePayload = { 
+        id: imageId, 
+        imageData, 
+        fileInfo: {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          lastModified: file.lastModified
+        },
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('capturedImage', JSON.stringify(imagePayload));
   
       // Upload image to first API
       const formDataImage = new FormData();
@@ -292,21 +291,18 @@ const FrontCapture = ({
             "Content-Type": "multipart/form-data",
           },
           withCredentials: true,
-          timeout: 30000 // 30 seconds timeout
         });
-        
-        if (!response1.data || response1.data.status !== "success" || !response1.data.data_verified) {
-          localStorage.removeItem('capturedImage');
-          throw new Error(ERROR_TYPES.IMAGE_PROCESSING);
-        }
       } catch (err) {
         console.error("Upload-image API error:", err.response?.data || err.message);
         localStorage.removeItem('capturedImage');
-        throw new Error(
-          err.response?.data?.message || 
-          err.message || 
-          ERROR_TYPES.UPLOAD_FAILED
-        );
+        setError("Failed to upload image. Please try again.");
+        return;
+      }
+  
+      if (!response1.data || response1.data.status !== "success" || !response1.data.data_verified) {
+        localStorage.removeItem('capturedImage');
+        setError("Image processing failed. Ensure the document is clear and valid.");
+        return;
       }
       
       // Upload to second API
@@ -329,21 +325,14 @@ const FrontCapture = ({
             headers: {
               "Content-Type": "multipart/form-data",
             },
-            timeout: 30000 // 30 seconds timeout
           }
         );
-        
-        if (!response2.data) {
-          throw new Error(ERROR_TYPES.INVALID_RESPONSE);
-        }
       } catch (err) {
         console.error("Document API error:", err.response?.data || err.message);
-        throw new Error(
-          err.response?.data?.message || 
-          err.message || 
-          ERROR_TYPES.UPLOAD_FAILED
-        );
+        setError("Failed to save document. Please try again.");
+        return;
       }
+      console.log(response2);
 
       // Final success handling
       setCapturedImage(imageData);
@@ -358,111 +347,61 @@ const FrontCapture = ({
       return { ...response2.data, localStorageImageId: imageId };
   
     } catch (err) {
-      console.error("Capture error:", err);
-      setError(err.message || ERROR_TYPES.UNEXPECTED);
-      try {
-        localStorage.removeItem('capturedImage');
-      } catch (e) {
-        console.error("Failed to remove image from storage:", e);
-      }
+      console.error("Unexpected error:", err);
+      setError(err.message || "An unexpected error occurred. Please try again.");
+      localStorage.removeItem('capturedImage');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleRetake = () => {
-    try {
-      setCapturedImage(null);
-      if (onRetake) onRetake();
-    } catch (err) {
-      console.error("Retake error:", err);
-      setError(ERROR_TYPES.UNEXPECTED);
-    }
+    setCapturedImage(null);
+    if (onRetake) onRetake();
+    startCamera(); // Restart camera when retaking
   };
 
   const handleFileUpload = async (e) => {
-    if (!e.target.files || e.target.files.length === 0) {
-      setError("No file selected");
-      return;
-    }
-
     const file = e.target.files[0];
-    if (!file) return;
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          setIsSubmitting(true);
 
-    // Validate file type and size
-    if (!file.type.match('image.*')) {
-      setError("Please select an image file");
-      return;
-    }
+          // Create FormData
+          const formData = new FormData();
+          formData.append('document_name', 'National ID Front');
+          formData.append('document_url', file);
+          formData.append('status', 'pending');
+          formData.append('uploaded_by', localStorage.getItem('user')); 
+          formData.append("document_type",'1');
+          formData.append('submission_date', new Date().toISOString());
 
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
-      setError("File size too large (max 5MB)");
-      return;
-    }
+          // Make API call
+          const response = await axios.post(
+            `http://192.168.1.120:8000/ocr/document/`,
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+              withCredentials: true,
+            }
+          );
 
-    const reader = new FileReader();
-    
-    reader.onloadstart = () => {
-      setIsSubmitting(true);
-      setError(null);
-    };
-    
-    reader.onerror = () => {
-      setError(ERROR_TYPES.FILE_READ);
-      setIsSubmitting(false);
-    };
-    
-    reader.onload = async (event) => {
-      try {
-        const imageData = event.target.result;
-        
-        // Create FormData
-        const formData = new FormData();
-        formData.append('document_name', 'National ID Front');
-        formData.append('document_url', file);
-        formData.append('status', 'pending');
-        formData.append('uploaded_by', localStorage.getItem('user')); 
-        formData.append("document_type",'1');
-        formData.append('submission_date', new Date().toISOString());
+          // Update state if successful
+          setCapturedImage(event.target.result);
+          if (onCapture) onCapture(event.target.result);
 
-        // Make API call
-        const response = await axios.post(
-          `http://192.168.1.120:8000/ocr/document/`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-            withCredentials: true,
-            timeout: 30000
-          }
-        );
-
-        if (!response.data) {
-          throw new Error(ERROR_TYPES.INVALID_RESPONSE);
+        } catch (err) {
+          console.error("Upload error:", err);
+          setError("Failed to upload document. Please try again.");
+        } finally {
+          setIsSubmitting(false);
         }
-
-        // Update state if successful
-        setCapturedImage(imageData);
-        if (onCapture) onCapture(imageData);
-
-      } catch (err) {
-        console.error("Upload error:", err);
-        setError(
-          err.response?.data?.message || 
-          err.message || 
-          ERROR_TYPES.UPLOAD_FAILED
-        );
-      } finally {
-        setIsSubmitting(false);
-      }
-    };
-    
-    try {
+      };
       reader.readAsDataURL(file);
-    } catch (err) {
-      setError(ERROR_TYPES.FILE_READ);
-      setIsSubmitting(false);
     }
   };
 
@@ -475,23 +414,24 @@ const FrontCapture = ({
     }
   };
 
-  const handleNextStep = () => {
-    try {
-      const updatedProgress = {
-        ...progress,
-        step: 3, // Moving to step 3 (back capture)
-        subStep: 1
-      };
-      
-      // Save to localStorage and state
-      localStorage.setItem('registrationProgress', JSON.stringify(updatedProgress));
-      setProgress(updatedProgress);
-      navigate('/register/identity-verification/verification/back-document');
-    } catch (err) {
-      console.error("Navigation error:", err);
-      setError("Failed to proceed to next step. Please try again.");
+  // Check permissions on mount
+  useEffect(() => {
+    checkPermissions();
+  }, [checkPermissions]);
+
+  // Initialize camera when no captured image
+  useEffect(() => {
+    if (!capturedImage) {
+      startCamera();
     }
-  };
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      stopCamera();
+    };
+  }, [capturedImage, startCamera, stopCamera]);
 
   return (
     <div className="max-w-md mx-auto">
@@ -548,12 +488,7 @@ const FrontCapture = ({
               <p className="text-gray-500">Starting camera...</p>
             </div>
           ) : capturedImage ? (
-            <img 
-              src={capturedImage} 
-              alt="Captured Front" 
-              className="w-full h-full object-contain"
-              onError={() => setError("Failed to load captured image")}
-            />
+            <img src={capturedImage} alt="Captured Front" className="w-full h-full object-contain" />
           ) : (
             <>
               <video
@@ -584,12 +519,17 @@ const FrontCapture = ({
           <div className="bg-red-50 border-l-4 border-red-400 text-red-700 p-4 mb-6 rounded">
             <p className="font-medium">Error</p>
             <p>{error}</p>
-            <button 
-              onClick={() => setError(null)} 
-              className="mt-2 text-sm text-red-600 hover:text-red-800"
-            >
-              Dismiss
-            </button>
+            {error.includes("Camera") && (
+              <div className="mt-2 text-sm text-red-600">
+                <p className="font-medium">Troubleshooting:</p>
+                <ul className="list-disc pl-5">
+                  <li>Make sure you're using HTTPS</li>
+                  <li>Allow camera permissions when prompted</li>
+                  <li>Close other apps that might be using the camera</li>
+                  <li>Refresh the page and try again</li>
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
@@ -631,7 +571,17 @@ const FrontCapture = ({
                 <FiRotateCw className="mr-2" /> Retake
               </button>
               <button
-                onClick={handleNextStep}
+                onClick={() => {
+                  const updatedProgress = {
+                    ...progress,
+                    step: 3, // Moving to step 3 (back capture)
+                    subStep: 1
+                  };
+                  
+                  localStorage.setItem('registrationProgress', JSON.stringify(updatedProgress));
+                  setProgress(updatedProgress);
+                  navigate('/register/identity-verification/verification/back-document');
+                }}
                 className="bg-blue-600 text-white py-2 px-4 rounded-full flex-1 flex items-center justify-center"
               >
                 Next <FiArrowRight className="ml-2" />
