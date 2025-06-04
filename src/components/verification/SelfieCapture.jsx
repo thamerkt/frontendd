@@ -7,7 +7,7 @@ import { motion } from "framer-motion"
 import axios from "axios"
 import Cookies from "js-cookie"
 import { FiCamera, FiRotateCw, FiCheck, FiAlertCircle, FiUser, FiPlay, FiVideo, FiShield } from "react-icons/fi"
-import { removeImage } from "../redux/selfieSlice" // Adjust path as needed
+
 
 const SelfieCapture = ({ onComplete, onRetake, currentStep = 4, totalSteps = 5 }) => {
   const navigate = useNavigate()
