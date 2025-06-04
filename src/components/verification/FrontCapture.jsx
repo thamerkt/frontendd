@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { FiCamera, FiRotateCw, FiArrowRight, FiUpload, FiCheck } from 'react-icons/fi';
 import { motion } from 'framer-motion';
@@ -16,20 +18,18 @@ const FrontCapture = ({
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [detectionStatus, setDetectionStatus] = useState('position');
   const [showUploadOption, setShowUploadOption] = useState(false);
   const [capturedImage, setCapturedImage] = useState(initialImage || null);
-  const [hasPermission, setHasPermission] = useState(null);
-  const { user } = useParams();
-  const navigate = useNavigate();
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
-  const canvasRef = useRef(null);
-  const detectionCanvasRef = useRef(null);
-  const animationRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const detectionCanvasRef = useRef<HTMLCanvasElement>(null);
+  const animationRef = useRef<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [ip, setIP] = useState(Cookies.get('local_ip'));
   const [progress, setProgress] = useState(() => {
     const savedProgress = localStorage.getItem('registrationProgress') || '{}';
@@ -64,7 +64,7 @@ const FrontCapture = ({
     try {
       if ("permissions" in navigator) {
         try {
-          const permission = await navigator.permissions.query({ name: "camera" });
+          const permission = await navigator.permissions.query({ name: "camera" as PermissionName });
           setHasPermission(permission.state === "granted");
 
           permission.onchange = () => {
@@ -81,7 +81,7 @@ const FrontCapture = ({
     }
   }, []);
 
-  // Start camera function with improved error handling
+  // Start camera function with improved error handling (same as CameraComponent)
   const startCamera = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -97,7 +97,7 @@ const FrontCapture = ({
         },
       };
 
-      let stream;
+      let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (backCameraError) {
@@ -135,7 +135,7 @@ const FrontCapture = ({
       setIsCameraActive(true);
       setHasPermission(true);
       startDetectionSimulation();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Camera start failed:", err);
 
       let errorMessage = "Unknown camera error";
@@ -161,7 +161,7 @@ const FrontCapture = ({
     }
   }, [checkEnvironment]);
 
-  // Stop camera function
+  // Stop camera function (same as CameraComponent)
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => {
@@ -175,13 +175,18 @@ const FrontCapture = ({
     }
 
     setIsCameraActive(false);
+    
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
   }, []);
 
   const startDetectionSimulation = () => {
     let detectionProgress = 0;
     let lastUpdate = 0;
 
-    const detect = (timestamp) => {
+    const detect = (timestamp: number) => {
       if (!videoRef.current || !detectionCanvasRef.current) {
         animationRef.current = requestAnimationFrame(detect);
         return;
@@ -190,6 +195,7 @@ const FrontCapture = ({
       const video = videoRef.current;
       const canvas = detectionCanvasRef.current;
       const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
@@ -248,6 +254,8 @@ const FrontCapture = ({
     if (!video || !canvas) return;
   
     const context = canvas.getContext("2d");
+    if (!context) return;
+    
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -311,7 +319,7 @@ const FrontCapture = ({
       formData.append("document_name", "National ID Front");
       formData.append("document_url", file);
       formData.append("status", "pending");
-      formData.append('uploaded_by', localStorage.getItem('user')); 
+      formData.append('uploaded_by', localStorage.getItem('user') || ''); 
       formData.append("document_type",'1');
       formData.append("submission_date", new Date().toISOString());
       formData.append("file", file);
@@ -332,7 +340,6 @@ const FrontCapture = ({
         setError("Failed to save document. Please try again.");
         return;
       }
-      console.log(response2);
 
       // Final success handling
       setCapturedImage(imageData);
@@ -346,7 +353,7 @@ const FrontCapture = ({
   
       return { ...response2.data, localStorageImageId: imageId };
   
-    } catch (err) {
+    } catch (err: any) {
       console.error("Unexpected error:", err);
       setError(err.message || "An unexpected error occurred. Please try again.");
       localStorage.removeItem('capturedImage');
@@ -361,48 +368,48 @@ const FrontCapture = ({
     startCamera(); // Restart camera when retaking
   };
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        try {
-          setIsSubmitting(true);
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-          // Create FormData
-          const formData = new FormData();
-          formData.append('document_name', 'National ID Front');
-          formData.append('document_url', file);
-          formData.append('status', 'pending');
-          formData.append('uploaded_by', localStorage.getItem('user')); 
-          formData.append("document_type",'1');
-          formData.append('submission_date', new Date().toISOString());
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        setIsSubmitting(true);
 
-          // Make API call
-          const response = await axios.post(
-            `http://192.168.1.120:8000/ocr/document/`,
-            formData,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-              withCredentials: true,
-            }
-          );
+        // Create FormData
+        const formData = new FormData();
+        formData.append('document_name', 'National ID Front');
+        formData.append('document_url', file);
+        formData.append('status', 'pending');
+        formData.append('uploaded_by', localStorage.getItem('user') || ''); 
+        formData.append("document_type",'1');
+        formData.append('submission_date', new Date().toISOString());
 
-          // Update state if successful
-          setCapturedImage(event.target.result);
-          if (onCapture) onCapture(event.target.result);
+        // Make API call
+        const response = await axios.post(
+          `http://192.168.1.120:8000/ocr/document/`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+            withCredentials: true,
+          }
+        );
 
-        } catch (err) {
-          console.error("Upload error:", err);
-          setError("Failed to upload document. Please try again.");
-        } finally {
-          setIsSubmitting(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
+        // Update state if successful
+        setCapturedImage(event.target?.result as string);
+        if (onCapture) onCapture(event.target?.result as string);
+
+      } catch (err: any) {
+        console.error("Upload error:", err);
+        setError("Failed to upload document. Please try again.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const getStatusMessage = () => {
@@ -580,7 +587,7 @@ const FrontCapture = ({
                   
                   localStorage.setItem('registrationProgress', JSON.stringify(updatedProgress));
                   setProgress(updatedProgress);
-                  navigate('/register/identity-verification/verification/back-document');
+                  if (onNext) onNext();
                 }}
                 className="bg-blue-600 text-white py-2 px-4 rounded-full flex-1 flex items-center justify-center"
               >
