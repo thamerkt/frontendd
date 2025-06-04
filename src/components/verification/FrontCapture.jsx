@@ -5,22 +5,6 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Cookies from "js-cookie";
 
-interface FrontCaptureProps {
-  onNext?: () => void;
-  onCapture?: (imageData: string) => void;
-  onRetake?: () => void;
-  initialImage?: string | null;
-  currentStep?: number;
-  totalSteps?: number;
-}
-
-interface RegistrationProgress {
-  step?: number;
-  subStep?: number;
-  phase?: string;
-  subPhase?: string;
-}
-
 const FrontCapture = ({
   onNext,
   onCapture,
@@ -28,7 +12,14 @@ const FrontCapture = ({
   initialImage = null,
   currentStep = 2,
   totalSteps = 5
-}: FrontCaptureProps) => {
+}: {
+  onNext?: () => void;
+  onCapture?: (imageData: string) => void;
+  onRetake?: () => void;
+  initialImage?: string | null;
+  currentStep?: number;
+  totalSteps?: number;
+}) => {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,7 +29,12 @@ const FrontCapture = ({
   const [capturedImage, setCapturedImage] = useState<string | null>(initialImage);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [ip] = useState(Cookies.get('local_ip') || '');
-  const [progress, setProgress] = useState<RegistrationProgress>(() => {
+  const [progress, setProgress] = useState<{
+    step?: number;
+    subStep?: number;
+    phase?: string;
+    subPhase?: string;
+  }>(() => {
     const savedProgress = localStorage.getItem('registrationProgress');
     return savedProgress ? JSON.parse(savedProgress) : {
       step: 5,
