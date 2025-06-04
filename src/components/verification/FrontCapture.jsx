@@ -910,7 +910,7 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
               </button>
               <button
                 onClick={capturePhoto}
-                disabled={!cameraReady || !streamActive || isSubmitting }
+                disabled={isSubmitting }
                 className={`flex-1 py-3 px-4 rounded-full flex items-center justify-center font-medium transition-colors ${
                   !cameraReady || !streamActive || isSubmitting || !cardDetected
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
