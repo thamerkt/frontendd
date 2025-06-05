@@ -40,13 +40,11 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
         const user = JSON.parse(userData);
         const role = user?.role || 'customer';
         
-        // Check if user is suspended
         if (user?.is_suspended) {
           toast.error("Your account has been suspended. Please contact support.");
           return;
         }
 
-        // Check if user is verified (except for admin)
         if (role !== 'admin' && !user?.is_verified) {
           toast.warning("Please verify your email before proceeding.");
           return;
@@ -108,10 +106,10 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
       if (response.ok) {
         const data = await response.json();
         console.log('User authenticated:', data);
-  
+
         if (data.userdata) {
           const roles = data.userdata.roles || [];
-          let role = 'customer'; // default
+          let role = 'customer';
           
           if (roles.includes('customer')) {
             role = 'customer';
@@ -120,7 +118,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
           } else if (roles.length === 0) {
             role = 'admin';
           }
-  
+
           const userInfo = {
             email: data.userdata.email,
             role: role,
@@ -128,22 +126,21 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
             last_name: data.userdata.last_name,
             is_verified: data.userdata.is_verified || false,
             is_suspended: data.userdata.is_suspended || false,
-            token: data.token?.access_token // Store the access token if available
+            token: data.token?.access_token
           };
           
           localStorage.setItem('user', JSON.stringify(userInfo));
           
-          // Check verification and suspension status
           if (userInfo.is_suspended) {
             toast.error("Your account has been suspended. Please contact support.");
             return;
           }
-  
+
           if (!userInfo.is_verified && userInfo.role !== 'admin') {
             toast.warning("Please verify your email before proceeding.");
             return;
           }
-  
+
           toast.success("Google login successful! Redirecting...");
           setTimeout(() => {
             if (role === 'customer') {
@@ -219,7 +216,6 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
               
               localStorage.setItem('user', JSON.stringify(userInfo));
 
-              // Check verification and suspension status
               if (userInfo.is_suspended) {
                 toast.error("Your account has been suspended. Please contact support.");
                 return;
@@ -289,19 +285,17 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
         const response = await authStore.signup(formData.email, formData.password, formData.role || 'customer');
         setFormData({ email: "", password: "", confirmPassword: "", role: formData.role});
         localStorage.setItem('role', formData.role);
-        toast.success("Registration successful! Please check your email for verification.", );
+        toast.success("Registration successful! Please check your email for verification.");
         sessionStorage.setItem('progress', JSON.stringify({ "progress": "step1" }));
         setTimeout(() => navigate("/register/email-verification"), 3000);
       } else {
         const userData = await authStore.login(formData.email, formData.password);
         
-        // Check if user is suspended
         if (userData.user.is_suspended) {
           toast.error("Your account has been suspended. Please contact support.");
           return;
         }
   
-        // Check if user is verified (except for admin)
         const roles = userData.user.roles || [];
         const isEmptyRoles = roles.length === 0;
         
@@ -310,8 +304,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
           return;
         }
   
-        // Determine the role based on roles array
-        let role = formData.role; // default
+        let role = formData.role;
         if (isEmptyRoles) {
           role = 'admin';
         } else if (roles.includes('customer')) {
@@ -320,7 +313,6 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
           role = 'rental';
         }
       
-        // Store user data
         localStorage.setItem('user', JSON.stringify({
           email: userData.user.username,
           role,
@@ -329,17 +321,15 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
           last_name: userData.last_name,
           is_verified: userData.user.is_verified,
           is_suspended: userData.user.is_suspended,
-          token: userData.token.access_token // Store the access token
+          token: userData.token.access_token
         }));
       
-        // Show appropriate success message
         if (isEmptyRoles) {
           toast.success("Admin login successful! Redirecting to dashboard...");
         } else {
           toast.success("Login successful! Redirecting...");
         }
       
-        // Redirect based on role
         setTimeout(() => {
           if (role === 'admin') {
             navigate('/owner/dashboard');
@@ -512,16 +502,16 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
                     Account Type
                   </label>
                   <select
-  id="role"
-  name="role"
-  value={formData.role}
-  onChange={handleChange}
-  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md"
->
-  <option value="">Select account type</option>
-  <option value="customer">Customer</option>
-  <option value="equipment_manager_individual">Owner</option>
-</select>
+                    id="role"
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md"
+                  >
+                    <option value="">Select account type</option>
+                    <option value="customer">Customer</option>
+                    <option value="equipment_manager_individual">Owner</option>
+                  </select>
                 </div>
               </>
             )}
@@ -584,32 +574,31 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-col gap-3">
-  <div className="mt-6 flex flex-col items-center gap-3"> {/* Added items-center */}
-  <div className="w-[300px]"> {/* Specific width container */}
-    <GoogleOAuthProvider clientId={clientId}>
-      <GoogleLogin
-        onSuccess={handleSuccess}
-        onError={handleError}
-        useOneTap
-        theme="filled_blue"
-        size="large"
-        width="300" // Match the container width
-        text={isRegister ? "signup_with" : "signin_with"}
-      />
-    </GoogleOAuthProvider>
-  </div>
+            <div className="mt-6 flex flex-col items-center gap-3">
+              <div className="w-[300px]">
+                <GoogleOAuthProvider clientId={clientId}>
+                  <GoogleLogin
+                    onSuccess={handleSuccess}
+                    onError={handleError}
+                    useOneTap
+                    theme="filled_blue"
+                    size="large"
+                    width="300"
+                    text={isRegister ? "signup_with" : "signin_with"}
+                  />
+                </GoogleOAuthProvider>
+              </div>
 
-  <button
-    onClick={handleFacebookLogin}
-    className="w-[300px] inline-flex justify-center items-center py-2.5 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-  >
-    <svg className="w-5 h-5 mr-2" fill="#000000" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.53-4.5-10.02-10-10.02z"/>
-    </svg>
-    Continue with Facebook
-  </button>
-</div>
+              <button
+                onClick={handleFacebookLogin}
+                className="w-[300px] inline-flex justify-center items-center py-2.5 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                <svg className="w-5 h-5 mr-2" fill="#000000" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.53-4.5-10.02-10-10.02z"/>
+                </svg>
+                Continue with Facebook
+              </button>
+            </div>
           </div>
         </div>
 
