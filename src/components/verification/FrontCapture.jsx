@@ -173,9 +173,7 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
       }
 
       // First API call to process image
-      const response1 = await axios.post(
-        `https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/upload-image/`,
-        formDataImage,
+      const response1 = await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/upload-image/`,formDataImage,
         {
           ...uploadConfig,
           headers: {
