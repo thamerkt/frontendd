@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
 import { FiCamera, FiRotateCw, FiCheck, FiAlertCircle, FiUser } from "react-icons/fi"
-
+import Cookies from "js-cookie"
 const SelfieCapture = ({ onComplete, onRetake, currentStep = 4 }) => {
   const navigate = useNavigate()
   
