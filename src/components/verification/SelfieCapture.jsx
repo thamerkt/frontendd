@@ -23,6 +23,8 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4 }) => {
   const streamRef = useRef(null)
   const canvasRef = useRef(null)
   const detectionCanvasRef = useRef(null)
+ 
+  const animationRef = useRef(null)
 
   // Status configurations
   const STATUS_CONFIG = {
@@ -123,6 +125,8 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4 }) => {
       setError("Please align your face properly")
       return
     }
+    const video = videoRef.current
+    const canvas = canvasRef.current
     let newImageId = null
     try {
       setIsUploading(true)
