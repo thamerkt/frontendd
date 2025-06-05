@@ -5,6 +5,7 @@ import { FiCamera, FiRotateCw, FiArrowRight,FiVideo, FiUpload, FiCheck, FiPlay, 
 import { motion } from "framer-motion"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
+import Cookies from "js-cookie"
 
 
 const BackCaptureWithFrame = ({ onNext, onCapture, onRetake, initialImage = null, currentStep = 3 }) => {
@@ -153,72 +154,67 @@ const BackCaptureWithFrame = ({ onNext, onCapture, onRetake, initialImage = null
   }
 
   const capturePhoto = async () => {
+    if (!isCameraActive || !cameraReady || !streamActive) {
+      setError("Camera is not ready. Please wait or restart the camera.")
+      return
+    }
+
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    if (!video || !canvas) return
+
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      setError("Video stream is not ready. Please wait and try again.")
+      return
+    }
+
     try {
       setIsSubmitting(true)
-      const canvas = canvasRef.current
-      const video = videoRef.current
-      
+
+      const context = canvas.getContext("2d")
+      if (!context) throw new Error("Canvas context not available")
+
       canvas.width = video.videoWidth
       canvas.height = video.videoHeight
-      canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height)
-      
-      const imageData = canvas.toDataURL("image/jpeg")
-      const blob = await (await fetch(imageData)).blob()
-      const file = new File([blob], "national_id_back.jpg", { type: "image/jpeg" })
+      context.drawImage(video, 0, 0, canvas.width, canvas.height)
 
-      const formData = new FormData()
-      formData.append("document_name", "National ID Back")
-      formData.append("document_type", "1")
-      formData.append("file", file)
+      const imageData = canvas.toDataURL("image/jpeg", 0.8)
 
-      await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`, formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      })
+      if (!navigator.onLine) {
+        setError("No internet connection. Please check your network.")
+        return
+      }
+
+      try {
+        const blob = await (await fetch(imageData)).blob()
+        const file = new File([blob], "national_id_backend.jpg", { type: "image/jpeg" })
+
+        const formData = new FormData()
+        formData.append("document_name", "National ID Back")
+        formData.append("status", "pending")
+        formData.append("document_url", file)
+        formData.append("uploaded_by", localStorage.getItem("user"))
+        formData.append("document_type", "1")
+        formData.append("submission_date", new Date().toISOString())
+        formData.append("file", file)
+
+        const response = await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        console.log("Upload successful:", response.data)
+      } catch (err) {
+        console.error("Document API error:", err.response?.data || err.message)
+        setError("Failed to save document. Please try again.")
+        return
+      }
 
       setCapturedImage(imageData)
       if (onCapture) onCapture(imageData)
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to capture photo")
+      console.error("Capture failed:", err)
+      setError("Failed to capture photo. Please try again.")
     } finally {
       setIsSubmitting(false)
-    }
-  }
-
-  const handleRetake = () => {
-    setCapturedImage(null)
-    if (onRetake) onRetake()
-    stopCamera()
-  }
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setIsLoading(true)
-    try {
-      const reader = new FileReader()
-      reader.onload = async (event) => {
-        const result = event.target.result
-        const blob = await (await fetch(result)).blob()
-        const apiFile = new File([blob], "national_id_back.jpg", { type: "image/jpeg" })
-
-        const formData = new FormData()
-        formData.append("document_name", "National ID Back")
-        formData.append("document_type", "1")
-        formData.append("file", apiFile)
-
-        await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`, formData, {
-          headers: { "Content-Type": "multipart/form-data" }
-        })
-
-        setCapturedImage(result)
-        if (onCapture) onCapture(result)
-      }
-      reader.readAsDataURL(file)
-    } catch (err) {
-      setError("Failed to upload document")
-    } finally {
-      setIsLoading(false)
     }
   }
 
