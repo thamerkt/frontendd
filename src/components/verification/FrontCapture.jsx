@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { FiCamera, FiRotateCw,FiVideo,FiArrowRight, FiUpload, FiCheck, FiPlay, FiAlertCircle } from "react-icons/fi"
 import { motion } from "framer-motion"
 import axios from "axios"
-
+import { useNavigate, useParams } from "react-router-dom"
 
 const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, currentStep = 2, totalSteps = 5 }) => {
   const [isCameraActive, setIsCameraActive] = useState(false)
@@ -15,6 +15,7 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
   const [frameColor, setFrameColor] = useState("rgba(239, 68, 68, 0.7)")
   const [cardDetected, setCardDetected] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const navigate = useNavigate()
 
   const videoRef = useRef(null)
   const streamRef = useRef(null)
@@ -22,7 +23,7 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
   const detectionCanvasRef = useRef(null)
   const animationRef = useRef(null)
   const fileInputRef = useRef(null)
-  
+  const { user } = useParams()
 
 
   const startCamera = async () => {
