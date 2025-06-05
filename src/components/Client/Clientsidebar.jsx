@@ -12,24 +12,6 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useState } from "react";
 import PropTypes from 'prop-types';
 
-interface MenuItem {
-  name: string;
-  icon: React.ComponentType<{ size?: number }>;
-  path: string;
-}
-
-interface SidebarClientProps {
-  logoUrl?: string;
-  user?: {
-    name: string;
-    email: string;
-    initials?: string;
-    avatarUrl?: string;
-  };
-  menuItems?: MenuItem[];
-  onLogout?: () => void;
-}
-
 const SidebarClient = ({
   logoUrl = "../assets/logo-ekrini.png",
   user = {
@@ -38,13 +20,13 @@ const SidebarClient = ({
     initials: "CU"
   },
   menuItems: customMenuItems,
-  onLogout
-}: SidebarClientProps) => {
+  onLogout = () => console.log('Logout clicked')
+}) => {
   const location = useLocation();
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [hoveredItem, setHoveredItem] = useState(null);
   const isClientPage = location.pathname.startsWith("/client");
 
-  const defaultMenuItems: MenuItem[] = [
+  const defaultMenuItems = [
     { name: "Dashboard", icon: Home, path: "/client/dashboard" },
     { name: "Bookings", icon: CalendarDays, path: "/client/bookings" },
     { name: "Favorites", icon: Heart, path: "/client/favorite" },
