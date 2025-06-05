@@ -145,14 +145,14 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4 }) => {
       // Upload to API
       const formData = new FormData()
       formData.append("selfie", file)
-      await axios.post(`/api/ocr/selfie`, formData)
+      await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/api/ocr/selfie`, formData)
 
       // Upload document metadata
       const docFormData = new FormData()
       docFormData.append("document_name", "Selfie")
       docFormData.append("document_type", "1")
       docFormData.append("file", file)
-      await axios.post(`/api/ocr/document`, docFormData)
+      await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/api/ocr/document`, docFormData)
 
       setImage(imageData)
       stopCamera()
