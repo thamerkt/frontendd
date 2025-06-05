@@ -125,39 +125,88 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4 }) => {
 
     try {
       setIsUploading(true)
-      const canvas = canvasRef.current
-      const video = videoRef.current
-      
+      newImageId = Date.now()
+      setImageId(newImageId)
+
+      const context = canvas.getContext("2d")
+      if (!context) throw new Error("Canvas context not available")
+
+      // Capture image from video
       canvas.width = video.videoWidth
       canvas.height = video.videoHeight
-      canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height)
-      
-      const imageData = canvas.toDataURL("image/jpeg")
+      context.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+      // Convert the captured image to a base64 string (imageData)
+      const imageData = canvas.toDataURL("image/jpeg", 0.8) // Base64 encoded image
+
+      // Create a file object
       const blob = await (await fetch(imageData)).blob()
-      const file = new File([blob], `selfie_${Date.now()}.jpg`, { type: "image/jpeg" })
+      const file = new File([blob], `selfie_${newImageId}.jpg`, { type: "image/jpeg" })
+
+      // Prepare the data to be stored in localStorage
+      const selfieData = {
+        imageData, // Base64 encoded image
+        fileInfo: {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          lastModified: file.lastModified,
+        },
+        timestamp: new Date().toISOString(),
+        imageId: newImageId,
+      }
 
       // Save to localStorage
-      localStorage.setItem("selfie", JSON.stringify({
-        imageData,
-        timestamp: new Date().toISOString()
-      }))
+      localStorage.setItem("selfie", JSON.stringify(selfieData))
+
+      // Check for internet connection
+      if (!navigator.onLine) {
+        setError("No internet connection. Your selfie has been saved locally.")
+        setImage(imageData)
+        stopCamera()
+        return
+      }
 
       // Upload to API
       const formData = new FormData()
       formData.append("selfie", file)
-      await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/api/ocr/selfie`, formData)
+
+      const response = await axios.post(`http://192.168.1.120:8000/ocr/selfie/`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+
+      if (response.data?.status !== "success") {
+        localStorage.removeItem('selfie')
+        throw new Error(response.data?.message || "Selfie upload failed")
+      }
 
       // Upload document metadata
-      const docFormData = new FormData()
-      docFormData.append("document_name", "Selfie")
-      docFormData.append("document_type", "1")
-      docFormData.append("file", file)
-      await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/api/ocr/document`, docFormData)
+      const documentFormData = new FormData()
+      documentFormData.append("document_name", "Selfie")
+      documentFormData.append('status', 'pending')
+      documentFormData.append('document_url', file)
+      documentFormData.append('uploaded_by', Cookies.get('user')) 
+      documentFormData.append("document_type",'1')
+      documentFormData.append('submission_date', new Date().toISOString())
+      documentFormData.append('file', file)
 
+      const documentResponse = await axios.post(
+        `http://192.168.1.120:8000/ocr/document/`,
+        documentFormData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      )
+
+      // Success handling
       setImage(imageData)
       stopCamera()
+      console.log("Upload successful:", documentResponse.data)
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to upload selfie")
+      console.error("Error:", err)
+      setError(err.message || "An error occurred while capturing")
+      if (newImageId) {
+        localStorage.removeItem("selfie")
+        setImageId(null)
+      }
     } finally {
       setIsUploading(false)
     }
