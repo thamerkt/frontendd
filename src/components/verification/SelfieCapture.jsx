@@ -16,6 +16,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4 }) => {
   const [error, setError] = useState(null)
   const [faceStatus, setFaceStatus] = useState("position")
   const [isUploading, setIsUploading] = useState(false)
+  const [imageId, setImageId] = useState(null)
 
   // Refs
   const videoRef = useRef(null)
