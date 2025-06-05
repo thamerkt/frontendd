@@ -99,7 +99,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
     const { credential } = credentialResponse;
   
     try {
-      const response = await fetch('https://f7d3-197-27-48-225.ngrok-free.app/user/auth/google/', {
+      const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/auth/google/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential }),
@@ -191,7 +191,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
     try {
       window.FB.api('/me', { fields: 'name,email' }, async (userInfo) => {
         try {
-          const fbResponse = await fetch('https://f7d3-197-27-48-225.ngrok-free.app/user/auth/facebook/', {
+          const fbResponse = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/auth/facebook/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
