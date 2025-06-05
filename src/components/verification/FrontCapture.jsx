@@ -131,10 +131,7 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
   }
 
   const capturePhoto = async () => {
-    if (!isCameraActive || !cameraReady || !streamActive) {
-      setError("Camera is not ready. Please wait or restart the camera.")
-      return
-    }
+    
 
     const video = videoRef.current
     const canvas = canvasRef.current
