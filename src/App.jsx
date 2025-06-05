@@ -15,7 +15,7 @@ import RegistrationProgressGuard from "./RegistrationProgressGuard";
 import AuthForm from "./components/authentication";
 import CallbackPage from "./components/callback";
 import SidebarClient from "./components/Client/clientsidebar";
-import SidebarClient from "./components/Client/requests";
+import ClientRequestsPage from "./components/Client/requests";
 // Pages & Components
 import LandingPage from "./pages/LandingPage";
 import LandingPagee from "./pages/landingpagee";
