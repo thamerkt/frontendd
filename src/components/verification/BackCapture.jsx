@@ -193,7 +193,7 @@ const BackCaptureWithFrame = ({ onNext, onCapture, onRetake, initialImage = null
         formData.append("document_name", "National ID Back")
         formData.append("status", "pending")
         formData.append("document_url", file)
-        formData.append("uploaded_by", localStorage.getItem("user"))
+        formData.append("uploaded_by", Cookies.get("user"))
         formData.append("document_type", "1")
         formData.append("submission_date", new Date().toISOString())
         formData.append("file", file)
