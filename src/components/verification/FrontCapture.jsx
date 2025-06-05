@@ -132,97 +132,122 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
   }
 
   const capturePhoto = async () => {
-    
-
     const video = videoRef.current
     const canvas = canvasRef.current
     if (!video || !canvas) return
 
     if (video.videoWidth === 0 || video.videoHeight === 0) {
-      setError("Video stream is not ready. Please wait and try again.")
-      return
+        setError("Video stream is not ready. Please wait and try again.")
+        return
     }
 
+    let newImageId = null
     try {
-      setIsSubmitting(true)
-      setUploadProgress(0)
+        setIsSubmitting(true)
+        setUploadProgress(0)
+        newImageId = Date.now()
 
-      const context = canvas.getContext("2d")
-      if (!context) throw new Error("Canvas context not available")
+        const context = canvas.getContext("2d")
+        if (!context) throw new Error("Canvas context not available")
 
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-      context.drawImage(video, 0, 0, canvas.width, canvas.height)
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        context.drawImage(video, 0, 0, canvas.width, canvas.height)
 
-      const imageData = canvas.toDataURL("image/jpeg", 0.8)
-      setCapturedImage(imageData)
+        const imageData = canvas.toDataURL("image/jpeg", 0.8)
+        setCapturedImage(imageData)
 
-      // Convert to blob for upload
-      const blob = await (await fetch(imageData)).blob()
-      const file = new File([blob], `id_front_${Date.now()}.jpg`, { type: "image/jpeg" })
+        // Convert to blob for upload
+        const blob = await (await fetch(imageData)).blob()
+        const file = new File([blob], `id_front_${newImageId}.jpg`, { type: "image/jpeg" })
 
-      // First API call
-      const formDataImage = new FormData()
-      formDataImage.append("image", file)
-
-      const uploadConfig = {
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-          setUploadProgress(percentCompleted)
+        // Prepare the data to be stored in localStorage
+        const capturedImageData = {
+            imageData, // Base64 encoded image
+            fileInfo: {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                lastModified: file.lastModified,
+            },
+            timestamp: new Date().toISOString(),
+            imageId: newImageId,
         }
-      }
 
-      // First API call to process image
-      const response1 = await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/upload-image/`,formDataImage,
-        {
-          ...uploadConfig,
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          withCredentials: true,
+        // Save to localStorage
+        localStorage.setItem("capturedImage", JSON.stringify(capturedImageData))
+
+        // Check for internet connection
+        if (!navigator.onLine) {
+            setError("No internet connection. Your image has been saved locally.")
+            return
         }
-      )
 
-      if (!response1.data || response1.data.status !== "success" || !response1.data.data_verified) {
-        throw new Error("Image processing failed. Ensure the document is clear and valid.")
-      }
+        // First API call
+        const formDataImage = new FormData()
+        formDataImage.append("image", file)
 
-      // Second API call to save document
-      const formData = new FormData()
-      formData.append("document_name", "National ID Front")
-      formData.append("document_url", file)
-      formData.append("status", "pending")
-      formData.append("uploaded_by", Cookies.get("user") || "")
-      formData.append("document_type", "1")
-      formData.append("submission_date", new Date().toISOString())
-      formData.append("file", file)
-
-      const response2 = await axios.post(
-        `https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`,
-        formData,
-        {
-          ...uploadConfig,
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+        const uploadConfig = {
+            onUploadProgress: (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                setUploadProgress(percentCompleted)
+            }
         }
-      )
 
-      console.log("Upload successful:", {
-        apiResponse1: response1.data,
-        apiResponse2: response2.data,
-      })
+        // First API call to process image
+        const response1 = await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/upload-image/`, formDataImage,
+            {
+                ...uploadConfig,
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+                withCredentials: true,
+            }
+        )
 
-      if (onCapture) onCapture(imageData)
+        if (!response1.data || response1.data.status !== "success" || !response1.data.data_verified) {
+            throw new Error("Image processing failed. Ensure the document is clear and valid.")
+        }
+
+        // Second API call to save document
+        const formData = new FormData()
+        formData.append("document_name", "National ID Front")
+        formData.append("document_url", file)
+        formData.append("status", "pending")
+        formData.append("uploaded_by", Cookies.get("user") || "")
+        formData.append("document_type", "1")
+        formData.append("submission_date", new Date().toISOString())
+        formData.append("file", file)
+
+        const response2 = await axios.post(
+            `https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`,
+            formData,
+            {
+                ...uploadProgress,
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            }
+        )
+
+        console.log("Upload successful:", {
+            apiResponse1: response1.data,
+            apiResponse2: response2.data,
+        })
+
+        if (onCapture) onCapture(imageData)
     } catch (err) {
-      console.error("Capture failed:", err)
-      setError(err.response?.data?.message || err.message || "Failed to capture and upload photo")
-      setCapturedImage(null)
+        console.error("Capture failed:", err)
+        setError(err.response?.data?.message || err.message || "Failed to capture and upload photo")
+        setCapturedImage(null)
+        if (newImageId) {
+            localStorage.removeItem("capturedImage")
+        }
     } finally {
-      setIsSubmitting(false)
-      setUploadProgress(0)
+        setIsSubmitting(false)
+        setUploadProgress(0)
     }
-  }
+}
 
   const handleRetake = () => {
     setCapturedImage(null)
