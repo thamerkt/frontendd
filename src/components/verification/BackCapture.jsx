@@ -214,6 +214,53 @@ const BackCaptureWithFrame = ({ onNext, onCapture, onRetake, initialImage = null
       setIsSubmitting(false)
     }
   }
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsLoading(true)
+    try {
+      const reader = new FileReader()
+      reader.onload = async (event) => {
+        const result = event.target.result
+
+        try {
+          const blob = await (await fetch(result)).blob()
+          const apiFile = new File([blob], "national_id_backend.jpg", { type: "image/jpeg" })
+
+          const formData = new FormData()
+          formData.append("document_name", "National ID Back")
+          formData.append("status", "pending")
+          formData.append("document_url", apiFile)
+          formData.append("uploaded_by", localStorage.getItem("user"))
+          formData.append("document_type", "1")
+          formData.append("submission_date", new Date().toISOString())
+          formData.append("file", apiFile)
+
+          await axios.post(`https://kong-7e283b39dauspilq0.kongcloud.dev/ocr/document/`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          })
+        } catch (err) {
+          console.error("Document API error:", err.response?.data || err.message)
+          setError("Failed to save document. Please try again.")
+        }
+
+        setCapturedImage(result)
+        if (onCapture) onCapture(result)
+      }
+      reader.readAsDataURL(file)
+    } catch (err) {
+      console.error("File upload error:", err)
+      setError("Failed to process uploaded file.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  const handleRetake = () => {
+    setCapturedImage(null)
+    if (onRetake) onRetake()
+    stopCamera()
+  }
 
   useEffect(() => {
     checkPermissions()
