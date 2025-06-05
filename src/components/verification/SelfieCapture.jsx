@@ -122,7 +122,7 @@ const SelfieCapture = ({ onComplete, onRetake, currentStep = 4 }) => {
       setError("Please align your face properly")
       return
     }
-
+    let newImageId = null
     try {
       setIsUploading(true)
       newImageId = Date.now()
