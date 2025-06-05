@@ -33,7 +33,7 @@ import DocumentTypeSelection from "./components/verification/DocumentUpload";
 import DocumentCapture from "./components/verification/DocumentCapture";
 import FrontCapture from "./components/verification/FrontCapture";
 import BackCapture from "./components/verification/BackCapture";
-import SelfieCapture from "./components/verification/SelfieCapture";
+import RealFaceDetectionSelfie from "./components/verification/SelfieCapture";
 import VerificationComplete from "./components/verification/StatusCheck";
 
 import Dashboard from "./pages/Admin/dashbord";
