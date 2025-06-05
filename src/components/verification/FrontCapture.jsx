@@ -5,7 +5,7 @@ import { FiCamera, FiRotateCw,FiVideo,FiArrowRight, FiUpload, FiCheck, FiPlay, F
 import { motion } from "framer-motion"
 import axios from "axios"
 import { useNavigate, useParams } from "react-router-dom"
-
+import Cookies from "js-cookie"
 const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, currentStep = 2, totalSteps = 5 }) => {
   const [isCameraActive, setIsCameraActive] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -192,7 +192,7 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
       formData.append("document_name", "National ID Front")
       formData.append("document_url", file)
       formData.append("status", "pending")
-      formData.append("uploaded_by", localStorage.getItem("user") || "")
+      formData.append("uploaded_by", Cookies.get("user") || "")
       formData.append("document_type", "1")
       formData.append("submission_date", new Date().toISOString())
       formData.append("file", file)
