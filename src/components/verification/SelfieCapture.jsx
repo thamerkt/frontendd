@@ -1,193 +1,124 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
-import Cookies from "js-cookie"
-import { FiCamera, FiRotateCw, FiCheck, FiAlertCircle, FiUser, FiPlay } from "react-icons/fi"
+import { useState, useRef, useEffect } from "react"
+import { motion } from "framer-motion"
+import axios from "axios"
+import { useNavigate } from "react-router-dom"
+import { FiCamera, FiRotateCw, FiCheck, FiAlertCircle, FiUser } from "react-icons/fi"
 
-const RealFaceDetectionSelfie = ({ onComplete, onRetake }) => {
-  // State
+const SelfieCapture = ({ onComplete, onRetake, currentStep = 4 }) => {
+  const navigate = useNavigate()
+  
+  // State management
   const [image, setImage] = useState(null)
   const [isCameraActive, setIsCameraActive] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const [faceStatus, setFaceStatus] = useState("position")
   const [isUploading, setIsUploading] = useState(false)
-  const [hasPermission, setHasPermission] = useState(null)
-  const [cameraReady, setCameraReady] = useState(false)
-  const [modelsLoaded, setModelsLoaded] = useState(true) // Set to true since we're faking it
 
   // Refs
   const videoRef = useRef(null)
   const streamRef = useRef(null)
   const canvasRef = useRef(null)
   const detectionCanvasRef = useRef(null)
-  const detectionIntervalRef = useRef(null)
-  const statusCycleRef = useRef(null)
 
-  // Configuration
-  const DETECTION_CONFIG = {
-    width: 60, // % of video width
-    height: 70, // % of video height
-    x: 20, // % offset from left
-    y: 15, // % offset from top
-    confidenceThreshold: 0.5,
-    faceAreaThreshold: 0.15 // minimum face area relative to detection zone
-  }
-
+  // Status configurations
   const STATUS_CONFIG = {
-    loading: { message: "Loading face detection...", color: "blue" },
     position: { message: "Move your face into the frame", color: "red" },
-    ready: { message: "Perfect! Hold still", color: "green" },
-    no_face: { message: "No face detected", color: "red" },
-    multiple_faces: { message: "Multiple faces detected", color: "red" }
+    centered: { message: "Center your face in the frame", color: "yellow" },
+    ready: { message: "Perfect! Hold still", color: "green" }
   }
 
-  // Simulate face detection status changes
-  const cycleStatuses = useCallback(() => {
-    const statuses = ["position", "no_face", "multiple_faces", "ready"]
-    let currentIndex = 0
-    
-    statusCycleRef.current = setInterval(() => {
-      currentIndex = (currentIndex + 1) % statuses.length
-      setFaceStatus(statuses[currentIndex])
-      
-      // Draw fake detection overlay
-      drawDetectionOverlay(statuses[currentIndex])
-    }, 3000)
-  }, [])
-
-  // Draw fake face detection overlay
-  const drawDetectionOverlay = useCallback((status) => {
-    if (!detectionCanvasRef.current || !videoRef.current) return
-
-    const video = videoRef.current
-    const canvas = detectionCanvasRef.current
-    const ctx = canvas.getContext("2d")
-
-    canvas.width = video.videoWidth || 640
-    canvas.height = video.videoHeight || 480
-
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-    // Draw detection zone
-    const { width, height, x, y } = DETECTION_CONFIG
-    const zoneWidth = (canvas.width * width) / 100
-    const zoneHeight = (canvas.height * height) / 100
-    const zoneX = (canvas.width * x) / 100
-    const zoneY = (canvas.height * y) / 100
-
-    // Draw semi-transparent overlay
-    ctx.fillStyle = "rgba(0, 0, 0, 0.5)"
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-    // Create face cutout
-    ctx.globalCompositeOperation = "destination-out"
-    ctx.beginPath()
-    ctx.ellipse(
-      zoneX + zoneWidth / 2,
-      zoneY + zoneHeight / 2,
-      zoneWidth * 0.4,
-      zoneHeight * 0.5,
-      0, 0, 2 * Math.PI
-    )
-    ctx.fill()
-    ctx.globalCompositeOperation = "source-over"
-
-    // Draw fake face detection based on status
-    ctx.strokeStyle = status === "ready" ? "#00FF00" : "#FF0000"
-    ctx.lineWidth = 2
-    
-    if (status !== "no_face") {
-      // Draw fake face box
-      const boxWidth = zoneWidth * 0.8
-      const boxHeight = zoneHeight * 0.9
-      const boxX = zoneX + (zoneWidth - boxWidth) / 2
-      const boxY = zoneY + (zoneHeight - boxHeight) / 2
-      
-      if (status === "multiple_faces") {
-        // Draw two faces
-        ctx.strokeRect(boxX - 30, boxY - 20, boxWidth, boxHeight)
-        ctx.strokeRect(boxX + 30, boxY + 20, boxWidth, boxHeight)
-      } else {
-        // Draw single face
-        ctx.strokeRect(boxX, boxY, boxWidth, boxHeight)
-        
-        // Draw some fake landmarks when ready
-        if (status === "ready") {
-          ctx.fillStyle = "yellow"
-          for (let i = 0; i < 68; i++) {
-            const x = boxX + boxWidth * 0.2 + Math.random() * boxWidth * 0.6
-            const y = boxY + boxHeight * 0.2 + Math.random() * boxHeight * 0.6
-            ctx.beginPath()
-            ctx.arc(x, y, 2, 0, 2 * Math.PI)
-            ctx.fill()
-          }
-        }
-      }
-    }
-
-    // Draw zone outline
-    ctx.strokeStyle = status === "ready" ? "#00FF00" : "#FF0000"
-    ctx.lineWidth = 3
-    ctx.beginPath()
-    ctx.ellipse(
-      zoneX + zoneWidth / 2,
-      zoneY + zoneHeight / 2,
-      zoneWidth * 0.4,
-      zoneHeight * 0.5,
-      0, 0, 2 * Math.PI
-    )
-    ctx.stroke()
-  }, [])
-
-  // Camera controls
-  const startCamera = useCallback(async () => {
+  // Start camera function
+  const startCamera = async () => {
     setIsLoading(true)
     setError(null)
     
     try {
-      // Simulate model loading
-      setFaceStatus("loading")
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: 1280, height: 720 }
       })
       
       streamRef.current = stream
       videoRef.current.srcObject = stream
-      
-      await new Promise((resolve) => {
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play().then(resolve)
-        }
-      })
+      await videoRef.current.play()
       
       setIsCameraActive(true)
-      setCameraReady(true)
-      setHasPermission(true)
-      
-      // Start fake face detection cycle
-      cycleStatuses()
-      
+      startFaceDetectionSimulation()
     } catch (err) {
-      setError("Camera access denied")
-      setHasPermission(false)
+      setError("Camera access denied. Please allow permissions.")
     } finally {
       setIsLoading(false)
     }
-  }, [cycleStatuses])
+  }
 
-  const stopCamera = useCallback(() => {
-    if (statusCycleRef.current) clearInterval(statusCycleRef.current)
-    if (streamRef.current) streamRef.current.getTracks().forEach(track => track.stop())
+  // Stop camera function
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
+    }
     setIsCameraActive(false)
-  }, [])
+  }
 
-  // Capture photo
+  // Face detection simulation
+  const startFaceDetectionSimulation = () => {
+    const detectFace = (timestamp) => {
+      if (!videoRef.current || !detectionCanvasRef.current) {
+        requestAnimationFrame(detectFace)
+        return
+      }
+
+      const video = videoRef.current
+      const canvas = detectionCanvasRef.current
+      const ctx = canvas.getContext("2d")
+      
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      // Draw detection zone (60% width, 70% height, centered)
+      const zoneWidth = video.videoWidth * 0.6
+      const zoneHeight = video.videoHeight * 0.7
+      const zoneX = (video.videoWidth - zoneWidth) / 2
+      const zoneY = (video.videoHeight - zoneHeight) / 2
+
+      const pulse = 0.7 + 0.3 * Math.sin(timestamp / 300)
+      const status = STATUS_CONFIG[faceStatus]
+      
+      ctx.strokeStyle = 
+        status.color === "red" ? `rgba(239, 68, 68, ${pulse})` :
+        status.color === "yellow" ? `rgba(234, 179, 8, ${pulse})` :
+        `rgba(16, 185, 129, ${pulse})`
+
+      ctx.lineWidth = 3
+      ctx.strokeRect(zoneX, zoneY, zoneWidth, zoneHeight)
+
+      // Draw face oval guide
+      ctx.beginPath()
+      ctx.ellipse(
+        zoneX + zoneWidth/2, 
+        zoneY + zoneHeight/2, 
+        zoneWidth * 0.4, 
+        zoneHeight * 0.5, 
+        0, 0, 2 * Math.PI
+      )
+      ctx.stroke()
+
+      // Simulate face detection states
+      if (timestamp % 6000 < 2000) setFaceStatus("position")
+      else if (timestamp % 6000 < 4000) setFaceStatus("centered")
+      else setFaceStatus("ready")
+
+      requestAnimationFrame(detectFace)
+    }
+    requestAnimationFrame(detectFace)
+  }
+
+  // Capture photo function
   const capturePhoto = async () => {
-    if (!cameraReady || faceStatus !== "ready") {
+    if (faceStatus !== "ready") {
       setError("Please align your face properly")
       return
     }
@@ -199,13 +130,34 @@ const RealFaceDetectionSelfie = ({ onComplete, onRetake }) => {
       
       canvas.width = video.videoWidth
       canvas.height = video.videoHeight
-      canvas.getContext("2d").drawImage(video, 0, 0)
+      canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height)
       
       const imageData = canvas.toDataURL("image/jpeg")
+      const blob = await (await fetch(imageData)).blob()
+      const file = new File([blob], `selfie_${Date.now()}.jpg`, { type: "image/jpeg" })
+
+      // Save to localStorage
+      localStorage.setItem("selfie", JSON.stringify({
+        imageData,
+        timestamp: new Date().toISOString()
+      }))
+
+      // Upload to API
+      const formData = new FormData()
+      formData.append("selfie", file)
+      await axios.post(`/api/ocr/selfie`, formData)
+
+      // Upload document metadata
+      const docFormData = new FormData()
+      docFormData.append("document_name", "Selfie")
+      docFormData.append("document_type", "1")
+      docFormData.append("file", file)
+      await axios.post(`/api/ocr/document`, docFormData)
+
       setImage(imageData)
       stopCamera()
     } catch (err) {
-      setError("Failed to capture photo")
+      setError(err.response?.data?.message || "Failed to upload selfie")
     } finally {
       setIsUploading(false)
     }
@@ -214,113 +166,147 @@ const RealFaceDetectionSelfie = ({ onComplete, onRetake }) => {
   const retakePhoto = () => {
     setImage(null)
     setError(null)
+    if (onRetake) onRetake()
     startCamera()
+  }
+
+  const handleContinue = () => {
+    onComplete?.(image)
+    navigate("/register/identity-verification/verification/verification-complete")
   }
 
   useEffect(() => {
     startCamera()
-    return () => {
-      stopCamera()
-      if (statusCycleRef.current) clearInterval(statusCycleRef.current)
-    }
-  }, [startCamera, stopCamera])
+    return () => stopCamera()
+  }, [])
 
-  const currentStatus = STATUS_CONFIG[faceStatus] || STATUS_CONFIG.position
+  const currentStatus = STATUS_CONFIG[faceStatus]
 
   return (
-    <div className="max-w-md mx-auto p-4 bg-white rounded-xl shadow-lg">
-      <div className="mb-6 text-center">
-        <h2 className="text-xl font-bold text-gray-800 mb-1">Face Verification</h2>
-        <p className="text-sm text-gray-600">AI-powered face detection</p>
-      </div>
+    <div className="max-w-md mx-auto">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="p-4 sm:p-6 bg-white rounded-xl shadow-lg"
+      >
+        <div className="mb-6 text-center">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">Face Verification</h2>
+          <p className="text-sm sm:text-base text-gray-600">Align your face with the outline</p>
 
-      {/* Camera Preview */}
-      <div className="relative aspect-[4/5] bg-gray-900 rounded-xl overflow-hidden mb-4">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className={`w-full h-full object-cover ${isCameraActive ? "block" : "hidden"}`}
-        />
+          {/* Progress Stepper */}
+          <div className="mt-6 flex justify-center">
+            {[1, 2, 3, 4, 5].map((step) => (
+              <div key={step} className="flex items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  step < currentStep ? "bg-green-100 text-green-600" :
+                  step === currentStep ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-400"
+                }`}>
+                  {step < currentStep ? <FiCheck size={14} /> : step}
+                </div>
+                {step < 5 && <div className={`h-1 w-6 ${step < currentStep ? "bg-green-100" : "bg-gray-200"}`} />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 mb-4 rounded-lg">
+            <div className="flex items-start">
+              <FiAlertCircle className="mr-2 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium">Error</p>
+                <p className="text-sm mt-1">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <canvas ref={canvasRef} className="hidden" />
         
-        <canvas
-          ref={detectionCanvasRef}
-          className="absolute inset-0 w-full h-full pointer-events-none"
-        />
+        <div className="relative aspect-[4/5] bg-gray-900 rounded-xl overflow-hidden mb-4 border-2 border-gray-200">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className={`w-full h-full object-cover ${isCameraActive ? "block" : "hidden"}`}
+          />
 
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/75">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white" />
-          </div>
-        )}
+          {isCameraActive && (
+            <canvas ref={detectionCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+          )}
 
-        {image && (
-          <img src={image} alt="Captured" className="absolute inset-0 w-full h-full object-cover" />
-        )}
-      </div>
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center text-white bg-gray-900 bg-opacity-75">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+            </div>
+          )}
 
-      {/* Status */}
-      <div className={`mb-6 p-4 rounded-lg border-l-4 ${
-        currentStatus.color === "red" ? "bg-red-50 border-red-500" :
-        currentStatus.color === "blue" ? "bg-blue-50 border-blue-500" :
-        "bg-green-50 border-green-500"
-      }`}>
-        <div className="flex items-center">
-          <FiUser className={`mr-3 ${
-            currentStatus.color === "red" ? "text-red-500" :
-            currentStatus.color === "blue" ? "text-blue-500" : "text-green-500"
-          }`} />
-          <p className="font-medium">{currentStatus.message}</p>
+          {image && (
+            <img src={image} alt="Captured selfie" className="absolute inset-0 w-full h-full object-cover" />
+          )}
         </div>
-      </div>
 
-      {/* Error Display */}
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
-          <div className="flex items-center">
-            <FiAlertCircle className="mr-3 text-red-500" />
-            <p className="font-medium">{error}</p>
+        <div className={`mb-6 p-4 rounded-lg ${
+          currentStatus.color === "red" ? "bg-red-50 border-l-4 border-red-500" :
+          currentStatus.color === "yellow" ? "bg-yellow-50 border-l-4 border-yellow-500" :
+          "bg-green-50 border-l-4 border-green-500"
+        }`}>
+          <div className="flex items-start">
+            <FiUser className={`mr-3 mt-0.5 ${
+              currentStatus.color === "red" ? "text-red-500" :
+              currentStatus.color === "yellow" ? "text-yellow-500" : "text-green-500"
+            }`} />
+            <div>
+              <p className={`font-medium ${
+                currentStatus.color === "red" ? "text-red-700" :
+                currentStatus.color === "yellow" ? "text-yellow-700" : "text-green-700"
+              }`}>
+                {currentStatus.message}
+              </p>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Hidden canvas for capture */}
-      <canvas ref={canvasRef} className="hidden" />
-
-      {/* Buttons */}
-      <div className="flex flex-col space-y-3">
-        {!image ? (
-          <button
-            onClick={capturePhoto}
-            disabled={!cameraReady || isUploading || faceStatus !== "ready"}
-            className={`py-3 px-6 rounded-lg flex items-center justify-center ${
-              !cameraReady || faceStatus !== "ready" || isUploading
-                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-            }`}
-          >
-            {isUploading ? "Processing..." : <><FiCamera className="mr-2" /> Capture Photo</>}
-          </button>
-        ) : (
-          <>
-            <button 
-              onClick={retakePhoto}
-              className="py-3 px-6 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center"
+        <div className="flex flex-col space-y-3">
+          {!image ? (
+            <button
+              onClick={capturePhoto}
+              disabled={!isCameraActive || isUploading || faceStatus !== "ready"}
+              className={`py-3 px-6 rounded-lg flex items-center justify-center ${
+                !isCameraActive || isUploading || faceStatus !== "ready" ?
+                "bg-gray-200 text-gray-500" : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
             >
-              <FiRotateCw className="mr-2" /> Retake
+              {isUploading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+              ) : (
+                <FiCamera className="mr-2" />
+              )}
+              Capture Photo
             </button>
-            <button 
-              onClick={() => onComplete?.(image)}
-              className="py-3 px-6 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center justify-center"
-            >
-              <FiCheck className="mr-2" /> Continue
-            </button>
-          </>
-        )}
-      </div>
+          ) : (
+            <>
+              <button
+                onClick={retakePhoto}
+                className="py-3 px-6 bg-gray-100 text-gray-700 rounded-lg flex items-center justify-center hover:bg-gray-200"
+              >
+                <FiRotateCw className="mr-2" />
+                Retake Photo
+              </button>
+              <button
+                onClick={handleContinue}
+                className="py-3 px-6 bg-green-600 text-white rounded-lg flex items-center justify-center hover:bg-green-700"
+              >
+                <FiCheck className="mr-2" />
+                Confirm and Continue
+              </button>
+            </>
+          )}
+        </div>
+      </motion.div>
     </div>
   )
 }
 
-export default RealFaceDetectionSelfie
+export default SelfieCapture
