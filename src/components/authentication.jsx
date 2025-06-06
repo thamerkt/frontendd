@@ -88,6 +88,9 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
       ...prevData,
       [field]: value
     }));
+    if (field === 'role') {
+    localStorage.setItem('role', value);
+  }
     
     setError("");
   };
