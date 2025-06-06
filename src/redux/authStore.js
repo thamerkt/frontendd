@@ -188,7 +188,7 @@ const authStore = {
 
   getUsers: async () => {
     try {
-      const { data } = await axios.get(`${API_URL}/users/`, { withCredentials: true, ...getAuth() });
+      const { data } = await axios.get(`${API_URL}/users/`, { withCredentials: true});
       return data;
     } catch (e) {
       handleError(e, "Fetching users failed");
