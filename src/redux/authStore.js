@@ -87,22 +87,61 @@ const authStore = {
   verify: async (otp) => {
   try {
     const user_id = Cookies.get("keycloak_user_id");
-    const token = Cookies.get("token"); // <-- make sure token is stored here
+    const token = Cookies.get("token"); // Ensure token is set in cookies
 
     if (!user_id || !token) {
       throw new Error("User ID or token is missing in the cookies.");
     }
 
-    const { data } = await axios.post(
+    const response = await axios.post(
       `${API_URL}/verify-otp/`,
       { user_id, otp },
       {
         headers: {
-          Authorization: `Bearer ${token}`, // <-- send token in headers
-          "Content-Type": "application/json"
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       }
-    );,
+    );
+
+    return response.data; // Return success response
+  } catch (error) {
+    // Log error to console for Render debugging
+    console.error("Verification failed:", error);
+
+    // Handle axios error object
+    if (error.response) {
+      throw new Error(error.response.data?.error || "OTP verification failed.");
+    } else if (error.request) {
+      throw new Error("No response received from the server.");
+    } else {
+      throw new Error(error.message || "An unknown error occurred.");
+    }
+  }
+}
+✅ Improvements:
+✅ Clean and valid JS syntax.
+
+✅ Includes clear error handling for:
+
+Missing cookies.
+
+Axios response, request, or general error.
+
+✅ Logs errors for debugging on platforms like Render.com.
+
+Let me know if you need this inside a full useMutation or React component context too.
+
+
+
+
+
+
+
+
+
+
+Vous avez atteint la
 
   resetPasswordRequest: async (email) => {
     try {
