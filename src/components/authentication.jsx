@@ -191,6 +191,7 @@ const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/
     console.log("Facebook OAuth Success:", authResponse);
   
     try {
+      const role = localStorage.getItem('role') || "customer";
       window.FB.api('/me', { fields: 'name,email' }, async (userInfo) => {
         try {
           const fbResponse = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/auth/facebook/', {
@@ -200,7 +201,9 @@ const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/
               accessToken: authResponse.accessToken,
               userID: authResponse.userID,
               email: userInfo.email,
-              name: userInfo.name
+              name: userInfo.name,
+              role: role
+              
             }),
           });
   
