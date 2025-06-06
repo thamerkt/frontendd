@@ -144,10 +144,14 @@ const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/
             return;
           }
 
-          if (!userInfo.is_verified && userInfo.role !== 'admin') {
-            toast.warning("Please verify your email before proceeding.");
-            return;
-          }
+           if (!userInfo.is_verified && userInfo.role !== 'admin') {
+        // 👇 NEW: Set progress & redirect to profile setup
+        sessionStorage.setItem('progress', JSON.stringify({ "progress": "step2" }));
+        setTimeout(() => {
+          navigate("/register/profil", { replace: true });
+        }, 1500);
+        return; // Prevent further execution
+      }
 
           toast.success("Google login successful! Redirecting...");
           setTimeout(() => {
