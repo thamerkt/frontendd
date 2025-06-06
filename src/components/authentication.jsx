@@ -40,7 +40,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
         const user = JSON.parse(userData);
         const role = user?.role || 'customer';
         
-        if (user?.is_suspended) {
+        if (user?.is_suspended==true) {
           toast.error("Your account has been suspended. Please contact support.");
           return;
         }
@@ -131,7 +131,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
           
           localStorage.setItem('user', JSON.stringify(userInfo));
           
-          if (userInfo.is_suspended) {
+          if (userInfo.is_suspended==true) {
             toast.error("Your account has been suspended. Please contact support.");
             return;
           }
@@ -216,7 +216,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
               
               localStorage.setItem('user', JSON.stringify(userInfo));
 
-              if (userInfo.is_suspended) {
+              if (userInfo.is_suspended==true) {
                 toast.error("Your account has been suspended. Please contact support.");
                 return;
               }
@@ -291,7 +291,7 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
       } else {
         const userData = await authStore.login(formData.email, formData.password);
         
-        if (userData.user.is_suspended) {
+        if (userData.user.is_suspended==true) {
           toast.error("Your account has been suspended. Please contact support.");
           return;
         }
