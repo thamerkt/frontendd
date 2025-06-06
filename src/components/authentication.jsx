@@ -319,13 +319,13 @@ const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/
         const roles = userData.user.roles || [];
         const isEmptyRoles = roles.length === 0;
         
-        if (!isEmptyRoles && !userData.user.is_verified) {
+        if (!roles.includes('admin') && !userData.user.is_verified) {
           toast.warning("Your account is not verified. Please check your email for verification instructions.");
           return;
         }
   
         let role = formData.role;
-        if (isEmptyRoles) {
+        if (roles.includes('admin')) {
           role = 'admin';
         } else if (roles.includes('customer')) {
           role = 'customer';
@@ -344,7 +344,7 @@ const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/
           token: userData.token.access_token
         }));
       
-        if (isEmptyRoles) {
+        if (roles.includes('admin')) {
           toast.success("Admin login successful! Redirecting to dashboard...");
         } else {
           toast.success("Login successful! Redirecting...");
