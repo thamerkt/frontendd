@@ -97,11 +97,16 @@ const AuthForm = ({ isPopup = false, onClose = () => {} }) => {
     const { credential } = credentialResponse;
   
     try {
-      const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/auth/google/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential }),
-      });
+      const role = localStorage.getItem('role') || "customer";  // 👈 Get role from localStorage
+
+const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/auth/google/', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    credential,
+    role, // 👈 Include role in request body
+  }),
+});
   
       if (response.ok) {
         const data = await response.json();
