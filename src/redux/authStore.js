@@ -21,8 +21,7 @@ const authStore = {
   login: async (email, password) => {
     try {
       const { data } = await axios.post(`${API_URL}/login/`, { email, password });
-      console.log("data",data)
-      setToken(data.token?.access_token);
+      setToken(data.token);
       if (data.user_id) Cookies.set("keycloak_user_id", data.user_id);
       if (data.user) localStorage.setItem("user", JSON.stringify(data.user));
       return data;
