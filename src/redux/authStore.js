@@ -85,13 +85,24 @@ const authStore = {
   },
 
   verify: async (otp) => {
-    try {
-      const user_id = Cookies.get("keycloak_user_id");
-      if (!user_id) throw new Error("User ID is missing in the cookies.");
-      const { data } = await axios.post(`${API_URL}/verify-otp/`, { user_id, otp });
-      return data;
-    } catch (e) { handleError(e, "OTP verification failed"); }
-  },
+  try {
+    const user_id = Cookies.get("keycloak_user_id");
+    const token = Cookies.get("token"); // <-- make sure token is stored here
+
+    if (!user_id || !token) {
+      throw new Error("User ID or token is missing in the cookies.");
+    }
+
+    const { data } = await axios.post(
+      `${API_URL}/verify-otp/`,
+      { user_id, otp },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`, // <-- send token in headers
+          "Content-Type": "application/json"
+        }
+      }
+    );,
 
   resetPasswordRequest: async (email) => {
     try {
