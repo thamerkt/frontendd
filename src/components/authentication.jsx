@@ -309,6 +309,7 @@ const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/
         setTimeout(() => navigate("/register/email-verification"), 3000);
       } else {
         const userData = await authStore.login(formData.email, formData.password);
+        console.log(userData)
         
         if (userData.user.is_suspended==true) {
           toast.error("Your account has been suspended. Please contact support.");
