@@ -34,7 +34,7 @@ const AddProductForm = () => {
     // Fetch categories
     const fetchCategories = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/categories/', {
+        const response = await axios.get('https://kong-7e283b39dauspilq0.kongcloud.dev/api/categories/', {
           headers: {
             'Content-Type': 'application/json',
 
@@ -58,7 +58,7 @@ const AddProductForm = () => {
   const fetchSubCategories = async (categoryId) => {
     try {
       setLoadingSubCategories(true);
-      const response = await axios.get(`http://localhost:8000/api/subcatgeory/`, {
+      const response = await axios.get(`https://kong-7e283b39dauspilq0.kongcloud.dev/api/subcatgeory/`, {
         headers: {
           'Content-Type': 'application/json',
 
@@ -95,7 +95,7 @@ const AddProductForm = () => {
   };
 
   const handleImageDelete = async (imageId, imageUrl) => {
-    await fetch(`http://localhost:8000/api/images/${imageId}`, {
+    await fetch(`https://kong-7e283b39dauspilq0.kongcloud.dev/api/images/${imageId}`, {
       method: 'DELETE'
     });
   };
@@ -266,7 +266,7 @@ const AddProductForm = () => {
         }
 
         const managementRes = await axios.post(
-          'http://localhost:8000/api/stuffmanagment/',
+          'https://kong-7e283b39dauspilq0.kongcloud.dev/api/stuffmanagment/',
           managementFormData,
           {
             headers: {
@@ -308,7 +308,7 @@ const AddProductForm = () => {
         stuffFormData.append('stuff_management', stuffManagementId);
         stuffFormData.append('user', productData.user);
 
-        const stuffRes = await axios.post('http://localhost:8000/api/stuffs/', stuffFormData, {
+        const stuffRes = await axios.post('https://kong-7e283b39dauspilq0.kongcloud.dev/api/stuffs/', stuffFormData, {
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${Cookies.get('access_token')}`
@@ -329,7 +329,7 @@ const AddProductForm = () => {
         imgFormData.append('position', Number.isInteger(img.position) ? img.position : i);
 
         try {
-          await axios.post('http://localhost:8000/api/images/', imgFormData, {
+          await axios.post('https://kong-7e283b39dauspilq0.kongcloud.dev/api/images/', imgFormData, {
             headers: {
               'Content-Type': 'multipart/form-data',
               'Authorization': `Bearer ${Cookies.get('access_token')}`
@@ -351,7 +351,7 @@ const AddProductForm = () => {
             imgFormData.append('position', 0);
 
             try {
-              await axios.post('http://localhost:8000/api/images/', imgFormData, {
+              await axios.post('https://kong-7e283b39dauspilq0.kongcloud.dev/api/images/', imgFormData, {
                 headers: {
                   'Content-Type': 'multipart/form-data',
                   'Authorization': `Bearer ${Cookies.get('access_token')}`
