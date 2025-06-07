@@ -4,6 +4,7 @@ import authStore from "../redux/authStore";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import Cookies from 'js-cookie';
 
 const clientId = '348131616981-85ms78t7eshj5l60pg07adpe9fc00tbt.apps.googleusercontent.com';
 const facebookAppId = '445559468644845';
