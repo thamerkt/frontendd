@@ -158,8 +158,9 @@ const ResizableImage = Image.extend({
   }
 });
 
-const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }, ref) => {
+const MyEditor = forwardRef(({ content, onImageUpload, onImageDelete }, ref) => {
   const [uploadedImages, setUploadedImages] = useState([]);
+  const [currentContent, setCurrentContent] = useState(content);
 
   const editor = useEditor({
     extensions: [
@@ -183,7 +184,7 @@ const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }
       TableCell,
       TableHeader,
     ],
-    content: content || '<p>Start writing your content here...</p>',
+    content: currentContent || '<p>Start writing your content here...</p>',
     editorProps: {
       attributes: {
         class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-xl mx-auto focus:outline-none p-4',
@@ -191,16 +192,17 @@ const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }
     },
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
-      if (onChange) {
-        onChange(html);
-      }
+      setCurrentContent(html);
     },
   });
 
   useEffect(() => {
     if (!editor || !content) return;
-    editor.commands.setContent(content);
-  }, [content, editor]);
+    if (content !== currentContent) {
+      editor.commands.setContent(content);
+      setCurrentContent(content);
+    }
+  }, [content, editor, currentContent]);
 
   const handleImageUpload = useCallback(async (event) => {
     if (!editor) return;
@@ -224,10 +226,14 @@ const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }
     }).run();
   
     try {
+      if (!onImageUpload) {
+        throw new Error('No image upload handler provided');
+      }
+      
       // Upload image
       const uploaded = await onImageUpload(file);
       const filename = uploaded?.filename || file.name;
-      const finalUrl = `http://host.docker.internal:8006/equipment_images/${filename}`;
+      const finalUrl = uploaded?.url || `http://localhost:8000/uploads/${filename}`;
   
       // Replace image node with matching data-id
       const { state, view } = editor;
@@ -282,11 +288,24 @@ const MyEditor = forwardRef(({ content, onChange, onImageUpload, onImageDelete }
   }, [editor, handleImageUpload]);
 
   useImperativeHandle(ref, () => ({
-    getHTML: () => editor?.getHTML() || '',
+    getHTML: () => {
+      if (!editor) return '';
+      return editor.getHTML();
+    },
     getJSON: () => editor?.getJSON() || null,
     isEmpty: () => editor?.isEmpty || true,
-    clearContent: () => editor?.commands.clearContent(),
-    setContent: (content) => editor?.commands.setContent(content),
+    clearContent: () => {
+      if (editor) {
+        editor.commands.clearContent();
+        setCurrentContent('');
+      }
+    },
+    setContent: (content) => {
+      if (editor) {
+        editor.commands.setContent(content);
+        setCurrentContent(content);
+      }
+    },
     getUploadedImages: () => uploadedImages.filter(img => img.file),
   }));
 
