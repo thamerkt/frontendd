@@ -947,6 +947,7 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
   const [quantity, setQuantity] = useState(1);
   const [view, setView] = useState("dayGridMonth");
   const calendarRef = useRef(null);
+  const [isResizing, setIsResizing] = useState(false);
   const [events, setEvents] = useState([]);
   const [activeSidebarTab, setActiveSidebarTab] = useState("calendar");
 
