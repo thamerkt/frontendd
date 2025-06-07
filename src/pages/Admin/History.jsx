@@ -61,6 +61,7 @@ export default function History() {
                 // Determine which fetch method to use based on the URL path
                 if (location.pathname.startsWith('/admin')) {
                     data = await HistoryService.fetchHistoryByParam({ bailleur: user });
+                    console.log('data',data)
                 } else if (location.pathname.startsWith('/owner')) {
                     data = await HistoryService.fetchHistoryByParam();
                 } else if (location.pathname.startsWith('/client')) {
