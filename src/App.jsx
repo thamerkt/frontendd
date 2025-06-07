@@ -164,7 +164,7 @@ const App = () => {
                     <Route path="products" element={<AdminProductsPage />} />
                     <Route path="users" element={<UserManagement />} />
                     <Route path="settings" element={<SettingsPage />} />
-                    <Route path="history" element={<HistoryPage />} />
+                    <Route path="history" element={<History />} />
                     <Route path="contracts" element={<Contracts />} />
                   </Route>
 
@@ -184,7 +184,7 @@ const App = () => {
                     
                     <Route path="products" element={<ProductsPage />} />
                     <Route path="clients" element={<ClientComponent />} />
-                    <Route path="history" element={<HistoryPage />} />
+                    <Route path="history" element={<History />} />
                     
                     <Route path="settings" element={<SettingsPage />} />
                     <Route path="contracts" element={<Contracts />} />
