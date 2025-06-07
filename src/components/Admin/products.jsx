@@ -117,23 +117,30 @@ const ProductsPage = () => {
       console.log('Products:', response);
       setProducts(response);
       
+      // Fetch categories
+      const categoriesResponse = await EquipmentService.fetchCategories();
+      const categoryOptions = categoriesResponse.map(cat => ({
+        id: cat.id,
+        name: cat.name
+      }));
+      setCategories(categoryOptions);
+      console.log("Categories:", categoryOptions);
       
-      // Extract unique categories from products
-      const uniqueCategories = await EquipmentService.fetchCategories();
-      setCategories(uniqueCategories);
-      console.log("uniqueCategories",uniqueCategories)
-      
-      // Calculate category distribution
-      const categoryCounts = categories.reduce((acc, product) => {
-        const category = product.category?.toString() || 'Other';
-        acc[category] = (acc[category] || 0) + 1;
+      // Calculate category distribution using products data
+      const categoryCounts = response.reduce((acc, product) => {
+        const categoryId = product.category?.toString() || 'other';
+        acc[categoryId] = (acc[categoryId] || 0) + 1;
         return acc;
       }, {});
       
-      const updatedCategoryData = Object.keys(categoryCounts).map(category => ({
-        name: category,
-        value: categoryCounts[category]
-      }));
+      const updatedCategoryData = Object.keys(categoryCounts).map(categoryId => {
+        const category = categoryOptions.find(cat => cat.id.toString() === categoryId) || 
+                        { name: 'Other' };
+        return {
+          name: category.name,
+          value: categoryCounts[categoryId]
+        };
+      });
       
       setCategoryData(updatedCategoryData);
       
@@ -297,9 +304,10 @@ const ProductsPage = () => {
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.stuffname.toLowerCase().includes(searchTerm.toLowerCase());
+    const productCategory = product.category?.toString();
     const matchesCategory = selectedCategory === "all" || 
-                         (product.category?.toString() === selectedCategory || 
-                         (selectedCategory === 'Other' && !product.category));
+                         (selectedCategory === productCategory) || 
+                         (selectedCategory === 'other' && !productCategory);
     return matchesSearch && matchesCategory;
   });
 
@@ -517,8 +525,11 @@ const ProductsPage = () => {
               >
                 <option value="all">All Categories</option>
                 {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
                 ))}
+                <option value="other">Other</option>
               </select>
             </div>
           </div>
@@ -560,7 +571,7 @@ const ProductsPage = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {product.category?.toString() || 'Other'}
+                    {categories.find(cat => cat.id === product.category)?.name || 'Other'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     ${product.price_per_day?.toFixed(2) || '0.00'}
@@ -606,7 +617,7 @@ const ProductsPage = () => {
       {/* Add Product Modal */}
       <AnimatePresence>
         {showAddProduct && (
-          <AddProductModal onClose={() => setShowAddProduct(false)} />
+          <AddProductModal onClose={() => setShowAddProduct(false)} categories={categories} />
         )}
       </AnimatePresence>
     </div>
@@ -614,7 +625,7 @@ const ProductsPage = () => {
 };
 
 // Add Product Modal Component
-const AddProductModal = ({ onClose }) => {
+const AddProductModal = ({ onClose, categories }) => {
   const [formData, setFormData] = useState({
     stuffname: '',
     short_description: '',
@@ -703,11 +714,11 @@ const AddProductModal = ({ onClose }) => {
                   onChange={handleChange}
                 >
                   <option value="">Select Category</option>
-                  <option value="1">Electronics</option>
-                  <option value="2">Tools</option>
-                  <option value="3">Furniture</option>
-                  <option value="4">Vehicles</option>
-                  <option value="5">Other</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               
