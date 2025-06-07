@@ -308,6 +308,7 @@ const AddProductForm = () => {
             'Authorization': `Bearer ${Cookies.get('access_token')}`
           },
         });
+        console.log("stuffRes",stuffRes)
 
         stuffId = stuffRes.data.id;
       } catch (err) {
