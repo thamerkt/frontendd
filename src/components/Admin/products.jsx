@@ -14,18 +14,18 @@ import EquipmentService from "../../services/EquipmentService";
 const apiService = {
   reports: {
     getByUser: async (username) => {
-      const response = await axios.get(`http://localhost:8000/reports/rapports/?user=${username}`, {withCredentials: true});
+      const response = await axios.get(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapports/?user=${username}`, {withCredentials: true});
       return response.data;
     },
     create: async (reportData) => {
-      const response = await axios.post('http://localhost:8000/reports/rapports/', reportData, {
+      const response = await axios.post('https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapports/', reportData, {
         headers: { 'Content-Type': 'application/json' },
         withCredentials: true
       });
       return response.data;
     },
     update: async (reportId, reportData) => {
-      const response = await axios.patch(`http://localhost:8000/reports/rapports/${reportId}/`, reportData, {
+      const response = await axios.patch(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapports/${reportId}/`, reportData, {
         headers: { 'Content-Type': 'application/json' },
         withCredentials: true
       });
@@ -34,15 +34,15 @@ const apiService = {
   },
   reportData: {
     getByReport: async (reportId) => {
-      const response = await axios.get(`http://localhost:8000/reports/rapport-data/?rapport=${reportId}`, {withCredentials: true});
+      const response = await axios.get(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapport-data/?rapport=${reportId}`, {withCredentials: true});
       return response.data;
     },
     create: async (metricData) => {
-      const response = await axios.post('http://localhost:8000/reports/rapport-data/', metricData, {withCredentials: true});
+      const response = await axios.post('https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapport-data/', metricData, {withCredentials: true});
       return response.data;
     },
     update: async (metricId, metricData) => {
-      const response = await axios.patch(`http://localhost:8000/reports/rapport-data/${metricId}/`, metricData, {withCredentials: true});
+      const response = await axios.patch(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapport-data/${metricId}/`, metricData, {withCredentials: true});
       return response.data;
     }
   }
@@ -114,8 +114,8 @@ const ProductsPage = () => {
       setLoadingProducts(true);
       const userId = Cookies.get('keycloak_user_id');
       const response = await EquipmentService.fetchRentalsBy('user', userId);
-      console.log('Products:', response.data);
-      setProducts(response.data);
+      console.log('Products:', response);
+      setProducts(response);
       
       // Extract unique categories from products
       const uniqueCategories = [...new Set(response.data.map(p => p.category?.toString() || 'Other'))];
