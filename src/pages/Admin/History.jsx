@@ -52,14 +52,15 @@ export default function History() {
             try {
                 setIsLoading(true);
                 let data;
+                const user=Cookies.get('keycloak_user_id')
                 
                 // Determine which fetch method to use based on the URL path
                 if (location.pathname.startsWith('/admin')) {
-                    data = await HistoryService.fetchHistoryByParam({ bailleur: 201 });
+                    data = await HistoryService.fetchHistoryByParam({ bailleur: user });
                 } else if (location.pathname.startsWith('/owner')) {
                     data = await HistoryService.fetchHistoryByParam();
                 } else if (location.pathname.startsWith('/client')) {
-                    data = await HistoryService.fetchHistoryByParam({ client: 301 });
+                    data = await HistoryService.fetchHistoryByParam({ client: user });
                 } else {
                     // Default to regular fetch if path doesn't match
                     data = await HistoryService.fetchHistory();
