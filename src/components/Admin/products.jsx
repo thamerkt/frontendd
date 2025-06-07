@@ -124,7 +124,7 @@ const ProductsPage = () => {
       console.log("uniqueCategories",uniqueCategories)
       
       // Calculate category distribution
-      const categoryCounts = response.data.reduce((acc, product) => {
+      const categoryCounts = categories.reduce((acc, product) => {
         const category = product.category?.toString() || 'Other';
         acc[category] = (acc[category] || 0) + 1;
         return acc;
