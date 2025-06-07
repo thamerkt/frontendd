@@ -46,7 +46,7 @@ const CheckoutProcess = () => {
 
   const fetchUserData = async (user) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/profile/profil/?user=${user}`, {
+      const response = await fetch(`https://kong-7e283b39dauspilq0.kongcloud.dev/profile/profil/?user=${user}`, {
         headers: {
           
           'Content-Type': 'application/json'
