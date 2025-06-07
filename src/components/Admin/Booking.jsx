@@ -7,7 +7,7 @@ import FullCalendar from '@fullcalendar/react';
 import { motion } from "framer-motion";
 import { FiPlus, FiChevronLeft, FiChevronRight, FiCalendar, FiCheckCircle, FiClock, FiAlertCircle } from "react-icons/fi";
 import { useLocation } from "react-router-dom";
-
+import Cookies from 'js-cookie';
 const BookingComponent = () => {
   const calendarRef = useRef(null);
   const [currentView, setCurrentView] = useState('dayGridMonth');
