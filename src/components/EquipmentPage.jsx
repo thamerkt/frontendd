@@ -964,7 +964,19 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import ChatComponent from './Messanger';
+
+
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { toast } from 'react-toastify';
+import axios from "axios";
+import { differenceInDays, parseISO, addDays, format } from 'date-fns';
+import { AnimatePresence, motion } from "framer-motion";
+import { FiCalendar, FiX, FiMessageSquare } from 'react-icons/fi';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+
 
 const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => {
   const [selectedDates, setSelectedDates] = useState([]);
@@ -1393,7 +1405,7 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
                         </button>
                         <div className="px-3 py-1 border-t border-b border-gray-300 bg-white text-center w-10">
                           {quantity}
-                        </button>
+                        </div>
                         <button
                           type="button"
                           onClick={() => setQuantity(quantity + 1)}
@@ -1444,4 +1456,6 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
     </AnimatePresence>
   );
 };
+
+
 
