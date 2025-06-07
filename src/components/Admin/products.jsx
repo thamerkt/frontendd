@@ -121,7 +121,7 @@ const ProductsPage = () => {
       // Extract unique categories from products
       const uniqueCategories = await EquipmentService.fetchCategories();
       setCategories(uniqueCategories);
-      console("uniqueCategories",uniqueCategories)
+      console.log("uniqueCategories",uniqueCategories)
       
       // Calculate category distribution
       const categoryCounts = response.data.reduce((acc, product) => {
