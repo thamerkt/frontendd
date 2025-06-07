@@ -138,10 +138,10 @@ const ProductsPage = () => {
       setCategoryData(updatedCategoryData);
       
       // Calculate stats
-      const totalProducts = response.data.length;
-      const outOfStock = response.data.filter(p => p.quantity === 0).length;
-      const activeRentals = response.data.reduce((sum, p) => sum + (p.rented || 0), 0);
-      const monthlyRevenue = response.data.reduce((sum, p) => sum + (p.price_per_day * (p.rented || 0) * 30), 0); // Approximate monthly revenue
+      const totalProducts = response.length;
+      const outOfStock = response.filter(p => p.quantity === 0).length;
+      const activeRentals = response.reduce((sum, p) => sum + (p.rented || 0), 0);
+      const monthlyRevenue = response.reduce((sum, p) => sum + (p.price_per_day * (p.rented || 0) * 30), 0); // Approximate monthly revenue
       const avgRentalValue = totalProducts > 0 ? monthlyRevenue / totalProducts : 0;
       
       setStats({
