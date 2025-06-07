@@ -42,7 +42,7 @@ import SettingsPage from "./components/Admin/settings";
 import BookingComponent from "./components/Admin/Booking";
 import ClientComponent from "./components/Admin/clients";
 import ProductsPage from "./components/Admin/products";
-import HistoryPage from "./pages/Admin/History";
+import History from "./pages/Admin/History";
 import AdminProductsPage from "./components/Admininstrateur/products";
 import UserManagement from "./components/Admininstrateur/UserManagement";
 import AdminCategoriesPage from "./components/Admininstrateur/Categorie";
@@ -150,7 +150,7 @@ const App = () => {
                     <Route path="products" element={<ProductsPage />} />
                     <Route path="clients" element={<ClientComponent />} />
                     <Route path="settings" element={<SettingsPage />} />
-                    <Route path="history" element={<HistoryPage />} />
+                    <Route path="history" element={<History />} />
                     <Route path="contracts" element={<Contracts />} />
                     <Route path="add" element={<AddProductForm />} />
                     
