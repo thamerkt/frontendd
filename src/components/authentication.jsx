@@ -135,7 +135,7 @@ const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/
   last_name: data.userdata.last_name,
   is_verified: data.userdata.is_verified === true || data.userdata.is_verified === 'true',
   is_suspended: data.userdata.is_suspended === true || data.userdata.is_suspended === 'true',
-  token: data.token?.access_token
+  token: data.userdata?.access_token
 };
           
           localStorage.setItem('user', JSON.stringify(userInfo));
@@ -229,7 +229,7 @@ const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/
   last_name: data.userdata.last_name,
   is_verified: data.userdata.is_verified === true || data.userdata.is_verified === 'true',
   is_suspended: data.userdata.is_suspended === true || data.userdata.is_suspended === 'true',
-  token: data.token?.access_token
+  token: data.userdata?.access_token
 };
               
               localStorage.setItem('user', JSON.stringify(userInfo));
