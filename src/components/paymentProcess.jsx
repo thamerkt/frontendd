@@ -95,7 +95,7 @@ const CheckoutProcess = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch('http://127.0.0.1:8000/payme/payment/start/', {
+      const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/payme/payment/start/', {
         method: 'POST',
         headers,
         body: JSON.stringify({
