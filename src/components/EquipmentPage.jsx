@@ -1090,6 +1090,7 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
         quantity: quantity,
         total_price: calculateTotalPrice,
       };
+      console.log('request',rentalRequestData)
 
       const response = await axios.post(
         "https://kong-7e283b39dauspilq0.kongcloud.dev/rental/rental_requests/",
