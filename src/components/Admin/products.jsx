@@ -8,24 +8,24 @@ import {
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import EquipmentService from "../../services/EquipmentService";
+import { equipmentService } from '../Service/equipmentService';
 
 // API Service
 const apiService = {
   reports: {
     getByUser: async (username) => {
-      const response = await axios.get(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapports/?user=${username}`, {withCredentials: true});
+      const response = await axios.get(`http://localhost:8000/reports/rapports/?user=${username}`, {withCredentials: true});
       return response.data;
     },
     create: async (reportData) => {
-      const response = await axios.post('https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapports/', reportData, {
+      const response = await axios.post('http://localhost:8000/reports/rapports/', reportData, {
         headers: { 'Content-Type': 'application/json' },
         withCredentials: true
       });
       return response.data;
     },
     update: async (reportId, reportData) => {
-      const response = await axios.patch(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapports/${reportId}/`, reportData, {
+      const response = await axios.patch(`http://localhost:8000/reports/rapports/${reportId}/`, reportData, {
         headers: { 'Content-Type': 'application/json' },
         withCredentials: true
       });
@@ -34,15 +34,15 @@ const apiService = {
   },
   reportData: {
     getByReport: async (reportId) => {
-      const response = await axios.get(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapport-data/?rapport=${reportId}`, {withCredentials: true});
+      const response = await axios.get(`http://localhost:8000/reports/rapport-data/?rapport=${reportId}`, {withCredentials: true});
       return response.data;
     },
     create: async (metricData) => {
-      const response = await axios.post('https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapport-data/', metricData, {withCredentials: true});
+      const response = await axios.post('http://localhost:8000/reports/rapport-data/', metricData, {withCredentials: true});
       return response.data;
     },
     update: async (metricId, metricData) => {
-      const response = await axios.patch(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapport-data/${metricId}/`, metricData, {withCredentials: true});
+      const response = await axios.patch(`http://localhost:8000/reports/rapport-data/${metricId}/`, metricData, {withCredentials: true});
       return response.data;
     }
   }
@@ -89,6 +89,7 @@ const ProductsPage = () => {
   const [productsReports, setProductsReports] = useState([]);
   const [productsMetrics, setProductsMetrics] = useState({});
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [stats, setStats] = useState({
     totalProducts: 0,
     activeRentals: 0,
@@ -98,14 +99,7 @@ const ProductsPage = () => {
     avgRentalValue: "$0"
   });
 
-  const [categoryData, setCategoryData] = useState([
-    { name: 'Photography', value: 0 },
-    { name: 'Videography', value: 0 },
-    { name: 'Computers', value: 0 },
-    { name: 'Gaming', value: 0 },
-    { name: 'Other', value: 0 },
-  ]);
-
+  const [categoryData, setCategoryData] = useState([]);
   const [revenueData, setRevenueData] = useState([
     { name: 'Jan', revenue: 0 },
     { name: 'Feb', revenue: 0 },
@@ -119,20 +113,24 @@ const ProductsPage = () => {
     try {
       setLoadingProducts(true);
       const userId = Cookies.get('keycloak_user_id');
-      const response = await EquipmentService.fetchRentalsBy('user', userId);
-      setProducts(response);
-      console.log('product:',response)
+      const response = await equipmentService.fetchRentalsBy('user', userId);
+      console.log('Products:', response.data);
+      setProducts(response.data);
+      
+      // Extract unique categories from products
+      const uniqueCategories = [...new Set(response.data.map(p => p.category?.toString() || 'Other'))];
+      setCategories(uniqueCategories);
       
       // Calculate category distribution
       const categoryCounts = response.data.reduce((acc, product) => {
-        const category = product.category || 'Other';
+        const category = product.category?.toString() || 'Other';
         acc[category] = (acc[category] || 0) + 1;
         return acc;
       }, {});
       
-      const updatedCategoryData = categoryData.map(item => ({
-        ...item,
-        value: categoryCounts[item.name] || 0
+      const updatedCategoryData = Object.keys(categoryCounts).map(category => ({
+        name: category,
+        value: categoryCounts[category]
       }));
       
       setCategoryData(updatedCategoryData);
@@ -141,7 +139,7 @@ const ProductsPage = () => {
       const totalProducts = response.data.length;
       const outOfStock = response.data.filter(p => p.quantity === 0).length;
       const activeRentals = response.data.reduce((sum, p) => sum + (p.rented || 0), 0);
-      const monthlyRevenue = response.data.reduce((sum, p) => sum + (p.price * (p.rented || 0)), 0);
+      const monthlyRevenue = response.data.reduce((sum, p) => sum + (p.price_per_day * (p.rented || 0) * 30), 0); // Approximate monthly revenue
       const avgRentalValue = totalProducts > 0 ? monthlyRevenue / totalProducts : 0;
       
       setStats({
@@ -296,8 +294,10 @@ const ProductsPage = () => {
   }, []);
 
   const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
+    const matchesSearch = product.stuffname.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || 
+                         (product.category?.toString() === selectedCategory || 
+                         (selectedCategory === 'Other' && !product.category));
     return matchesSearch && matchesCategory;
   });
 
@@ -514,7 +514,7 @@ const ProductsPage = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
                 <option value="all">All Categories</option>
-                {Array.from(new Set(products.map(p => p.category || 'Other'))).map(category => (
+                {categories.map(category => (
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
@@ -528,9 +528,8 @@ const ProductsPage = () => {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rented</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Price</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
@@ -548,40 +547,33 @@ const ProductsPage = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10 rounded-md overflow-hidden bg-gray-100">
-                        {product.image ? (
-                          <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <svg className="h-full w-full text-gray-300" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                          </svg>
-                        )}
+                        <svg className="h-full w-full text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                        <div className="text-sm text-gray-500">{product.id}</div>
+                        <div className="text-sm font-medium text-gray-900">{product.stuffname}</div>
+                        <div className="text-sm text-gray-500">{product.short_description}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {product.category || 'Other'}
+                    {product.category?.toString() || 'Other'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${product.price}/day
+                    ${product.price_per_day?.toFixed(2) || '0.00'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {product.quantity}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {product.rented || 0}
+                    {product.location || product.rental_location || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      product.quantity > 5 ? "bg-green-100 text-green-800" :
-                      product.quantity > 0 ? "bg-yellow-100 text-yellow-800" :
-                      "bg-red-100 text-red-800"
+                      product.state === "new" ? "bg-green-100 text-green-800" :
+                      product.state === "used" ? "bg-yellow-100 text-yellow-800" :
+                      "bg-gray-100 text-gray-800"
                     }`}>
-                      {product.quantity > 5 ? "Available" :
-                       product.quantity > 0 ? "Low Stock" : "Out of Stock"}
+                      {product.state === "new" ? "New" :
+                       product.state === "used" ? "Used" : "N/A"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -621,6 +613,44 @@ const ProductsPage = () => {
 
 // Add Product Modal Component
 const AddProductModal = ({ onClose }) => {
+  const [formData, setFormData] = useState({
+    stuffname: '',
+    short_description: '',
+    detailed_description: '',
+    category: '',
+    price_per_day: '',
+    location: '',
+    state: 'new'
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const userId = Cookies.get('keycloak_user_id');
+      const productData = {
+        ...formData,
+        user: userId,
+        price_per_day: parseFloat(formData.price_per_day),
+        category: formData.category || null
+      };
+      
+      // Here you would call your API to create the product
+      // await equipmentService.createProduct(productData);
+      
+      onClose();
+    } catch (err) {
+      console.error("Error creating product:", err);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -647,92 +677,145 @@ const AddProductModal = ({ onClose }) => {
             </button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                placeholder="Enter product name"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
-                <option>Photography</option>
-                <option>Videography</option>
-                <option>Computers</option>
-                <option>Gaming</option>
-                <option>Other</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Daily Price</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2">$</span>
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
                 <input
-                  type="number"
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  placeholder="0.00"
+                  type="text"
+                  name="stuffname"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="Enter product name"
+                  value={formData.stuffname}
+                  onChange={handleChange}
+                  required
                 />
               </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
-              <input
-                type="number"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                placeholder="Enter quantity"
-              />
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <textarea
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                placeholder="Enter product description"
-              />
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
-              <div className="mt-1 flex items-center">
-                <span className="inline-block h-12 w-12 rounded-md overflow-hidden bg-gray-100">
-                  <svg className="h-full w-full text-gray-300" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </span>
-                <button
-                  type="button"
-                  className="ml-5 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <select 
+                  name="category"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  value={formData.category}
+                  onChange={handleChange}
                 >
-                  Upload
-                </button>
+                  <option value="">Select Category</option>
+                  <option value="1">Electronics</option>
+                  <option value="2">Tools</option>
+                  <option value="3">Furniture</option>
+                  <option value="4">Vehicles</option>
+                  <option value="5">Other</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Daily Price</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2">$</span>
+                  <input
+                    type="number"
+                    name="price_per_day"
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    value={formData.price_per_day}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <input
+                  type="text"
+                  name="location"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="Enter location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+                <select
+                  name="state"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  value={formData.state}
+                  onChange={handleChange}
+                >
+                  <option value="new">New</option>
+                  <option value="used">Used</option>
+                </select>
+              </div>
+              
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
+                <input
+                  type="text"
+                  name="short_description"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="Enter short description"
+                  value={formData.short_description}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Detailed Description</label>
+                <textarea
+                  rows={4}
+                  name="detailed_description"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="Enter detailed description"
+                  value={formData.detailed_description}
+                  onChange={handleChange}
+                />
+              </div>
+              
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+                <div className="mt-1 flex items-center">
+                  <span className="inline-block h-12 w-12 rounded-md overflow-hidden bg-gray-100">
+                    <svg className="h-full w-full text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  </span>
+                  <button
+                    type="button"
+                    className="ml-5 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                  >
+                    Upload
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="mt-6 flex justify-end space-x-3">
-            <motion.button
-              whileHover={{ backgroundColor: "#f3f4f6" }}
-              whileTap={{ scale: 0.98 }}
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700"
-            >
-              Cancel
-            </motion.button>
-            <motion.button
-              whileHover={{ backgroundColor: "#0d9488" }}
-              whileTap={{ scale: 0.98 }}
-              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
-            >
-              Add Product
-            </motion.button>
-          </div>
+            
+            <div className="mt-6 flex justify-end space-x-3">
+              <motion.button
+                type="button"
+                whileHover={{ backgroundColor: "#f3f4f6" }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700"
+              >
+                Cancel
+              </motion.button>
+              <motion.button
+                type="submit"
+                whileHover={{ backgroundColor: "#0d9488" }}
+                whileTap={{ scale: 0.98 }}
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+              >
+                Add Product
+              </motion.button>
+            </div>
+          </form>
         </div>
       </motion.div>
     </motion.div>
