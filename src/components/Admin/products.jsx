@@ -8,7 +8,7 @@ import {
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import EquipmentService from '../services/EquipmentService';
+import EquipmentService from "../../services/EquipmentService";
 
 // API Service
 const apiService = {
