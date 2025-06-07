@@ -1433,4 +1433,4 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
   );
 };
 
-export default CalendarSidebar;
+
