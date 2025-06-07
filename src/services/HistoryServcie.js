@@ -19,12 +19,23 @@ const handleError = (error) => {
 
 const HistoryService = {
     fetchHistoryByParam: (filters = {}) => {
-        const queryParams = new URLSearchParams(filters).toString();
-        const url = `${API_URL}historiques/${queryParams ? `?${queryParams}` : ""}`;
-        return axios.get(url,{withCredentials: true})
+    // Remove keys with undefined, null, or empty string values
+    const cleanedFilters = Object.fromEntries(
+        Object.entries(filters).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    );
+
+    // Build the query string
+    const queryParams = new URLSearchParams(cleanedFilters).toString();
+
+    // Compose full URL
+    const url = `${API_URL}historiques/${queryParams ? `?${queryParams}` : ""}`;
+
+    // Make the request
+    return axios.get(url, { withCredentials: true })
         .then(response => response.data)
         .catch(handleError);
-    },
+},
+
 
     DeleteHistory: async (historyId) => {
         try {
