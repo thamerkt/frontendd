@@ -454,7 +454,7 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
               </button>
               <button
                 onClick={() => {
-            const selectedDocument = cookies.get('SelectedDocumentType');
+            const selectedDocument = Cookies.get('SelectedDocumentType');
           
             if (selectedDocument === '2') {
               navigate('/register/identity-verification/verification/selfie');
