@@ -120,8 +120,8 @@ const ProductsPage = () => {
       setLoadingProducts(true);
       const userId = Cookies.get('keycloak_user_id');
       const response = await EquipmentService.fetchRentalsBy('user', userId);
-      setProducts(response.data);
-      console.log('product:',response.data)
+      setProducts(response);
+      console.log('product:',response)
       
       // Calculate category distribution
       const categoryCounts = response.data.reduce((acc, product) => {
