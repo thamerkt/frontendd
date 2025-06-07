@@ -138,6 +138,8 @@ const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/
 };
           
           localStorage.setItem('user', JSON.stringify(userInfo));
+          Cookies.set('token',data.token?.access_token)
+          Cookies.set('keycloak_user_id',data.user_id)
           
           if (userInfo.is_suspended==true) {
             toast.error("Your account has been suspended. Please contact support.");
@@ -219,17 +221,19 @@ const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/
             console.log('User authenticated:', data);
 
             if (data.userdata) {
-              const userInfo = {
-                email: data.userdata.email,
-                role: data.userdata.role || 'customer',
-                first_name: data.userdata.first_name,
-                last_name: data.userdata.last_name,
-                token: data.userdata.access_token,
-                is_verified: data.userdata.is_verified || false,
-                is_suspended: data.userdata.is_suspended || false
-              };
+             const userInfo = {
+  email: data.userdata.email,
+  role: role,
+  first_name: data.userdata.first_name,
+  last_name: data.userdata.last_name,
+  is_verified: data.userdata.is_verified === true || data.userdata.is_verified === 'true',
+  is_suspended: data.userdata.is_suspended === true || data.userdata.is_suspended === 'true',
+  token: data.token?.access_token
+};
               
               localStorage.setItem('user', JSON.stringify(userInfo));
+              Cookies.set('token',data.token?.access_token)
+              Cookies.set('keycloak_user_id',data.user_id)
 
               if (userInfo.is_suspended==true) {
                 toast.error("Your account has been suspended. Please contact support.");
