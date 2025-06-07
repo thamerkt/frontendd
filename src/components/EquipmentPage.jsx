@@ -942,16 +942,31 @@ export default function ProductDetail() {
 
 import ChatComponent from './Messanger'
 
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { toast } from 'react-toastify';
+import axios from "axios";
+import { differenceInDays, parseISO, addDays, format } from 'date-fns';
+import { AnimatePresence, motion } from "framer-motion";
+import { FiCalendar, FiX, FiMessageSquare } from 'react-icons/fi';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import ChatComponent from './Messanger';
+
 const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => {
   const [selectedDates, setSelectedDates] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [view, setView] = useState("dayGridMonth");
-  const calendarRef = useRef(null);
+  const [sidebarWidth, setSidebarWidth] = useState("400px");
   const [isResizing, setIsResizing] = useState(false);
   const [events, setEvents] = useState([]);
   const [activeSidebarTab, setActiveSidebarTab] = useState("calendar");
+  
+  const sidebarRef = useRef(null);
+  const calendarRef = useRef(null);
 
-  // Fetch rental requests when component mounts or product changes
+  // Fetch rental requests
   useEffect(() => {
     const fetchRentalRequests = async () => {
       try {
@@ -1008,7 +1023,6 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
     }
   }, [product.id, showForm]);
 
-  // Calculate duration in days
   const calculateDuration = () => {
     if (selectedDates.length === 2) {
       return differenceInDays(
@@ -1019,13 +1033,11 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
     return 0;
   };
 
-  // Calculate total price
   const calculateTotalPrice = useMemo(() => {
     const duration = calculateDuration();
     return (duration * product.price_per_day * quantity).toFixed(2);
   }, [selectedDates, quantity, product.price_per_day]);
 
-  // Handle date range selection from calendar drag
   const handleDateSelect = (selectInfo) => {
     const { startStr, endStr } = selectInfo;
     const endDate = endStr
@@ -1059,22 +1071,9 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
       calendarRef.current.getApi().changeView("timeGridDay", startStr);
     }
     
-    // Unselect after setting dates
     calendarRef.current.getApi().unselect();
   };
 
-  // Handle manual date input changes
-  const handleStartDateChange = (e) => {
-    setSelectedDates([e.target.value, selectedDates[1] || '']);
-  };
-
-  const handleEndDateChange = (e) => {
-    if (selectedDates[0]) {
-      setSelectedDates([selectedDates[0], e.target.value]);
-    }
-  };
-
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -1093,7 +1092,7 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
         client: user?.user_id,
         status: "pending",
         quantity: quantity,
-        total_price: calculateTotalPrice(),
+        total_price: calculateTotalPrice,
       };
 
       const response = await axios.post(
@@ -1131,13 +1130,11 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
     }
   };
 
-  // Change calendar view
   const changeView = (newView) => {
     setView(newView);
     calendarRef.current.getApi().changeView(newView);
   };
 
-  // Handle sidebar resize
   const startResizing = useCallback(() => {
     setIsResizing(true);
   }, []);
@@ -1167,7 +1164,7 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
   return (
     <AnimatePresence>
       {showForm && (
-        <motion.div
+        <motion.div 
           className="fixed inset-0 z-50 overflow-hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -1179,12 +1176,20 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
           />
 
           <motion.div
-            className="absolute right-0 top-0 h-full w-full sm:w-96 bg-white shadow-xl flex flex-col"
+            ref={sidebarRef}
+            className="absolute right-0 top-0 h-full bg-white shadow-xl flex flex-col"
+            style={{ width: sidebarWidth }}
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
+            {/* Resize handle */}
+            <div
+              className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize bg-gray-200 hover:bg-teal-500"
+              onMouseDown={startResizing}
+            />
+
             {/* Header with tabs */}
             <div className="flex border-b border-gray-200">
               <button
@@ -1208,6 +1213,7 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
                 Messages
               </button>
             </div>
+
             <div className="p-4 border-b border-gray-200 bg-teal-600 text-white">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
@@ -1234,13 +1240,9 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
               </div>
             </div>
 
-
-
-            {/* Content based on active tab */}
             <div className="flex-1 overflow-y-auto">
               {activeSidebarTab === "calendar" ? (
                 <>
-                  {/* View Toggle */}
                   <div className="flex border-b border-gray-200">
                     <button
                       onClick={() => changeView("dayGridMonth")}
@@ -1274,7 +1276,6 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
                     </button>
                   </div>
 
-                  {/* Calendar */}
                   <div className="p-3 border-b border-gray-200">
                     <FullCalendar
                       ref={calendarRef}
@@ -1312,7 +1313,6 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
                     />
                   </div>
 
-                  {/* Form */}
                   <form onSubmit={handleSubmit} className="p-3 space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
@@ -1362,7 +1362,7 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
                         </div>
                         <div className="flex justify-between font-semibold text-teal-700 pt-1 border-t border-teal-200">
                           <span>Total:</span>
-                          <span>${calculateTotalPrice()}</span>
+                          <span>${calculateTotalPrice}</span>
                         </div>
                       </div>
                     )}
@@ -1381,7 +1381,7 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
                         </button>
                         <div className="px-3 py-1 border-t border-b border-gray-300 bg-white text-center w-10">
                           {quantity}
-                        </div>
+                        </button>
                         <button
                           type="button"
                           onClick={() => setQuantity(quantity + 1)}
@@ -1402,7 +1402,6 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
               )}
             </div>
 
-            {/* Footer - only show for calendar tab */}
             {activeSidebarTab === "calendar" && (
               <div className="p-3 border-t border-gray-200 bg-gray-50">
                 <div className="flex gap-2">
@@ -1434,4 +1433,4 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
   );
 };
 
-;
+export default CalendarSidebar;
