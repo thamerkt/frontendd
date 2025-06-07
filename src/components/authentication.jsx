@@ -233,8 +233,8 @@ const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/
 };
               
               localStorage.setItem('user', JSON.stringify(userInfo));
-              Cookies.set('token',data.token?.access_token)
-              Cookies.set('keycloak_user_id',data.user_id)
+              Cookies.set('token',data.userdata?.access_token)
+              Cookies.set('keycloak_user_id',data.user)
 
               if (userInfo.is_suspended==true) {
                 toast.error("Your account has been suspended. Please contact support.");
