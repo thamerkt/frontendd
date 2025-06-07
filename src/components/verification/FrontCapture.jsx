@@ -453,7 +453,15 @@ const FrontCapture = ({ onNext, onCapture, onRetake, initialImage = null, curren
                 <FiRotateCw className="mr-2" /> Retake
               </button>
               <button
-                onClick={() => navigate('/register/identity-verification/verification/back-document')}
+                onClick={() => {
+            const selectedDocument = cookies.get('selectedDocument');
+          
+            if (selectedDocument === '2') {
+              navigate('/register/identity-verification/verification/selfie');
+            } else {
+              navigate('/register/identity-verification/verification/back-document');
+            }
+          }}
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-full flex items-center justify-center font-medium"
               >
                 Next <FiArrowRight className="ml-2" />
