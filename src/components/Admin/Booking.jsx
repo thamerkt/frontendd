@@ -23,12 +23,13 @@ const BookingComponent = () => {
 
 useEffect(() => {
   const fetchData = async () => {
+    const user=Cookies.get('keycloak_user_id')
     try {
       let apiUrl;
       if (location.pathname.startsWith('/admin')) {
-        apiUrl = 'https://kong-7e283b39dauspilq0.kongcloud.dev/rental/rental_requests/?rental=2';
+        apiUrl = `https://kong-7e283b39dauspilq0.kongcloud.dev/rental/rental_requests/?rental=${user}`;
       } else {
-        apiUrl = 'https://kong-7e283b39dauspilq0.kongcloud.dev/rental/rental_requests/?client=10';
+        apiUrl = `https://kong-7e283b39dauspilq0.kongcloud.dev/rental/rental_requests/?client=${user}`;
       }
 
       const response = await fetch(apiUrl, {
