@@ -107,7 +107,7 @@ const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     credential,
-    role, // 👈 Include role in request body
+    role,
   }),
 });
   
@@ -128,14 +128,14 @@ const response = await fetch('https://kong-7e283b39dauspilq0.kongcloud.dev/user/
           }
 
           const userInfo = {
-            email: data.userdata.email,
-            role: role,
-            first_name: data.userdata.first_name,
-            last_name: data.userdata.last_name,
-            is_verified: data.userdata.is_verified || false,
-            is_suspended: data.userdata.is_suspended || false,
-            token: data.token?.access_token
-          };
+  email: data.userdata.email,
+  role: role,
+  first_name: data.userdata.first_name,
+  last_name: data.userdata.last_name,
+  is_verified: data.userdata.is_verified === true || data.userdata.is_verified === 'true',
+  is_suspended: data.userdata.is_suspended === true || data.userdata.is_suspended === 'true',
+  token: data.token?.access_token
+};
           
           localStorage.setItem('user', JSON.stringify(userInfo));
           
