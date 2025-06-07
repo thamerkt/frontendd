@@ -152,9 +152,10 @@ const App = () => {
                     <Route path="settings" element={<SettingsPage />} />
                     <Route path="history" element={<HistoryPage />} />
                     <Route path="contracts" element={<Contracts />} />
+                    <Route path="add" element={<AddProductForm />} />
                     
                   </Route>
-                  <Route path="add" element={<AddProductForm />} />
+                  
 
                   {/* Owner Routes */}
                   <Route path="/owner" element={<ProtectedRoute role="admin" />}>
