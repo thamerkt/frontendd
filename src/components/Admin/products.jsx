@@ -7,13 +7,14 @@ import {
 } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
-
+import Cookies from 'js-cookie';
+import { EquipmentService } from '../service/EquipmentService';
 
 // API Service
 const apiService = {
   reports: {
     getByUser: async (username) => {
-      const response = await axios.get(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapports/?user=${username}`,{withCredentials: true});
+      const response = await axios.get(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapports/?user=${username}`, {withCredentials: true});
       return response.data;
     },
     create: async (reportData) => {
@@ -22,15 +23,26 @@ const apiService = {
         withCredentials: true
       });
       return response.data;
+    },
+    update: async (reportId, reportData) => {
+      const response = await axios.patch(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapports/${reportId}/`, reportData, {
+        headers: { 'Content-Type': 'application/json' },
+        withCredentials: true
+      });
+      return response.data;
     }
   },
   reportData: {
     getByReport: async (reportId) => {
-      const response = await axios.get(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapport-data/?rapport=${reportId}`,{withCredentials: true});
+      const response = await axios.get(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapport-data/?rapport=${reportId}`, {withCredentials: true});
       return response.data;
     },
     create: async (metricData) => {
-      const response = await axios.post('https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapport-data/', metricData,{withCredentials: true});
+      const response = await axios.post('https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapport-data/', metricData, {withCredentials: true});
+      return response.data;
+    },
+    update: async (metricId, metricData) => {
+      const response = await axios.patch(`https://kong-7e283b39dauspilq0.kongcloud.dev/reports/rapport-data/${metricId}/`, metricData, {withCredentials: true});
       return response.data;
     }
   }
@@ -64,29 +76,6 @@ const REQUIRED_REPORTS = [
   }
 ];
 
-const PRODUCTS = [
-  { 
-    id: "PRD001", 
-    name: "Professional Camera", 
-    category: "Photography", 
-    price: "$0/day", 
-    stock: 0,
-    rented: 0,
-    status: "available",
-    image: "/camera.jpg"
-  },
-  { 
-    id: "PRD002", 
-    name: "DJI Drone", 
-    category: "Videography", 
-    price: "$0/day", 
-    stock: 0,
-    rented: 0,
-    status: "available",
-    image: "/drone.jpg"
-  }
-];
-
 const COLORS = ['#0d9488', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899'];
 
 const ProductsPage = () => {
@@ -95,9 +84,11 @@ const ProductsPage = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isSidebarExpanded] = useState(true);
   const [loadingReports, setLoadingReports] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [reportError, setReportError] = useState(null);
   const [productsReports, setProductsReports] = useState([]);
   const [productsMetrics, setProductsMetrics] = useState({});
+  const [products, setProducts] = useState([]);
   const [stats, setStats] = useState({
     totalProducts: 0,
     activeRentals: 0,
@@ -123,11 +114,102 @@ const ProductsPage = () => {
     { name: 'May', revenue: 0 },
   ]);
 
-  const filteredProducts = PRODUCTS.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Fetch products from API
+  const fetchProducts = async () => {
+    try {
+      setLoadingProducts(true);
+      const userId = Cookies.get('keycloak_user_id');
+      const response = await equipmentService.fetchRentalsBy('user', userId);
+      setProducts(response.data);
+      
+      // Calculate category distribution
+      const categoryCounts = response.data.reduce((acc, product) => {
+        const category = product.category || 'Other';
+        acc[category] = (acc[category] || 0) + 1;
+        return acc;
+      }, {});
+      
+      const updatedCategoryData = categoryData.map(item => ({
+        ...item,
+        value: categoryCounts[item.name] || 0
+      }));
+      
+      setCategoryData(updatedCategoryData);
+      
+      // Calculate stats
+      const totalProducts = response.data.length;
+      const outOfStock = response.data.filter(p => p.quantity === 0).length;
+      const activeRentals = response.data.reduce((sum, p) => sum + (p.rented || 0), 0);
+      const monthlyRevenue = response.data.reduce((sum, p) => sum + (p.price * (p.rented || 0)), 0);
+      const avgRentalValue = totalProducts > 0 ? monthlyRevenue / totalProducts : 0;
+      
+      setStats({
+        totalProducts,
+        activeRentals,
+        monthlyRevenue: `$${monthlyRevenue.toFixed(2)}`,
+        outOfStock,
+        monthlyGrowth: "0%",
+        avgRentalValue: `$${avgRentalValue.toFixed(2)}`
+      });
+      
+      // Update reports with new data
+      await updateReportsWithProductData(totalProducts, activeRentals, monthlyRevenue, outOfStock, avgRentalValue);
+      
+      setLoadingProducts(false);
+    } catch (err) {
+      console.error("Error fetching products:", err);
+      setLoadingProducts(false);
+    }
+  };
+
+  // Update reports with current product data
+  const updateReportsWithProductData = async (totalProducts, activeRentals, monthlyRevenue, outOfStock, avgRentalValue) => {
+    try {
+      for (const report of productsReports) {
+        const metrics = await apiService.reportData.getByReport(report.id);
+        
+        for (const metric of metrics) {
+          let newValue = metric.metric_value;
+          
+          switch (metric.metric_name) {
+            case "Total Products":
+              newValue = totalProducts;
+              break;
+            case "Active Rentals":
+              newValue = activeRentals;
+              break;
+            case "Monthly Revenue":
+              newValue = monthlyRevenue;
+              break;
+            case "Out of Stock":
+              newValue = outOfStock;
+              break;
+            case "Monthly Growth":
+              // You might want to implement growth calculation logic here
+              break;
+            case "Average Rental Value":
+              newValue = avgRentalValue;
+              break;
+          }
+          
+          if (newValue !== metric.metric_value) {
+            await apiService.reportData.update(metric.id, {
+              metric_value: newValue
+            });
+          }
+        }
+      }
+      
+      // Refresh metrics
+      const updatedMetrics = {};
+      for (const report of productsReports) {
+        updatedMetrics[report.type] = await apiService.reportData.getByReport(report.id);
+      }
+      setProductsMetrics(updatedMetrics);
+    } catch (err) {
+      console.error("Error updating reports:", err);
+    }
+  };
 
   // Initialize products reports and metrics
   useEffect(() => {
@@ -136,11 +218,12 @@ const ProductsPage = () => {
         setLoadingReports(true);
         setReportError(null);
         
-        // Simulate products data
-        const productsName = "products";
+        // Get user ID from cookies
+        const userId = Cookies.get('keycloak_user_id');
+        if (!userId) throw new Error("User not authenticated");
         
         // 1. Fetch existing reports
-        const existingReports = await apiService.reports.getByUser(productsName);
+        const existingReports = await apiService.reports.getByUser(userId);
         
         // 2. Check which required reports are missing
         const missingReports = REQUIRED_REPORTS.filter(requiredReport => 
@@ -153,7 +236,7 @@ const ProductsPage = () => {
             const now = new Date().toISOString();
             const reportData = {
               ...reportTemplate,
-              user: productsName,
+              user: userId,
               date_created: now,
               start_date: new Date().toISOString().split('T')[0],
               end_date: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
@@ -161,7 +244,7 @@ const ProductsPage = () => {
                 .split('T')[0]
             };
             const response = await apiService.reports.create(reportData);
-            return response.data.id;
+            return response;
           })
         );
         
@@ -199,6 +282,8 @@ const ProductsPage = () => {
         setProductsMetrics(metricsCollection);
         setLoadingReports(false);
         
+        // Fetch products after reports are initialized
+        await fetchProducts();
       } catch (err) {
         console.error("Error initializing products reports:", err);
         setReportError("Failed to initialize products reports");
@@ -209,12 +294,18 @@ const ProductsPage = () => {
     initializeProductsReports();
   }, []);
 
-  if (loadingReports) {
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  if (loadingReports || loadingProducts) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Initializing products reports...</p>
+          <p className="mt-4 text-gray-600">Loading products data...</p>
         </div>
       </div>
     );
@@ -422,10 +513,9 @@ const ProductsPage = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
                 <option value="all">All Categories</option>
-                <option value="Photography">Photography</option>
-                <option value="Videography">Videography</option>
-                <option value="Computers">Computers</option>
-                <option value="Gaming">Gaming</option>
+                {Array.from(new Set(products.map(p => p.category || 'Other'))).map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -457,9 +547,13 @@ const ProductsPage = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10 rounded-md overflow-hidden bg-gray-100">
-                        <svg className="h-full w-full text-gray-300" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
+                        {product.image ? (
+                          <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <svg className="h-full w-full text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
+                        )}
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">{product.name}</div>
@@ -468,25 +562,25 @@ const ProductsPage = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {product.category}
+                    {product.category || 'Other'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {product.price}
+                    ${product.price}/day
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {product.stock}
+                    {product.quantity}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {product.rented}
+                    {product.rented || 0}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      product.status === "available" ? "bg-green-100 text-green-800" :
-                      product.status === "low-stock" ? "bg-yellow-100 text-yellow-800" :
+                      product.quantity > 5 ? "bg-green-100 text-green-800" :
+                      product.quantity > 0 ? "bg-yellow-100 text-yellow-800" :
                       "bg-red-100 text-red-800"
                     }`}>
-                      {product.status === "available" ? "Available" :
-                       product.status === "low-stock" ? "Low Stock" : "Out of Stock"}
+                      {product.quantity > 5 ? "Available" :
+                       product.quantity > 0 ? "Low Stock" : "Out of Stock"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
