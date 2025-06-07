@@ -83,7 +83,7 @@ const Navbar = () => {
             }
             
             console.log("Fetching notifications for user:", userId);
-            const response = await fetch(`http://127.0.0.1:8002/notify/notifications/?user=${userId}`);
+            const response = await fetch(`https://kong-7e283b39dauspilq0.kongcloud.dev/notify/notifications/?user=${userId}`);
             
             console.log("Response status:", response.status);
             if (!response.ok) {
@@ -108,7 +108,7 @@ const Navbar = () => {
             const userId = Cookies.get('keycloak_user_id');
             if (!userId) return;
             
-            const response = await fetch(`http://127.0.0.1:8002/notify/notifications/mark-read/`, {
+            const response = await fetch(`https://kong-7e283b39dauspilq0.kongcloud.dev/notify/notifications/mark-read/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -194,7 +194,7 @@ const Navbar = () => {
     // Fetch unread message count from REST API
     const fetchUnreadMessageCount = async () => {
         try {
-            const response = await fetch(`http://127.0.0.1:8001/api/chat/chat/unread/${user?.user_id}/`);
+            const response = await fetch(`https://kong-7e283b39dauspilq0.kongcloud.dev/api/chat/chat/unread/${user?.user_id}/`);
             if (response.ok) {
                 const data = await response.json();
                 // Assuming data.unread_messages is an array
@@ -209,7 +209,7 @@ const Navbar = () => {
     // Mark messages as read when visiting messages page
     const markMessagesAsRead = async () => {
         try {
-            const response = await fetch(`http://127.0.0.1:8001/api/chat/chat/mark_read/${user?.user_id}/`, {
+            const response = await fetch(`https://kong-7e283b39dauspilq0.kongcloud.dev/api/chat/chat/mark_read/${user?.user_id}/`, {
                 method: 'POST',
                 credentials: 'include'
             });
