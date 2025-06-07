@@ -5,6 +5,8 @@ import { SelectInput } from "../../Customcss/custom";
 import HistoryService from "../../services/HistoryServcie";
 import { useLocation } from "react-router-dom";
 import * as XLSX from 'xlsx';
+import Cookies from 'js-cookie';
+
 
 export default function History() {
     const [historyData, setHistoryData] = useState([]);
