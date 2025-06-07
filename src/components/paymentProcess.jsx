@@ -74,7 +74,7 @@ const CheckoutProcess = () => {
             country: user.address?.country || '',
           }
         }));
-        
+        console.log("data",data)
         // Skip to shipping if user is logged in and data is loaded
         setStep(2);
       }
