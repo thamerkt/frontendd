@@ -1078,13 +1078,14 @@ const CalendarSidebar = ({ product, showForm, setShowForm, onEventCreated }) => 
     }
 
     try {
-      const user = JSON.parse(localStorage.getItem("user"));
+      const clientt = Cookies.get('keycloak_user_id');
 
       const rentalRequestData = {
         equipment: product.id,
         start_date: selectedDates[0],
         end_date: selectedDates[1],
-        client: user?.user_id,
+        client: clientt,
+        rental:product.user,
         status: "pending",
         quantity: quantity,
         total_price: calculateTotalPrice,
