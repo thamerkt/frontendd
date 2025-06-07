@@ -50,11 +50,13 @@ export default function History() {
     };
 
     useEffect(() => {
+        console.log("Current path:", location.pathname)
         const fetchData = async () => {
             try {
                 setIsLoading(true);
                 let data;
                 const user=Cookies.get('keycloak_user_id')
+                console.log("user path:", user)
                 
                 // Determine which fetch method to use based on the URL path
                 if (location.pathname.startsWith('/admin')) {
