@@ -119,7 +119,7 @@ const ProductsPage = () => {
     try {
       setLoadingProducts(true);
       const userId = Cookies.get('keycloak_user_id');
-      const response = await equipmentService.fetchRentalsBy('user', userId);
+      const response = await EquipmentService.fetchRentalsBy('user', userId);
       setProducts(response.data);
       
       // Calculate category distribution
