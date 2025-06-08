@@ -28,7 +28,7 @@ const HistoryService = {
     const queryParams = new URLSearchParams(cleanedFilters).toString();
 
     // Compose full URL
-    const url = `${API_URL}historiques/${queryParams ? `?${queryParams}` : ""}`;
+    const url = `${API_URL}${queryParams ? `?${queryParams}` : ""}`;
 
     // Make the request
     return axios.get(url, { withCredentials: true })
