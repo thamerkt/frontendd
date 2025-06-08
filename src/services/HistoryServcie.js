@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://kong-7e283b39dauspilq0.kongcloud.dev/history/"; 
+const API_URL = "https://kong-7e283b39dauspilq0.kongcloud.dev/rental/rental_requests/"; 
 
 
 
