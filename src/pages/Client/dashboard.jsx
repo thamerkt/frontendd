@@ -143,7 +143,7 @@ const ClientDashboard = () => {
                         transition={{ delay: 0.1 }}
                         className="mb-8"
                     >
-                        <h1 className="text-2xl font-bold text-gray-800">Welcome back, <span className="text-teal-500">Sarah</span></h1>
+                        <h1 className="text-2xl font-bold text-gray-800">Welcome back, <span className="text-teal-500">Thamer</span></h1>
                         <p className="text-gray-500">Here's your rental activity and upcoming bookings</p>
                     </motion.div>
 
