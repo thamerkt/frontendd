@@ -287,7 +287,7 @@ const Dashboard = () => {
                 <main className="p-6">
                     {/* Welcome Header */}
                     <div className="mb-6">
-                        <h1 className="text-2xl font-bold text-gray-800">Welcome back, <span className="text-teal-500">Alex</span></h1>
+                        <h1 className="text-2xl font-bold text-gray-800">Welcome back, <span className="text-teal-500">Thamer</span></h1>
                         <p className="text-gray-500">Here's what's happening with your business today</p>
                     </div>
 
